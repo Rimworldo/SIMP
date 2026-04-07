@@ -24,19 +24,23 @@ header{height:var(--hh);display:flex;align-items:center;justify-content:space-be
 .abtn.on{border-color:var(--accent);color:var(--accent);background:rgba(255,60,110,.1)}
 main{display:grid;grid-template-columns:1fr 350px;min-height:calc(100vh - var(--hh))}
 .theater{padding:1.5rem;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:1rem}
-.player-wrap{background:#000;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;border:1px solid var(--border);width:100%}
-#ytFrame{width:100%;height:100%;border:none;display:block}
-.eover{position:absolute;inset:0;background:rgba(10,10,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;transition:opacity .3s;pointer-events:none}
+.theater-stage{position:relative;width:100%}
+.player-glow{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(50px) saturate(200%);opacity:0;transition:opacity 0.6s ease;z-index:0;pointer-events:none;border-radius:12px;transform:scale(1.05)}
+.player-glow.active{opacity:0.25}
+.player-wrap{background:#000;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;border:1px solid var(--border);width:100%;z-index:2}
+#ytFrame{width:100%;height:100%;border:none;display:block;pointer-events:none}
+body.is-admin #ytFrame{pointer-events:auto}
+.eover{position:absolute;inset:0;background:rgba(10,10,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;transition:opacity .3s;pointer-events:none;z-index:3}
 .eover.gone{opacity:0}
 .eover .ei{font-size:2.5rem;opacity:.2}
 .eover p{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted);text-align:center;line-height:1.8}
 .eover .ec{color:var(--accent);background:var(--surface2);padding:.35rem .8rem;border-radius:6px;font-size:.78rem;display:inline-block;margin-top:.2rem}
-.npbar{display:flex;align-items:center;gap:.75rem}
+.npbar{display:flex;align-items:center;gap:.75rem;position:relative;z-index:2}
 .npi{flex:1;min-width:0}
 .nplbl{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:.2rem}
 .nptitle{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .npuser{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted)}.npuser b{color:#bf94ff;font-weight:400}
-.apanel{background:var(--surface);border:1px solid rgba(255,60,110,.2);border-radius:10px;padding:1rem 1.25rem;display:none;flex-direction:column;gap:.75rem}
+.apanel{background:var(--surface);border:1px solid rgba(255,60,110,.2);border-radius:10px;padding:1rem 1.25rem;display:none;flex-direction:column;gap:.75rem;position:relative;z-index:2}
 .apanel.show{display:flex}
 .aptitle{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--accent);letter-spacing:.15em;text-transform:uppercase}
 .aprow{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
@@ -53,23 +57,27 @@ main{display:grid;grid-template-columns:1fr 350px;min-height:calc(100vh - var(--
 .maddr{display:flex;gap:.4rem}
 .maddr input{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.4rem .65rem;color:var(--text);font-family:'Space Mono',monospace;font-size:.7rem;outline:none}
 .maddr input:focus{border-color:var(--accent)}
-#manUser{width:90px;flex-shrink:0}
 #manUrl{flex:1}
 .maddr button{background:var(--accent);border:none;color:#fff;padding:.4rem .8rem;border-radius:6px;font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;cursor:pointer}
+.cfg-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;background:rgba(0,0,0,.2);padding:.6rem .8rem;border-radius:8px;border:1px solid rgba(255,255,255,.03)}
+.cfg-row label{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--text);display:flex;align-items:center;gap:.4rem;cursor:pointer}
+.cfg-row input[type=number]{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:.2rem .4rem;width:45px;font-family:'Space Mono',monospace;font-size:.65rem;outline:none}
+.cfg-row input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
 .qside{display:flex;flex-direction:column;height:calc(100vh - var(--hh));position:sticky;top:var(--hh);overflow:hidden}
 .qhead{padding:1rem 1.25rem .7rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .qtitle{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .qcount{background:var(--accent);color:#fff;font-family:'Space Mono',monospace;font-size:.62rem;font-weight:700;padding:.12rem .45rem;border-radius:20px}
-.qlist{flex:1;overflow-y:auto;padding:.7rem;display:flex;flex-direction:column;gap:.45rem}
+.qlist-wrap{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;}
+#qlistBg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0.1;z-index:0;pointer-events:none;transition:background-image 0.5s ease;}
+.qlist{flex:1;overflow-y:auto;padding:.7rem;display:flex;flex-direction:column;gap:.45rem;position:relative;z-index:1}
 .qlist::-webkit-scrollbar{width:3px}
 .qlist::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.qi{background:var(--item);border:1px solid var(--border);border-radius:8px;padding:.6rem .7rem;display:flex;align-items:center;gap:.65rem;transition:border-color .2s;animation:qs .25s ease}
+.qi{background:#000;border:1px solid var(--border);border-radius:8px;padding:.6rem .7rem;display:flex;align-items:center;gap:.65rem;transition:border-color .2s;animation:qs .25s ease;position:relative;z-index:1}
 @keyframes qs{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 .qi:hover{border-color:rgba(255,255,255,.12)}
-.qi.cur{border-color:var(--accent);background:rgba(255,60,110,.05)}
+.qi.cur{border-color:var(--accent);}
 .qithumb{width:68px;height:40px;border-radius:5px;background:var(--surface2);overflow:hidden;flex-shrink:0;position:relative}
 .qithumb img{width:100%;height:100%;object-fit:cover;display:block}
-.pnow{position:absolute;inset:0;background:rgba(255,60,110,.28);display:flex;align-items:center;justify-content:center;font-size:.9rem}
 .qibody{flex:1;min-width:0}
 .qititle{font-size:.78rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 .qiuser{font-family:'Space Mono',monospace;font-size:.62rem;color:#bf94ff;margin-top:.1rem}
@@ -114,7 +122,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
 </head>
 <body>
 <header>
-  <div class="logo">Simp<span>.</span></div>
+  <div class="logo">Simp<span>.</div>
   <div class="hright">
     <div class="tp"><div class="tdot"></div>daenil</div>
     <button class="abtn" id="adminBtn">🔒 admin</button>
@@ -122,12 +130,15 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
 </header>
 <main>
   <div class="theater">
-    <div class="player-wrap">
-      <div id="ytFrame"></div>
-      <div class="eover" id="eover">
-        <div class="ei">🎬</div>
-        <p>Nenhum vídeo na fila ainda.<br>Manda no chat do Daenil:</p>
-        <span class="ec">%simp youtube.com/watch?v=...</span>
+    <div class="theater-stage">
+      <div id="playerGlow" class="player-glow"></div>
+      <div class="player-wrap">
+        <div id="ytFrame"></div>
+        <div class="eover" id="eover">
+          <div class="ei">🎬</div>
+          <p>Nenhum vídeo na fila ainda.<br>Manda no chat do Daenil:</p>
+          <span class="ec">%simp youtube.com/watch?v=...</span>
+        </div>
       </div>
     </div>
     <div class="npbar" id="npbar" style="display:none">
@@ -152,9 +163,22 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <div class="madd">
         <div class="maddt">adicionar manualmente</div>
         <div class="maddr">
-          <input type="text" id="manUser" placeholder="usuário">
-          <input type="text" id="manUrl" placeholder="link do YouTube">
+          <input type="text" id="manUrl" placeholder="Cole o link do YouTube aqui">
           <button id="manAddBtn">+</button>
+        </div>
+      </div>
+      <div class="madd">
+        <div class="maddt">configurações visuais</div>
+        <div class="cfg-row">
+          <label title="Quantidade de palavras do título usadas para buscar o GIF">
+            Palavras GIF: <input type="number" id="cfgGifWords" min="1" max="5" value="3">
+          </label>
+          <label title="Ativa um brilho ao redor do vídeo baseado nas cores dele">
+            <input type="checkbox" id="cfgGlow" checked> Glow Ativo
+          </label>
+          <label title="Toca beep quando vídeo é colocado">
+            <input type="checkbox" id="cfgBpm" checked> Beep ao adicionar
+          </label>
         </div>
       </div>
     </div>
@@ -164,10 +188,14 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <span class="qtitle">Fila de vídeos</span>
       <span class="qcount" id="qcount">0</span>
     </div>
-    <div class="qlist" id="qlist">
-      <div class="qempty" id="qempty">
-        <div class="qei">📺</div>
-        <p>Fila vazia!<br>No chat do Daenil, manda:<br><span class="qc">%simp [link]</span></p>
+   
+    <div class="qlist-wrap">
+      <div id="qlistBg"></div>
+      <div class="qlist" id="qlist">
+        <div class="qempty" id="qempty">
+          <div class="qei">📺</div>
+          <p>Fila vazia!<br>No chat do Daenil, manda:<br><span class="qc">%simp [link]</span></p>
+        </div>
       </div>
     </div>
     <div class="chatbox" id="chatbox">
@@ -196,9 +224,88 @@ let queue = [];
 let curIdx = -1;
 let isAdmin = false;
 let paused = false;
-let vol = 80;
 let ytReady = false;
 let ytPlayer = null;
+// Configurações padrão
+let config = {
+  gifWords: 3,
+  glow: true,
+  bpm: true,
+  vol: 80
+};
+// Carrega as configurações salvas do localStorage
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem('simpConfig');
+    if (saved) {
+      config = { ...config, ...JSON.parse(saved) };
+    }
+    document.getElementById('cfgGifWords').value = config.gifWords;
+    document.getElementById('cfgGlow').checked = config.glow;
+    document.getElementById('cfgBpm').checked = config.bpm;
+    document.getElementById('volSlider').value = config.vol;
+    document.getElementById('volNum').textContent = config.vol + '%';
+  } catch(e) {}
+}
+// Salva as configurações no localStorage
+function saveConfig() {
+  localStorage.setItem('simpConfig', JSON.stringify(config));
+  applyVisualEffects();
+}
+// Adiciona Listeners para as configs
+document.getElementById('cfgGifWords').addEventListener('change', (e) => {
+  let val = parseInt(e.target.value);
+  if (val < 1) val = 1;
+  if (val > 5) val = 5;
+  e.target.value = val;
+  config.gifWords = val;
+  saveConfig();
+  if (curIdx >= 0) setQueueGif(queue[curIdx].title);
+});
+document.getElementById('cfgGlow').addEventListener('change', (e) => {
+  config.glow = e.target.checked;
+  saveConfig();
+});
+document.getElementById('cfgBpm').addEventListener('change', (e) => {
+  config.bpm = e.target.checked;
+  saveConfig();
+});
+document.getElementById('volSlider').addEventListener('input', function() {
+  config.vol = parseInt(this.value);
+  document.getElementById('volNum').textContent = config.vol + '%';
+  if (ytReady && ytPlayer) ytPlayer.setVolume(config.vol);
+  saveConfig();
+});
+function applyVisualEffects() {
+  const glowEl = document.getElementById('playerGlow');
+  if (config.glow && curIdx !== -1) {
+    glowEl.classList.add('active');
+  } else {
+    glowEl.classList.remove('active');
+  }
+}
+function toggleAdmin(state) {
+  isAdmin = state;
+  if (isAdmin) {
+    localStorage.setItem('simpAdmin', '1');
+    document.body.classList.add('is-admin');
+    document.getElementById('apanel').classList.add('show');
+    document.getElementById('adminBtn').classList.add('on');
+    document.getElementById('adminBtn').textContent = '🔓 admin';
+  } else {
+    localStorage.removeItem('simpAdmin');
+    document.body.classList.remove('is-admin');
+    document.getElementById('apanel').classList.remove('show');
+    document.getElementById('adminBtn').classList.remove('on');
+    document.getElementById('adminBtn').textContent = '🔒 admin';
+  }
+  renderQueue();
+}
+// Inicializa configurações
+loadConfig();
+if (localStorage.getItem('simpAdmin') === '1') {
+  toggleAdmin(true);
+}
 (function(){
   const s = document.createElement('script');
   s.src = 'https://www.youtube.com/iframe_api';
@@ -209,7 +316,7 @@ window.onYouTubeIframeAPIReady = function(){
     events: {
       onReady: function(e) {
         ytReady = true;
-        e.target.setVolume(vol);
+        e.target.setVolume(config.vol);
         if (queue.length > 0 && curIdx === -1) {
           startPlayback(0);
         }
@@ -228,7 +335,7 @@ function loadVid(id) {
     autoplay: 1,
     startSeconds: 0
   });
-  ytPlayer.setVolume(vol);
+  ytPlayer.setVolume(config.vol);
 }
 function extractId(url) {
   url = url.trim();
@@ -258,30 +365,50 @@ async function fetchTitle(id) {
     return d.title || 'Vídeo do YouTube';
   } catch { return 'Vídeo do YouTube'; }
 }
+async function setQueueGif(title) {
+  const bgEl = document.getElementById('qlistBg');
+  if (!title) {
+    bgEl.style.backgroundImage = '';
+    return;
+  }
+  const words = title.split(/\s+/).slice(0, config.gifWords).join(' ');
+  try {
+    const r = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(words)}&key=LIVDSRZULELA&limit=1&media_filter=minimal`);
+    const d = await r.json();
+    if (d.results && d.results.length > 0) {
+      bgEl.style.backgroundImage = `url(${d.results[0].media[0].gif.url})`;
+    } else {
+      bgEl.style.backgroundImage = '';
+    }
+  } catch(e) {
+    bgEl.style.backgroundImage = '';
+  }
+}
 function playPing() {
+  if (!config.bpm) return;
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     const filter = audioCtx.createBiquadFilter();
-   
+  
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
     gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-   
+  
     oscillator.connect(filter);
     filter.connect(gain);
     gain.connect(audioCtx.destination);
-   
+  
     oscillator.start();
-   
+  
     setTimeout(() => {
       gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
       oscillator.stop(audioCtx.currentTime + 0.4);
     }, 80);
-   
+  
     setTimeout(() => {
       const osc2 = audioCtx.createOscillator();
       const g2 = audioCtx.createGain();
@@ -307,9 +434,8 @@ async function addToQueue(rawUrl, user) {
     videoId: id,
     title,
     user,
-    thumb: `https://img.youtube.com/vi/${id}/mqdefault.jpg`
+    thumb: `https://img.youtube.com/vi/${id}/hqdefault.jpg`
   };
- 
   queue.push(item);
   logChat(user, rawUrl, true);
   playPing();
@@ -325,11 +451,18 @@ function startPlayback(idx) {
   if (idx < 0 || idx >= queue.length) return;
   curIdx = idx;
   const item = queue[curIdx];
+ 
   document.getElementById('eover').classList.add('gone');
   document.getElementById('npbar').style.display = 'flex';
   document.getElementById('npTitle').textContent = item.title;
   document.getElementById('npUser').textContent = item.user;
+ 
+  const glowEl = document.getElementById('playerGlow');
+  glowEl.style.backgroundImage = `url(${item.thumb})`;
+ 
+  applyVisualEffects();
   loadVid(item.videoId);
+  setQueueGif(item.title);
   renderQueue();
 }
 function nextVideo() {
@@ -342,7 +475,9 @@ function showEmpty() {
   curIdx = -1;
   document.getElementById('eover').classList.remove('gone');
   document.getElementById('npbar').style.display = 'none';
+  document.getElementById('playerGlow').classList.remove('active');
   if (ytReady && ytPlayer) ytPlayer.stopVideo();
+  setQueueGif(null);
   renderQueue();
 }
 function esc(s) {
@@ -352,15 +487,13 @@ function renderQueue() {
   const list = document.getElementById('qlist');
   const empty = document.getElementById('qempty');
   document.getElementById('qcount').textContent = queue.length;
+  list.querySelectorAll('.qi').forEach(item => item.remove());
   if (queue.length === 0) {
-    list.innerHTML = '';
-    list.appendChild(empty);
-    empty.style.display = 'flex';
+    if (empty) empty.style.display = 'flex';
     return;
   }
-  empty.style.display = 'none';
-  list.innerHTML = '';
-  const fragment = document.createDocumentFragment();
+ 
+  if (empty) empty.style.display = 'none';
   queue.forEach((item, i) => {
     const isCur = i === curIdx;
     let pos = isCur ? '▶' : (curIdx >= 0 ? '#' + (i - curIdx) : '#' + (i + 1));
@@ -369,18 +502,16 @@ function renderQueue() {
     d.innerHTML = `
       <div class="qithumb">
         <img src="${esc(item.thumb)}" alt="" loading="lazy" onerror="this.style.opacity=0">
-        ${isCur ? '<div class="pnow">▶</div>' : ''}
       </div>
       <div class="qibody">
         <div class="qititle" title="${esc(item.title)}">${esc(item.title)}</div>
         <div class="qiuser">${esc(item.user)}</div>
       </div>
-      <span class="qinum">${pos}</span>
+      ${!isCur ? `<span class="qinum">${pos}</span>` : ''}
       ${isAdmin && !isCur ? `<button class="qidel" data-i="${i}">✕</button>` : ''}
     `;
-    fragment.appendChild(d);
+    list.appendChild(d);
   });
-  list.appendChild(fragment);
   const curEl = list.querySelector('.cur');
   if (curEl) curEl.scrollIntoView({block:'nearest', behavior:'smooth'});
   if (isAdmin) {
@@ -424,11 +555,7 @@ function toast(msg, type='') {
 }
 document.getElementById('adminBtn').addEventListener('click', () => {
   if (isAdmin) {
-    isAdmin = false;
-    document.getElementById('apanel').classList.remove('show');
-    document.getElementById('adminBtn').classList.remove('on');
-    document.getElementById('adminBtn').textContent = '🔒 admin';
-    renderQueue();
+    toggleAdmin(false);
     toast('Saiu do admin');
   } else {
     document.getElementById('ovl').classList.add('open');
@@ -442,12 +569,8 @@ document.getElementById('bok').addEventListener('click', checkPwd);
 document.getElementById('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPwd(); });
 function checkPwd() {
   if (document.getElementById('pwdInput').value === PASSWORD) {
-    isAdmin = true;
     document.getElementById('ovl').classList.remove('open');
-    document.getElementById('apanel').classList.add('show');
-    document.getElementById('adminBtn').classList.add('on');
-    document.getElementById('adminBtn').textContent = '🔓 admin';
-    renderQueue();
+    toggleAdmin(true);
     toast('Bem-vindo, admin! 🎛️', 'ok');
   } else {
     const inp = document.getElementById('pwdInput');
@@ -472,19 +595,13 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   showEmpty();
   toast('Fila limpa!', 'ok');
 });
-document.getElementById('volSlider').addEventListener('input', function() {
-  vol = parseInt(this.value);
-  document.getElementById('volNum').textContent = vol + '%';
-  if (ytReady && ytPlayer) ytPlayer.setVolume(vol);
-});
 document.getElementById('manAddBtn').addEventListener('click', async () => {
-  const user = document.getElementById('manUser').value.trim() || 'admin';
+  const user = 'admin';
   const url = document.getElementById('manUrl').value.trim();
   if (!url) return;
   const ok = await addToQueue(url, user);
   if (ok) {
     document.getElementById('manUrl').value = '';
-    document.getElementById('manUser').value = '';
   }
 });
 document.getElementById('manUrl').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('manAddBtn').click(); });
