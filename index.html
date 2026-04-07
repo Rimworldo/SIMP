@@ -25,7 +25,7 @@ header{height:var(--hh);display:flex;align-items:center;justify-content:space-be
 main{display:grid;grid-template-columns:1fr 350px;min-height:calc(100vh - var(--hh))}
 .theater{padding:1.5rem;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:1rem}
 .player-wrap{background:#000;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;border:1px solid var(--border);width:100%}
-#ytFrame{position:absolute;inset:0;width:100%;height:100%;border:none;display:block}
+#ytFrame{width:100%;height:100%;border:none;display:block}
 .eover{position:absolute;inset:0;background:rgba(10,10,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;transition:opacity .3s;pointer-events:none}
 .eover.gone{opacity:0}
 .eover .ei{font-size:2.5rem;opacity:.2}
@@ -123,11 +123,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
 <main>
   <div class="theater">
     <div class="player-wrap">
-      <iframe id="ytFrame"
-        src="about:blank"
-        allow="autoplay; encrypted-media"
-        allowfullscreen>
-      </iframe>
+      <div id="ytFrame"></div>
       <div class="eover" id="eover">
         <div class="ei">🎬</div>
         <p>Nenhum vídeo na fila ainda.<br>Manda no chat do Daenil:</p>
@@ -203,94 +199,89 @@ let paused = false;
 let vol = 80;
 let ytReady = false;
 let ytPlayer = null;
-let pendingId = null;
-
 (function(){
   const s = document.createElement('script');
   s.src = 'https://www.youtube.com/iframe_api';
   document.head.appendChild(s);
 })();
-
 window.onYouTubeIframeAPIReady = function(){
-  ytPlayer = new YT.Player('ytFrame',{
-    events:{
-      onReady(e){
+  ytPlayer = new YT.Player('ytFrame', {
+    events: {
+      onReady: function(e) {
         ytReady = true;
         e.target.setVolume(vol);
-        if(pendingId){ 
-          e.target.loadVideoById({videoId:pendingId, autoplay:1}); 
-          pendingId = null; 
+        if (queue.length > 0 && curIdx === -1) {
+          startPlayback(0);
         }
       },
-      onStateChange(e){
-        if(e.data === YT.PlayerState.ENDED) nextVideo();
+      onStateChange: function(e) {
+        if (e.data === YT.PlayerState.ENDED) nextVideo();
         paused = (e.data === YT.PlayerState.PAUSED);
-        refreshPauseBtn();
       }
     }
   });
 };
-
-function loadVid(id){
-  if(!id) return;
-  if(ytReady && ytPlayer){ 
-    ytPlayer.loadVideoById({videoId:id, autoplay:1}); 
-    ytPlayer.setVolume(vol); 
-  }
-  else { pendingId = id; }
+function loadVid(id) {
+  if (!id || !ytReady || !ytPlayer) return;
+  ytPlayer.loadVideoById({
+    videoId: id,
+    autoplay: 1,
+    startSeconds: 0
+  });
+  ytPlayer.setVolume(vol);
 }
-
-function refreshPauseBtn(){
-  const btn = document.getElementById('pauseBtn');
-  if(!btn) return;
-  if(paused){ btn.textContent='▶ Retomar'; btn.classList.add('paused'); }
-  else { btn.textContent='⏸ Pausar'; btn.classList.remove('paused'); }
-}
-
-function extractId(url){
+function extractId(url) {
   url = url.trim();
   let m;
-  m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
-  m = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/); if(m) return m[1];
-  m = url.match(/embed\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
-  m = url.match(/shorts\/([a-zA-Z0-9_-]{11})/); if(m) return m[1];
-  if(/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  m = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  m = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  m = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  m = url.match(/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  m = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+  if (m) {
+    const v = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (v) return v[1];
+    return null;
+  }
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
   return null;
 }
-
-async function fetchTitle(id){
-  try{
+async function fetchTitle(id) {
+  try {
     const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
-    if(!r.ok) return 'Vídeo do YouTube';
+    if (!r.ok) return 'Vídeo do YouTube';
     const d = await r.json();
     return d.title || 'Vídeo do YouTube';
-  }catch{ return 'Vídeo do YouTube'; }
+  } catch { return 'Vídeo do YouTube'; }
 }
-
-function playPing(){
-  try{
+function playPing() {
+  try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     const filter = audioCtx.createBiquadFilter();
-    
+   
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
     gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-    
+   
     oscillator.connect(filter);
     filter.connect(gain);
     gain.connect(audioCtx.destination);
-    
+   
     oscillator.start();
-    
+   
     setTimeout(() => {
       gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
       oscillator.stop(audioCtx.currentTime + 0.4);
     }, 80);
-    
+   
     setTimeout(() => {
       const osc2 = audioCtx.createOscillator();
       const g2 = audioCtx.createGain();
@@ -307,24 +298,31 @@ function playPing(){
     }, 140);
   } catch(e){}
 }
-
-async function addToQueue(rawUrl, user){
+async function addToQueue(rawUrl, user) {
   const id = extractId(rawUrl);
-  if(!id){ toast('Link inválido!','err'); return false; }
-  if(queue.find(q=>q.videoId===id)){ toast('Vídeo já está na fila!','err'); return false; }
+  if (!id) { toast('Link inválido!', 'err'); return false; }
+  if (queue.find(q => q.videoId === id)) { toast('Vídeo já está na fila!', 'err'); return false; }
   const title = await fetchTitle(id);
-  const item = { videoId:id, title, user, thumb:`https://img.youtube.com/vi/${id}/mqdefault.jpg` };
+  const item = {
+    videoId: id,
+    title,
+    user,
+    thumb: `https://img.youtube.com/vi/${id}/mqdefault.jpg`
+  };
+ 
   queue.push(item);
   logChat(user, rawUrl, true);
   playPing();
   toast(`✅ ${user}: ${title.slice(0,45)}`, 'ok');
-  if(curIdx === -1) startPlayback(0);
-  else renderQueue();
+  if (curIdx === -1) {
+    startPlayback(0);
+  } else {
+    renderQueue();
+  }
   return true;
 }
-
-function startPlayback(idx){
-  if(idx < 0 || idx >= queue.length) return;
+function startPlayback(idx) {
+  if (idx < 0 || idx >= queue.length) return;
   curIdx = idx;
   const item = queue[curIdx];
   document.getElementById('eover').classList.add('gone');
@@ -334,29 +332,27 @@ function startPlayback(idx){
   loadVid(item.videoId);
   renderQueue();
 }
-
-function nextVideo(){
+function nextVideo() {
   queue.splice(0, curIdx + 1);
   curIdx = -1;
-  if(queue.length > 0) startPlayback(0);
+  if (queue.length > 0) startPlayback(0);
   else showEmpty();
 }
-
-function showEmpty(){
+function showEmpty() {
   curIdx = -1;
   document.getElementById('eover').classList.remove('gone');
   document.getElementById('npbar').style.display = 'none';
-  if(ytReady && ytPlayer){ ytPlayer.stopVideo(); }
+  if (ytReady && ytPlayer) ytPlayer.stopVideo();
   renderQueue();
 }
-
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
-
-function renderQueue(){
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function renderQueue() {
   const list = document.getElementById('qlist');
   const empty = document.getElementById('qempty');
   document.getElementById('qcount').textContent = queue.length;
-  if(queue.length === 0){
+  if (queue.length === 0) {
     list.innerHTML = '';
     list.appendChild(empty);
     empty.style.display = 'flex';
@@ -364,12 +360,10 @@ function renderQueue(){
   }
   empty.style.display = 'none';
   list.innerHTML = '';
-  queue.forEach((item, i)=>{
+  const fragment = document.createDocumentFragment();
+  queue.forEach((item, i) => {
     const isCur = i === curIdx;
-    let pos;
-    if(isCur) pos = '▶';
-    else if(curIdx >= 0) pos = '#'+(i - curIdx);
-    else pos = '#'+(i+1);
+    let pos = isCur ? '▶' : (curIdx >= 0 ? '#' + (i - curIdx) : '#' + (i + 1));
     const d = document.createElement('div');
     d.className = 'qi' + (isCur ? ' cur' : '');
     d.innerHTML = `
@@ -384,31 +378,31 @@ function renderQueue(){
       <span class="qinum">${pos}</span>
       ${isAdmin && !isCur ? `<button class="qidel" data-i="${i}">✕</button>` : ''}
     `;
-    list.appendChild(d);
+    fragment.appendChild(d);
   });
+  list.appendChild(fragment);
   const curEl = list.querySelector('.cur');
-  if(curEl) curEl.scrollIntoView({block:'nearest',behavior:'smooth'});
-  if(isAdmin){
-    list.querySelectorAll('.qidel').forEach(btn=>{
-      btn.addEventListener('click', e=>{
+  if (curEl) curEl.scrollIntoView({block:'nearest', behavior:'smooth'});
+  if (isAdmin) {
+    list.querySelectorAll('.qidel').forEach(btn => {
+      btn.addEventListener('click', e => {
         e.stopPropagation();
         const i = parseInt(btn.dataset.i);
-        queue.splice(i,1);
-        if(i < curIdx) curIdx--;
-        else if(i === curIdx){
+        queue.splice(i, 1);
+        if (i < curIdx) curIdx--;
+        else if (i === curIdx) {
           curIdx = -1;
-          if(queue.length > 0) startPlayback(0);
+          if (queue.length > 0) startPlayback(0);
           else showEmpty();
           return;
         }
         renderQueue();
-        toast('Vídeo removido','ok');
+        toast('Vídeo removido', 'ok');
       });
     });
   }
 }
-
-function logChat(user, text, isCmd){
+function logChat(user, text, isCmd) {
   const box = document.getElementById('chatbox');
   const d = document.createElement('div');
   d.className = 'cm';
@@ -418,20 +412,18 @@ function logChat(user, text, isCmd){
   box.appendChild(d);
   box.scrollTop = box.scrollHeight;
   const all = box.querySelectorAll('.cm');
-  if(all.length > 60) all[0].remove();
+  if (all.length > 60) all[0].remove();
 }
-
-function toast(msg, type=''){
+function toast(msg, type='') {
   const c = document.getElementById('toasts');
   const t = document.createElement('div');
-  t.className = 'toast '+type;
+  t.className = 'toast ' + type;
   t.textContent = msg;
   c.appendChild(t);
-  setTimeout(()=>t.remove(), 3000);
+  setTimeout(() => t.remove(), 3000);
 }
-
-document.getElementById('adminBtn').addEventListener('click',()=>{
-  if(isAdmin){
+document.getElementById('adminBtn').addEventListener('click', () => {
+  if (isAdmin) {
     isAdmin = false;
     document.getElementById('apanel').classList.remove('show');
     document.getElementById('adminBtn').classList.remove('on');
@@ -440,89 +432,88 @@ document.getElementById('adminBtn').addEventListener('click',()=>{
     toast('Saiu do admin');
   } else {
     document.getElementById('ovl').classList.add('open');
-    document.getElementById('pwdInput').value='';
+    document.getElementById('pwdInput').value = '';
     document.getElementById('emsg').classList.remove('show');
-    setTimeout(()=>document.getElementById('pwdInput').focus(),80);
+    setTimeout(() => document.getElementById('pwdInput').focus(), 80);
   }
 });
-document.getElementById('bcan').addEventListener('click',()=>document.getElementById('ovl').classList.remove('open'));
+document.getElementById('bcan').addEventListener('click', () => document.getElementById('ovl').classList.remove('open'));
 document.getElementById('bok').addEventListener('click', checkPwd);
-document.getElementById('pwdInput').addEventListener('keydown',e=>{ if(e.key==='Enter') checkPwd(); });
-function checkPwd(){
-  if(document.getElementById('pwdInput').value===PASSWORD){
-    isAdmin=true;
+document.getElementById('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPwd(); });
+function checkPwd() {
+  if (document.getElementById('pwdInput').value === PASSWORD) {
+    isAdmin = true;
     document.getElementById('ovl').classList.remove('open');
     document.getElementById('apanel').classList.add('show');
     document.getElementById('adminBtn').classList.add('on');
-    document.getElementById('adminBtn').textContent='🔓 admin';
+    document.getElementById('adminBtn').textContent = '🔓 admin';
     renderQueue();
-    toast('Bem-vindo, admin! 🎛️','ok');
+    toast('Bem-vindo, admin! 🎛️', 'ok');
   } else {
-    const inp=document.getElementById('pwdInput');
+    const inp = document.getElementById('pwdInput');
     inp.classList.add('shake');
     document.getElementById('emsg').classList.add('show');
-    setTimeout(()=>inp.classList.remove('shake'),400);
+    setTimeout(() => inp.classList.remove('shake'), 400);
   }
 }
-
-document.getElementById('pauseBtn').addEventListener('click',()=>{
-  if(!ytReady||!ytPlayer||curIdx<0){ toast('Nenhum vídeo tocando','err'); return; }
-  if(paused){ ytPlayer.playVideo(); toast('▶ Retomado','ok'); }
-  else { ytPlayer.pauseVideo(); toast('⏸ Pausado','ok'); }
+document.getElementById('pauseBtn').addEventListener('click', () => {
+  if (!ytReady || !ytPlayer || curIdx < 0) { toast('Nenhum vídeo tocando', 'err'); return; }
+  if (paused) { ytPlayer.playVideo(); toast('▶ Retomado', 'ok'); }
+  else { ytPlayer.pauseVideo(); toast('⏸ Pausado', 'ok'); }
 });
-
-document.getElementById('skipBtn').addEventListener('click',()=>{
-  if(curIdx<0){ toast('Nenhum vídeo tocando','err'); return; }
-  toast('⏭ Pulando...'); nextVideo();
+document.getElementById('skipBtn').addEventListener('click', () => {
+  if (curIdx < 0) { toast('Nenhum vídeo tocando', 'err'); return; }
+  toast('⏭ Pulando...');
+  nextVideo();
 });
-
-document.getElementById('clearBtn').addEventListener('click',()=>{
-  if(!confirm('Limpar toda a fila?')) return;
-  queue=[]; showEmpty();
-  toast('Fila limpa!','ok');
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (!confirm('Limpar toda a fila?')) return;
+  queue = [];
+  showEmpty();
+  toast('Fila limpa!', 'ok');
 });
-
-document.getElementById('volSlider').addEventListener('input',function(){
-  vol=parseInt(this.value);
-  document.getElementById('volNum').textContent=vol+'%';
-  if(ytReady&&ytPlayer) ytPlayer.setVolume(vol);
+document.getElementById('volSlider').addEventListener('input', function() {
+  vol = parseInt(this.value);
+  document.getElementById('volNum').textContent = vol + '%';
+  if (ytReady && ytPlayer) ytPlayer.setVolume(vol);
 });
-
-document.getElementById('manAddBtn').addEventListener('click',async()=>{
-  const user=document.getElementById('manUser').value.trim()||'admin';
-  const url=document.getElementById('manUrl').value.trim();
-  if(!url) return;
-  const ok=await addToQueue(url,user);
-  if(ok){ document.getElementById('manUrl').value=''; document.getElementById('manUser').value=''; }
+document.getElementById('manAddBtn').addEventListener('click', async () => {
+  const user = document.getElementById('manUser').value.trim() || 'admin';
+  const url = document.getElementById('manUrl').value.trim();
+  if (!url) return;
+  const ok = await addToQueue(url, user);
+  if (ok) {
+    document.getElementById('manUrl').value = '';
+    document.getElementById('manUser').value = '';
+  }
 });
-document.getElementById('manUrl').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('manAddBtn').click(); });
-
-function connectTwitch(){
+document.getElementById('manUrl').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('manAddBtn').click(); });
+function connectTwitch() {
   const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
-  const rnd = Math.floor(Math.random()*99999);
-  ws.onopen=()=>{
+  const rnd = Math.floor(Math.random() * 99999);
+  ws.onopen = () => {
     ws.send(`PASS oauth:justinfan${rnd}`);
     ws.send(`NICK justinfan${rnd}`);
     ws.send(`JOIN #${CHANNEL}`);
-    logChat('sistema',`✅ conectado ao #${CHANNEL}`,false);
+    logChat('sistema', `✅ conectado ao #${CHANNEL}`, false);
   };
-  ws.onmessage=async(e)=>{
-    const raw=e.data.trim();
-    if(raw.startsWith('PING')){ ws.send('PONG :tmi.twitch.tv'); return; }
-    const m=raw.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.*)/);
-    if(!m) return;
-    const user=m[1], msg=m[2].trim();
-    if(msg.toLowerCase().startsWith(CMD.toLowerCase()+' ')){
+  ws.onmessage = async (e) => {
+    const raw = e.data.trim();
+    if (raw.startsWith('PING')) { ws.send('PONG :tmi.twitch.tv'); return; }
+    const m = raw.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.*)/);
+    if (!m) return;
+    const user = m[1], msg = m[2].trim();
+    if (msg.toLowerCase().startsWith(CMD.toLowerCase() + ' ')) {
       await addToQueue(msg.slice(CMD.length).trim(), user);
     } else {
-      logChat(user,msg,false);
+      logChat(user, msg, false);
     }
   };
-  ws.onclose=()=>{
-    logChat('sistema','⚠️ desconectado. reconectando em 5s...',false);
-    setTimeout(connectTwitch,5000);
+  ws.onclose = () => {
+    logChat('sistema', '⚠️ desconectado. reconectando em 5s...', false);
+    setTimeout(connectTwitch, 5000);
   };
-  ws.onerror=()=>ws.close();
+  ws.onerror = () => ws.close();
 }
 connectTwitch();
 renderQueue();
