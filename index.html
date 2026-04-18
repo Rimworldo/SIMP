@@ -20,10 +20,10 @@ header{height:var(--hh);display:flex;align-items:center;justify-content:space-be
 .role-badge{font-size:0.6rem; padding:0.2rem 0.5rem; border-radius:10px; font-family:'Space Mono'; text-transform:uppercase; font-weight:bold; letter-spacing:1px; background:#333;}
 .role-host{background:rgba(145,71,255,.2); color:#bf94ff; border:1px solid #bf94ff;}
 .role-client{background:rgba(50,200,100,.2); color:#5de89a; border:1px solid #5de89a;}
-
 .hright{display:flex;align-items:center;gap:.75rem}
-
-/* Estilos da Playlist Dropdown */
+.abtn{background:none;border:1px solid var(--border);color:var(--muted);padding:.3rem .85rem;border-radius:20px;font-family:'Space Mono',monospace;font-size:.7rem;cursor:pointer;transition:.2s}
+.abtn:hover{border-color:var(--accent);color:var(--accent)}
+.abtn.on{border-color:var(--accent);color:var(--accent);background:rgba(255,60,110,.1)}
 .dropdown { position: relative; display: inline-block; }
 .dropdown-content { display: none; position: absolute; right: 0; top: 120%; background-color: var(--surface); min-width: 280px; box-shadow: 0px 8px 20px rgba(0,0,0,0.8); z-index: 300; border: 1px solid var(--border); border-radius: 8px; max-height: 350px; overflow-y: auto; }
 .dropdown-content.show { display: block; animation: fdIn 0.2s ease; }
@@ -34,13 +34,9 @@ header{height:var(--hh);display:flex;align-items:center;justify-content:space-be
 .plist-title { font-size: 0.75rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; color: var(--text); }
 .plist-del { background: none; border: none; color: var(--muted); cursor: pointer; padding: 5px; font-size: 0.8rem; border-radius: 4px; }
 .plist-del:hover { color: var(--accent); background: rgba(255,60,110,.1); }
-
 .tp{display:flex;align-items:center;gap:.4rem;background:rgba(145,71,255,.12);border:1px solid rgba(145,71,255,.3);border-radius:20px;padding:.28rem .75rem;font-family:'Space Mono',monospace;font-size:.7rem;color:#bf94ff}
 .tdot{width:6px;height:6px;border-radius:50%;background:#bf94ff;animation:blink 2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.abtn{background:none;border:1px solid var(--border);color:var(--muted);padding:.3rem .85rem;border-radius:20px;font-family:'Space Mono',monospace;font-size:.7rem;cursor:pointer;transition:.2s}
-.abtn:hover{border-color:var(--accent);color:var(--accent)}
-.abtn.on{border-color:var(--accent);color:var(--accent);background:rgba(255,60,110,.1)}
 main{display:grid;grid-template-columns:1fr 350px;min-height:calc(100vh - var(--hh))}
 .theater{padding:1.5rem;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:1rem}
 .theater-stage{position:relative;width:100%}
@@ -82,14 +78,11 @@ body.is-admin #ytFrame{pointer-events:auto}
 .qhead{padding:1rem 1.25rem .7rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .qtitle{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .qcount{background:var(--accent);color:#fff;font-family:'Space Mono',monospace;font-size:.62rem;font-weight:700;padding:.12rem .45rem;border-radius:20px}
-
-/* Input Global para todos adicionarem vídeo */
 .user-add-box { display: flex; padding: 0.7rem 1.25rem; background: var(--surface); border-bottom: 1px solid var(--border); gap: 0.4rem; flex-shrink: 0; }
 .user-add-box input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem 0.65rem; color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.7rem; outline: none; transition: .2s; }
 .user-add-box input:focus { border-color: var(--accent); }
 .user-add-box button { background: var(--accent); border: none; color: #fff; padding: 0.5rem 0.9rem; border-radius: 6px; font-weight: 700; cursor: pointer; transition: .2s; }
 .user-add-box button:hover { background: #d42f5e; }
-
 .qlist-wrap{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden;}
 #qlistBg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0.1;z-index:0;pointer-events:none;transition:background-image 0.5s ease;}
 .qlist{flex:1;overflow-y:auto;padding:.7rem;display:flex;flex-direction:column;gap:.45rem;position:relative;z-index:1}
@@ -109,7 +102,6 @@ body.is-admin #ytFrame{pointer-events:auto}
 .qi:hover .qidel, .qi:hover .qisave{display:flex}
 .qidel:hover{color:var(--accent);background:rgba(255,60,110,.1)}
 .qisave:hover{color:#5de89a;background:rgba(50,200,100,.1)}
-
 .qempty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;color:var(--muted);text-align:center;padding:2rem}
 .qempty .qei{font-size:2rem;opacity:.2}
 .qempty p{font-family:'Space Mono',monospace;font-size:.7rem;line-height:1.8}
@@ -151,10 +143,12 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
   <div class="hright">
     <div class="dropdown">
       <button class="abtn" id="dropBtn">📑 Playlist</button>
-      <div class="dropdown-content" id="dropContent">
-        </div>
+      <div class="dropdown-content" id="dropContent"></div>
     </div>
+    <button class="abtn" id="simpsBtn">💰 Simps</button>
     <div class="tp"><div class="tdot"></div>daenil</div>
+    <div class="tp" id="clientsBadge" style="display:none;background:rgba(50,200,100,.1);border-color:rgba(50,200,100,.3);color:#5de89a"><span id="clientsCount">0</span> 👥</div>
+    <button class="abtn" id="roleBtn">👑 Host</button>
     <button class="abtn" id="adminBtn">🔒 admin</button>
   </div>
 </header>
@@ -167,8 +161,8 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
         <div class="eover" id="eover">
           <div class="ei">🎬</div>
           <p id="eoverText">Conectando ao sistema P2P...</p>
-          <span class="ec">%simp youtube.com/watch?v=...</span>
-          <button class="sync-btn" id="syncBtn">Sincronizar Player (Obrigatório)</button>
+          <span class="ec">%simp link • %yt titulo</span>
+          <button class="sync-btn" id="syncBtn">Sincronizar Player</button>
         </div>
       </div>
     </div>
@@ -179,11 +173,28 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
         <div class="npuser">pedido por <b id="npUser">—</b></div>
       </div>
     </div>
+    <div id="publicControls" style="display:flex;gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin:1rem 0;position:relative;z-index:2">
+      <div class="volrow" id="publicSeekRow" style="flex:1;display:none">
+        <label>POSIÇÃO</label>
+        <input type="range" min="0" max="100" value="0" id="seekSliderClient">
+        <span class="volnum" id="seekTimeClient">0:00/--:--</span>
+      </div>
+      <div class="volrow" style="flex:1">
+        <label>VOL</label>
+        <input type="range" min="0" max="100" value="80" id="volSliderClient">
+        <span class="volnum" id="volNumClient">80%</span>
+      </div>
+    </div>
     <div class="apanel" id="apanel">
       <div class="aptitle">⚙ controles do admin</div>
       <div class="aprow">
         <button class="cbtn" id="pauseBtn">⏸ Pausar</button>
         <button class="cbtn" id="skipBtn">⏭ Pular</button>
+        <div class="volrow">
+          <label>POSIÇÃO</label>
+          <input type="range" min="0" max="100" value="0" id="seekSlider">
+          <span class="volnum" id="seekTime">0:00/--:--</span>
+        </div>
         <div class="volrow">
           <label>VOL</label>
           <input type="range" min="0" max="100" value="80" id="volSlider">
@@ -192,20 +203,14 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
         <button class="cbtn red" id="clearBtn">🗑 Limpar fila</button>
       </div>
       <div class="madd" id="cfgGeral">
-        <div class="maddt">configurações visuais (Afeta a sala toda)</div>
+        <div class="maddt">configurações visuais</div>
         <div class="cfg-row">
-          <label title="Quantidade de palavras do título usadas para buscar o GIF">
-            Palavras GIF: <input type="number" id="cfgGifWords" min="1" max="5" value="3">
-          </label>
-          <label title="Ativa um brilho ao redor do vídeo baseado nas cores dele">
-            <input type="checkbox" id="cfgGlow" checked> Glow Ativo
-          </label>
-          <label title="Toca beep quando vídeo é colocado">
-            <input type="checkbox" id="cfgBpm" checked> Beep ao adicionar
-          </label>
-          <label title="Toca um som aleatório quando a fila acaba, pedindo mais vídeos">
-            <input type="checkbox" id="cfgEmptySound" checked> 🔔 Som de fila vazia
-          </label>
+          <label>Palavras GIF: <input type="number" id="cfgGifWords" min="1" max="5" value="3"></label>
+          <label><input type="checkbox" id="cfgGlow"> Glow Ativo</label>
+          <label><input type="checkbox" id="cfgBpm"> Beep ao adicionar</label>
+          <label><input type="checkbox" id="cfgEmptySound"> 🔔 Som de fila vazia</label>
+          <label><input type="checkbox" id="cfgAutoSkip"> Pulo Automático</label>
+          <label>Max dur.(min): <input type="number" id="cfgMaxDur" min="1" value="20"></label>
         </div>
       </div>
     </div>
@@ -215,12 +220,10 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <span class="qtitle">Fila de vídeos</span>
       <span class="qcount" id="qcount">0</span>
     </div>
-    
     <div class="user-add-box">
-      <input type="text" id="userUrl" placeholder="Colar link do YouTube para sugerir...">
+      <input type="text" id="userUrl" placeholder="Link do YouTube ou %yt fusca preto...">
       <button id="userAddBtn">Add</button>
     </div>
-
     <div class="qlist-wrap">
       <div id="qlistBg"></div>
       <div class="qlist" id="qlist">
@@ -235,207 +238,443 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
     </div>
   </div>
 </main>
+<div class="ovl" id="nameOvl">
+  <div class="modal">
+    <h2>Seu Nome</h2>
+    <p>Escolha seu nome</p>
+    <input type="text" id="nameInput" placeholder="Seu nome" maxlength="15">
+    <div class="emsg" id="nameEmg">Nome inválido</div>
+    <div class="mbtns">
+      <button class="bcan" id="nameCancel">Cancelar</button>
+      <button class="bok" id="nameOk">Salvar</button>
+    </div>
+  </div>
+</div>
 <div class="ovl" id="ovl">
   <div class="modal">
     <h2>Acesso Admin</h2>
-    <p>Digite a senha para liberar os controles. Sendo Client, suas ações serão enviadas ao Host.</p>
-    <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="off">
-    <div class="emsg" id="emsg">Senha incorreta.</div>
+    <p>Digite a senha</p>
+    <input type="password" id="pwdInput" placeholder="••••••••">
+    <div class="emsg" id="emsg">Senha incorreta</div>
     <div class="mbtns">
       <button class="bcan" id="bcan">Cancelar</button>
       <button class="bok" id="bok">Entrar</button>
     </div>
   </div>
 </div>
+<div class="ovl" id="simpsOvl">
+  <div class="modal" style="width:380px">
+    <h2>💰 Simps</h2>
+    <div id="simpsContent" style="font-family:Space Mono;font-size:0.75rem;line-height:1.6;max-height:400px;overflow-y:auto"></div>
+    <div class="mbtns" style="margin-top:1rem">
+      <button class="bok" id="simpsClose">Fechar</button>
+    </div>
+  </div>
+</div>
 <div class="toasts" id="toasts"></div>
 <script>
-// ======== SISTEMA P2P & VARIÁVEIS ========
 const CHANNEL = 'daenil';
 const CMD = '%simp';
-const PASSWORD = '40028922';
+const ADMIN_PASS = '40028922';
+const HOST_PASS = 'fabioémeuamor123';
 const ROOM_ID = `simp-room-${CHANNEL}`;
-
-// Sons de fila vazia
-const EMPTY_SOUNDS = [
-  'https://files.catbox.moe/d5u8m3.mp3',
-  'https://files.catbox.moe/xjed0e.mp3',
-  'https://files.catbox.moe/5cq2ql.mp3',
-  'https://files.catbox.moe/6cxh3k.mp3',
-  'https://files.catbox.moe/qffscp.mp3'
-];
-let emptySoundAudio = null; // referência ao Audio ativo
-
+const EMPTY_SOUNDS = ['https://files.catbox.moe/d5u8m3.mp3','https://files.catbox.moe/xjed0e.mp3','https://files.catbox.moe/5cq2ql.mp3','https://files.catbox.moe/6cxh3k.mp3','https://files.catbox.moe/qffscp.mp3'];
+let emptySoundAudio = null;
 let queue = [];
 let curIdx = -1;
 let isAdmin = false;
-let isHost = false; 
+let isHost = false;
 let paused = false;
 let ytReady = false;
 let ytPlayer = null;
 let currentGifUrl = '';
-let clientSynced = false; 
-
-// Playlist Local
+let clientSynced = false;
 let myPlaylist = JSON.parse(localStorage.getItem('simpPlaylist') || '[]');
+let myName = localStorage.getItem('simpMyName') || '';
+let myTwitchName = '';
+let config = JSON.parse(localStorage.getItem('simpConfig') || '{}');
+if(!config.gifWords) config = { gifWords: 3, glow: true, bpm: true, vol: 80, emptySound: true, autoSkip: true, maxDuration: 20 };
+let simpsPoints = JSON.parse(localStorage.getItem('simpPoints') || '{}');
+let hostPeer = null;
+let clientPeer = null;
+let hostConnection = null;
+let clientConnections = [];
+let p2pInitializing = false;
+let clientCurrentVideoId = null;
+let clientLastSyncTime = 0;
+const SYNC_TOLERANCE_SEC = 5;
+let twitchMods = new Set();
+let twitchUsers = new Set(JSON.parse(localStorage.getItem('simpTwitchUsers') || '[]'));
+let twitchColors = JSON.parse(localStorage.getItem('simpTwitchColors') || '{}');
+let audioContext, analyser, source, silenceTimer = null;
+let lastAudioTime = Date.now();
+let seekInterval = null;
 
-// PeerJS
-let peer = null;
-let hostConnection = null; 
-let clientConnections = []; 
+// FIX: inicializa os checkboxes e inputs com os valores salvos do config
+function initConfigUI() {
+  document.getElementById('cfgGlow').checked = config.glow;
+  document.getElementById('cfgBpm').checked = config.bpm;
+  document.getElementById('cfgEmptySound').checked = config.emptySound;
+  document.getElementById('cfgAutoSkip').checked = config.autoSkip;
+  document.getElementById('cfgGifWords').value = config.gifWords;
+  document.getElementById('cfgMaxDur').value = config.maxDuration;
+  document.getElementById('volSlider').value = config.vol;
+  document.getElementById('volNum').textContent = config.vol + '%';
+  document.getElementById('volSliderClient').value = config.vol;
+  document.getElementById('volNumClient').textContent = config.vol + '%';
+}
 
-let config = { gifWords: 3, glow: true, bpm: true, vol: 80, emptySound: true };
-
-// ======== SOM DE FILA VAZIA ========
+function saveConfig() { localStorage.setItem('simpConfig', JSON.stringify(config)); }
+function cleanTitleForGif(title) {
+  return title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, config.gifWords).join(' ');
+}
+function getUserPoints(user) { return simpsPoints[user] || 0; }
+function addPoints(user, amount) {
+  if(!user || !isHost) return;
+  simpsPoints[user] = (simpsPoints[user] || 0) + amount;
+  localStorage.setItem('simpPoints', JSON.stringify(simpsPoints));
+}
+function spendPoints(user, amount) {
+  if(!user || getUserPoints(user) < amount) return false;
+  simpsPoints[user] -= amount;
+  localStorage.setItem('simpPoints', JSON.stringify(simpsPoints));
+  return true;
+}
+function updateClientsBadge() {
+  const badge = document.getElementById('clientsBadge');
+  const count = document.getElementById('clientsCount');
+  if (!isHost) { badge.style.display = 'none'; return; }
+  badge.style.display = 'flex';
+  count.textContent = clientConnections.filter(c => c.open).length;
+}
+async function searchYouTube(query) {
+  try {
+    const inv = await fetch(`https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video&page=1`);
+    if (!inv.ok) throw new Error('invidious falhou');
+    const data = await inv.json();
+    if (!data || !data.length) return null;
+    const first = data[0];
+    return { videoId: first.videoId, title: first.title };
+  } catch(e) {
+    try {
+      const r2 = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
+      if (!r2.ok) throw new Error();
+      const d2 = await r2.json();
+      if (!d2 || !d2.length) return null;
+      return { videoId: d2[0].videoId, title: d2[0].title };
+    } catch(e2) { return null; }
+  }
+}
+async function getVideoDuration(id) {
+try{const r=await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);if(!r.ok)throw'';const d=await r.json();return d.lengthSeconds||0;}catch(e){return 0;}
+}
 function playEmptySound() {
   if (!isHost || !config.emptySound) return;
-  // Para qualquer som anterior
-  if (emptySoundAudio) {
-    emptySoundAudio.pause();
-    emptySoundAudio.currentTime = 0;
-    emptySoundAudio = null;
-  }
+  if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; }
   const url = EMPTY_SOUNDS[Math.floor(Math.random() * EMPTY_SOUNDS.length)];
-  emptySoundAudio = new Audio(url);
-  emptySoundAudio.volume = 0.85;
+  emptySoundAudio = new Audio(url); emptySoundAudio.volume = 0.85;
   emptySoundAudio.play().catch(() => {});
-  logChat('SISTEMA', '🔔 Fila acabou! Manda mais vídeos no chat.', true);
 }
-
 function stopEmptySound() {
-  if (emptySoundAudio) {
-    emptySoundAudio.pause();
-    emptySoundAudio.currentTime = 0;
-    emptySoundAudio = null;
-  }
+  if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; }
 }
-
-// ======== INICIALIZAÇÃO P2P ========
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function askForName() {
+  if(myName) return;
+  document.getElementById('nameOvl').classList.add('open');
+  document.getElementById('nameInput').focus();
+}
+document.getElementById('nameOk').addEventListener('click', () => {
+  const n = document.getElementById('nameInput').value.trim();
+  if(n.length < 2) { document.getElementById('nameEmg').classList.add('show'); return; }
+  myName = n;
+  localStorage.setItem('simpMyName', myName);
+  document.getElementById('nameOvl').classList.remove('open');
+});
+document.getElementById('nameCancel').addEventListener('click', () => document.getElementById('nameOvl').classList.remove('open'));
+document.getElementById('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('nameOk').click(); });
+function showSimps() {
+  let html = '<b>Rank Simps</b><br>';
+  const sorted = Object.entries(simpsPoints).sort((a,b)=>b[1]-a[1]);
+  sorted.forEach(([u,p]) => html += `${u} — ${p} Simps<br>`);
+  html += '<br><b>Comandos:</b><br>%simp skip → -50 Simps<br>%simp troll → -50 Simps<br>%simp gif (nome) → -20 Simps<br>%simp yt (titulo) → busca no YT<br>%yt (titulo) → busca no YT<br>Mods pulam grátis';
+  document.getElementById('simpsContent').innerHTML = html;
+  document.getElementById('simpsOvl').classList.add('open');
+}
+document.getElementById('simpsBtn').addEventListener('click', showSimps);
+document.getElementById('simpsClose').addEventListener('click', () => document.getElementById('simpsOvl').classList.remove('open'));
+function startAutoSkip() {
+  if (!isHost || !config.autoSkip || !ytReady) return;
+  stopAutoSkip();
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      silenceTimer = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
+        const avg = sum / bufferLength;
+        if(avg < 8) {
+          if(Date.now() - lastAudioTime > 10000) nextVideo();
+        } else lastAudioTime = Date.now();
+      }, 400);
+    }).catch(() => {});
+  } catch(e) {}
+}
+function stopAutoSkip() {
+  if(silenceTimer) clearInterval(silenceTimer);
+  silenceTimer = null;
+  if(source) source.disconnect();
+}
+function destroyPeers() {
+  clientConnections.forEach(c => { try { c.close(); } catch(e) {} });
+  clientConnections = [];
+  if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
+  if(hostPeer) { try { hostPeer.destroy(); } catch(e) {} hostPeer = null; }
+  if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
+}
 function initP2P() {
-  peer = new Peer(ROOM_ID);
-  
-  peer.on('open', (id) => {
+  if(p2pInitializing) return;
+  p2pInitializing = true;
+  destroyPeers();
+  hostPeer = new Peer(ROOM_ID, {
+    debug: 0,
+    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+  });
+  hostPeer.on('open', () => {
+    p2pInitializing = false;
     isHost = true;
     document.getElementById('roleBadge').textContent = '👑 HOST';
     document.getElementById('roleBadge').className = 'role-badge role-host';
-    document.getElementById('eoverText').innerHTML = `Nenhum vídeo na fila ainda.<br>Manda no chat do Daenil:`;
+    document.getElementById('eoverText').innerHTML = `Host iniciado.<br>Manda vídeos no chat!`;
+    updateClientsBadge();
     setupHost();
   });
-
-  peer.on('error', (err) => {
+  hostPeer.on('error', (err) => {
     if (err.type === 'unavailable-id') {
-      isHost = false;
-      document.getElementById('roleBadge').textContent = '🎧 CLIENT';
-      document.getElementById('roleBadge').className = 'role-badge role-client';
-      document.getElementById('eoverText').innerHTML = `Aguardando permissão para sincronizar...`;
-      document.getElementById('syncBtn').style.display = 'block'; 
-      
-      peer = new Peer();
-      peer.on('open', () => setupClient());
+      p2pInitializing = false;
+      try { hostPeer.destroy(); } catch(e) {}
+      hostPeer = null;
+      startAsClient();
+      return;
+    }
+    console.warn('[P2P] Erro no hostPeer:', err.type, err.message);
+    p2pInitializing = false;
+    if(!isHost) {
+      setTimeout(startAsClient, 3000);
     }
   });
 }
-
+function startAsClient() {
+  if(p2pInitializing) return;
+  p2pInitializing = true;
+  isHost = false;
+  document.getElementById('roleBadge').textContent = '🎧 CLIENT';
+  document.getElementById('roleBadge').className = 'role-badge role-client';
+  document.getElementById('eoverText').innerHTML = `Conectando ao Host...`;
+  document.getElementById('syncBtn').style.display = 'block';
+  if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
+  clientPeer = new Peer({
+    debug: 0,
+    config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
+  });
+  clientPeer.on('open', () => {
+    p2pInitializing = false;
+    setupClient();
+  });
+  clientPeer.on('error', (err) => {
+    console.warn('[P2P] Erro no clientPeer:', err.type, err.message);
+    p2pInitializing = false;
+    // FIX: só reconecta como client se ainda não virou host
+    if(!isHost) setTimeout(startAsClient, 4000);
+  });
+}
 function setupHost() {
-  logChat('SISTEMA P2P', 'Você é o Host. Aguardando clients e chat...', true);
-  connectTwitch(); 
-
-  peer.on('connection', (conn) => {
-    clientConnections.push(conn);
-    logChat('P2P', 'Um client conectou!', false);
-    
+  connectTwitch();
+  hostPeer.on('connection', (conn) => {
+    conn.on('open', () => {
+      clientConnections.push(conn);
+      updateClientsBadge();
+      logChat('SISTEMA', `Client conectado (${clientConnections.filter(c=>c.open).length} total)`, true);
+    });
     conn.on('data', async (data) => {
       if (data.type === 'cmd') {
-        if (data.action === 'skip') nextVideo();
-        if (data.action === 'pause') togglePause();
-        if (data.action === 'clear') { queue = []; showEmpty(); }
-        if (data.action === 'add') await addToQueue(data.url, data.user);
+        if (data.action === 'add') await addToQueue(data.url, data.user, data.color, data.fromTwitch);
+        if (data.action === 'skip') {
+          if(twitchMods.has(data.user) || getUserPoints(data.user) >= 50) {
+            if(!twitchMods.has(data.user)) spendPoints(data.user, 50);
+            nextVideo();
+          }
+        }
+        if (data.action === 'pause') {
+          paused = !paused;
+          if (paused && ytPlayer) ytPlayer.pauseVideo();
+          else if (ytPlayer) ytPlayer.playVideo();
+        }
+        if (data.action === 'clear') {
+          queue = [];
+          showEmpty();
+        }
+        if (data.action === 'seek' && data.time !== undefined) {
+          if (ytPlayer) ytPlayer.seekTo(data.time, true);
+        }
+        if (data.action === 'troll') {
+          if(getUserPoints(data.user) >= 50) {
+            spendPoints(data.user, 50);
+            queue = queue.sort(() => Math.random() - 0.5);
+            renderQueue();
+          }
+        }
+        if (data.action === 'gif' && data.gifName) {
+          if(getUserPoints(data.user) >= 20) {
+            spendPoints(data.user, 20);
+            setQueueGif(data.gifName);
+          }
+        }
       }
     });
-    conn.on('close', () => { clientConnections = clientConnections.filter(c => c !== conn); });
+    conn.on('close', () => {
+      clientConnections = clientConnections.filter(c => c !== conn);
+      updateClientsBadge();
+    });
+    conn.on('error', (err) => {
+      console.warn('[P2P] Erro na conexão com client:', err);
+      clientConnections = clientConnections.filter(c => c !== conn);
+      updateClientsBadge();
+    });
   });
-
   setInterval(() => {
     if (!ytReady || !ytPlayer || clientConnections.length === 0) return;
+    const time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function')
+      ? ytPlayer.getCurrentTime()
+      : 0;
     const syncData = {
       type: 'sync',
-      queue: queue,
-      curIdx: curIdx,
-      time: ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0,
-      paused: paused,
+      queue,
+      curIdx,
+      time,
+      paused,
       glow: config.glow,
-      gifUrl: currentGifUrl
+      gifUrl: currentGifUrl,
+      simpsPoints: {...simpsPoints}
     };
-    clientConnections.forEach(c => c.send(syncData));
+    clientConnections.forEach(c => { if(c.open) c.send(syncData); });
   }, 2000);
 }
-
 function setupClient() {
-  logChat('SISTEMA P2P', 'Conectando ao Host...', false);
-  hostConnection = peer.connect(ROOM_ID);
-  hostConnection.on('open', () => logChat('SISTEMA P2P', 'Conectado! Sincronizando dados...', true));
-  hostConnection.on('data', (data) => { if (data.type === 'sync') handleSync(data); });
+  if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
+  hostConnection = clientPeer.connect(ROOM_ID, { reliable: true });
+  hostConnection.on('open', () => {
+    logChat('SISTEMA', 'Conectado ao Host!', true);
+    document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
+  });
+  hostConnection.on('data', (data) => {
+    if (data.type === 'sync') handleSync(data);
+  });
+  hostConnection.on('close', () => {
+    logChat('SISTEMA', 'Desconectado do Host. Reconectando...', true);
+    hostConnection = null;
+    clientCurrentVideoId = null;
+    setTimeout(() => {
+      if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
+    }, 3000);
+  });
+  hostConnection.on('error', (err) => {
+    console.warn('[P2P] Erro na conexão com host:', err);
+    hostConnection = null;
+    clientCurrentVideoId = null;
+    setTimeout(() => {
+      if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
+    }, 3000);
+  });
 }
-
-document.getElementById('syncBtn').addEventListener('click', () => {
-  clientSynced = true;
-  document.getElementById('syncBtn').style.display = 'none';
-  if (curIdx >= 0) {
-    document.getElementById('eover').classList.add('gone');
-    if (ytReady && ytPlayer && ytPlayer.playVideo) ytPlayer.playVideo();
-  } else {
-    document.getElementById('eoverText').innerHTML = `Sincronizado! Aguardando o Host colocar vídeos.`;
-  }
-});
-
-let lastLoadedId = null;
 function handleSync(data) {
-  const qStr = JSON.stringify(data.queue);
-  if (JSON.stringify(queue) !== qStr || curIdx !== data.curIdx) {
-    queue = data.queue;
+  if(data.simpsPoints) simpsPoints = data.simpsPoints;
+  const queueChanged = JSON.stringify(queue) !== JSON.stringify(data.queue);
+  const idxChanged = curIdx !== data.curIdx;
+  if (queueChanged || idxChanged) {
+    queue = data.queue || [];
     curIdx = data.curIdx;
     renderQueue();
   }
-
   const bgEl = document.getElementById('qlistBg');
-  if (bgEl.style.backgroundImage !== `url("${data.gifUrl}")` && data.gifUrl) {
-    bgEl.style.backgroundImage = `url(${data.gifUrl})`;
-  } else if (!data.gifUrl) { bgEl.style.backgroundImage = ''; }
-  
-  const glowEl = document.getElementById('playerGlow');
-  if (data.glow && curIdx !== -1) {
-    glowEl.classList.add('active');
-    if (queue[curIdx]) glowEl.style.backgroundImage = `url(${queue[curIdx].thumb})`;
-  } else {
-    glowEl.classList.remove('active');
+  bgEl.style.backgroundImage = data.gifUrl ? `url(${data.gifUrl})` : '';
+  if (data.glow && curIdx !== -1) document.getElementById('playerGlow').classList.add('active');
+  else document.getElementById('playerGlow').classList.remove('active');
+  if (curIdx < 0 || curIdx >= queue.length) {
+    document.getElementById('eover').classList.remove('gone');
+    document.getElementById('eoverText').innerHTML = 'Aguardando Host...';
+    document.getElementById('npbar').style.display = 'none';
+    clientCurrentVideoId = null;
+    return;
   }
-
-  if (!clientSynced || !ytReady || !ytPlayer) return;
-  if (curIdx === -1) { showEmpty(); return; }
-
+  if (!clientSynced) return;
+  if (!ytReady || !ytPlayer) return;
+  const item = queue[curIdx];
   document.getElementById('eover').classList.add('gone');
   document.getElementById('npbar').style.display = 'flex';
-  document.getElementById('npTitle').textContent = queue[curIdx].title;
-  document.getElementById('npUser').textContent = queue[curIdx].user;
-
-  const expectedId = queue[curIdx].videoId;
-  if (lastLoadedId !== expectedId) {
-    ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: data.time });
-    lastLoadedId = expectedId;
-  } else {
-    const currentTime = ytPlayer.getCurrentTime();
-    if (Math.abs(currentTime - data.time) > 3) ytPlayer.seekTo(data.time);
-    const ytState = ytPlayer.getPlayerState();
-    if (data.paused && ytState !== YT.PlayerState.PAUSED) ytPlayer.pauseVideo();
-    if (!data.paused && ytState !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
+  document.getElementById('npTitle').textContent = item.title;
+  document.getElementById('npUser').textContent = item.user;
+  document.getElementById('npUser').style.color = item.color || '';
+  const expectedId = item.videoId;
+  const hostTime = data.time || 0;
+  const now = Date.now();
+  if (clientCurrentVideoId !== expectedId) {
+    clientCurrentVideoId = expectedId;
+    clientLastSyncTime = now;
+    ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: hostTime });
+    if (data.paused) ytPlayer.pauseVideo();
+    else ytPlayer.playVideo();
+    return;
+  }
+  if (now - clientLastSyncTime > 5000) {
+    clientLastSyncTime = now;
+    try {
+      const currentTime = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+      const diff = Math.abs(currentTime - hostTime);
+      if (diff > SYNC_TOLERANCE_SEC) {
+        ytPlayer.seekTo(hostTime, true);
+      }
+    } catch(e) {}
+  }
+  try {
+    const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1;
+    if (data.paused && state === 1) ytPlayer.pauseVideo();
+    else if (!data.paused && state === 2) ytPlayer.playVideo();
+  } catch(e) {}
+  if(!isHost){
+    const seekClient = document.getElementById('seekSliderClient');
+    const seekTimeClient = document.getElementById('seekTimeClient');
+    if(seekClient && seekTimeClient){
+      const dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 100;
+      seekClient.max = dur;
+      seekClient.value = hostTime;
+      const f=t=>{const m=Math.floor(t/60);const ss=Math.floor(t%60).toString().padStart(2,'0');return `${m}:${ss}`;};
+      seekTimeClient.textContent=`${f(hostTime)}/${dur>0?f(dur):'--:--'}`;
+    }
   }
 }
-
-// ======== YOUTUBE API ========
-(function(){
-  const s = document.createElement('script');
-  s.src = 'https://www.youtube.com/iframe_api';
-  document.head.appendChild(s);
-})();
+document.getElementById('syncBtn').addEventListener('click', () => {
+  clientSynced = true;
+  document.getElementById('syncBtn').style.display = 'none';
+  document.getElementById('eover').classList.add('gone');
+});
+document.getElementById('roleBtn').addEventListener('click', () => {
+  const pass = prompt('Senha para virar Host:');
+  if (pass !== HOST_PASS) return toast('Senha incorreta', 'err');
+  destroyPeers();
+  isHost = false;
+  clientSynced = false;
+  clientCurrentVideoId = null;
+  initP2P();
+});
+(function(){ const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s); })();
 window.onYouTubeIframeAPIReady = function(){
   ytPlayer = new YT.Player('ytFrame', {
     playerVars: { 'controls': 0, 'disablekb': 1 },
@@ -443,88 +682,63 @@ window.onYouTubeIframeAPIReady = function(){
       onReady: function(e) {
         ytReady = true;
         e.target.setVolume(config.vol);
-        initP2P(); 
+        initConfigUI(); // FIX: inicializa a UI de config com os valores salvos
+        if(!myName) askForName();
+        initP2P();
       },
       onStateChange: function(e) {
-        if (!isHost) return; 
-        if (e.data === YT.PlayerState.ENDED) nextVideo();
+        if(!isHost) return;
+        if(e.data === YT.PlayerState.ENDED) nextVideo();
         paused = (e.data === YT.PlayerState.PAUSED);
+        if(e.data === YT.PlayerState.PLAYING){
+          if(!seekInterval) seekInterval = setInterval(updateSeekBar,500);
+          if(config.autoSkip) startAutoSkip();
+        } else {
+          // FIX: zera seekInterval para null após limpar, evitando acúmulo de intervalos
+          if(seekInterval){ clearInterval(seekInterval); seekInterval = null; }
+          stopAutoSkip();
+        }
       }
     }
   });
 };
-
-function loadVid(id) {
-  if (!id || !ytReady || !ytPlayer) return;
-  ytPlayer.loadVideoById({ videoId: id, startSeconds: 0 });
-  if (!paused) ytPlayer.playVideo();
+function updateSeekBar(){
+if(!isHost||!ytPlayer||!ytReady)return;
+const cur=ytPlayer.getCurrentTime?ytPlayer.getCurrentTime():0;
+const dur=ytPlayer.getDuration?ytPlayer.getDuration():0;
+const s=document.getElementById('seekSlider');
+if(dur>0){s.max=dur;s.value=cur;}
+const f=t=>{const m=Math.floor(t/60);const ss=Math.floor(t%60).toString().padStart(2,'0');return `${m}:${ss}`;};
+document.getElementById('seekTime').textContent=`${f(cur)}/${dur>0?f(dur):'--:--'}`;
 }
-
-async function startPlayback(idx) {
-  if (!isHost || idx < 0 || idx >= queue.length) return;
-  // Para o som de fila vazia se estava tocando
-  stopEmptySound();
-  curIdx = idx;
-  const item = queue[curIdx];
-  
-  document.getElementById('eover').classList.add('gone');
-  document.getElementById('npbar').style.display = 'flex';
-  document.getElementById('npTitle').textContent = item.title;
-  document.getElementById('npUser').textContent = item.user;
-  document.getElementById('playerGlow').style.backgroundImage = `url(${item.thumb})`;
-  
-  applyVisualEffects();
-  loadVid(item.videoId);
-  await setQueueGif(item.title);
-  renderQueue();
-}
-
-function nextVideo() {
-  if (!isHost) return;
-  queue.splice(0, curIdx + 1);
-  curIdx = -1;
-  if (queue.length > 0) startPlayback(0);
-  else {
-    showEmpty();
-    playEmptySound(); // 🔔 Toca o som quando a fila acaba
-  }
-}
-
-function showEmpty() {
-  curIdx = -1;
-  if (isHost) currentGifUrl = '';
-  document.getElementById('eover').classList.remove('gone');
-  if(!isHost && !clientSynced) document.getElementById('eoverText').innerHTML = "Aguardando permissão...";
-  else document.getElementById('eoverText').innerHTML = isHost ? "Nenhum vídeo na fila ainda.<br>Manda no chat:" : "Aguardando Host iniciar um vídeo.";
-  
-  document.getElementById('npbar').style.display = 'none';
-  document.getElementById('playerGlow').classList.remove('active');
-  if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
-  document.getElementById('qlistBg').style.backgroundImage = '';
-  renderQueue();
-}
-
-async function addToQueue(rawUrl, user) {
+async function addToQueue(rawUrl, user, color, fromTwitch) {
+  if(!user) user = myName || 'Anônimo';
   const id = extractId(rawUrl);
-  if (!id) { toast('Link inválido!', 'err'); return false; }
-  if (queue.find(q => q.videoId === id)) { toast('Vídeo já está na fila!', 'err'); return false; }
+  if (!id) { toast('Link inválido!', 'err'); return; }
+  if (queue.find(q => q.videoId === id)) { toast('Já na fila!', 'err'); return; }
   const title = await fetchTitle(id);
-  const item = {
-    videoId: id,
-    title,
-    user,
-    thumb: `https://img.youtube.com/vi/${id}/hqdefault.jpg`
-  };
-  queue.push(item);
-  logChat(user, rawUrl, true);
+  const duration = await getVideoDuration(id);
+  if(duration > 0 && duration > config.maxDuration * 60) {
+    toast(`❌ >${config.maxDuration}min`, 'err');
+    return;
+  }
+  if(color && color.startsWith('#') && color !== '#bf94ff') {
+    twitchColors[user] = color;
+    localStorage.setItem('simpTwitchColors', JSON.stringify(twitchColors));
+  }
+  if(fromTwitch && !twitchUsers.has(user)) {
+    twitchUsers.add(user);
+    localStorage.setItem('simpTwitchUsers', JSON.stringify([...twitchUsers]));
+  }
+  const userColor = twitchColors[user] || null;
+  queue.push({videoId:id, title, user, color: userColor, thumb:`https://img.youtube.com/vi/${id}/hqdefault.jpg`});
+  if(isHost && twitchUsers.has(user)) addPoints(user, 10);
+  logChat(user, rawUrl, true, userColor || '#bf94ff');
   if(isHost) playPing();
-  toast(`✅ ${user}: ${title.slice(0,45)}`, 'ok');
-  
+  toast(`✅ ${user} adicionou`, 'ok');
   if (isHost && curIdx === -1) startPlayback(0);
   else renderQueue();
-  return true;
 }
-
 function extractId(url) {
   url = String(url).trim();
   let m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
@@ -535,268 +749,345 @@ function extractId(url) {
 async function fetchTitle(id) {
   try {
     const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
-    if (!r.ok) return 'Vídeo do YouTube';
     const d = await r.json();
     return d.title || 'Vídeo do YouTube';
   } catch { return 'Vídeo do YouTube'; }
 }
-
 async function setQueueGif(title) {
-  if (!isHost) return; 
-  if (!title) { currentGifUrl = ''; return; }
-  const words = title.split(/\s+/).slice(0, config.gifWords).join(' ');
+  if (!isHost) return;
+  const clean = cleanTitleForGif(title || 'anime');
   try {
-    const r = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(words)}&key=LIVDSRZULELA&limit=1&media_filter=minimal`);
+    const r = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(clean)}&key=LIVDSRZULELA&limit=1&media_filter=minimal`);
     const d = await r.json();
-    if (d.results && d.results.length > 0) currentGifUrl = d.results[0].media[0].gif.url;
-    else currentGifUrl = '';
+    currentGifUrl = d.results && d.results.length ? d.results[0].media[0].gif.url : '';
   } catch(e) { currentGifUrl = ''; }
   document.getElementById('qlistBg').style.backgroundImage = currentGifUrl ? `url(${currentGifUrl})` : '';
 }
-
+function startPlayback(idx) {
+  if (!isHost || idx < 0 || idx >= queue.length) return;
+  stopEmptySound();
+  curIdx = idx;
+  const item = queue[curIdx];
+  document.getElementById('eover').classList.add('gone');
+  document.getElementById('npbar').style.display = 'flex';
+  document.getElementById('npTitle').textContent = item.title;
+  document.getElementById('npUser').textContent = item.user;
+  document.getElementById('npUser').style.color = item.color || '';
+  document.getElementById('playerGlow').style.backgroundImage = `url(${item.thumb})`;
+  if(config.glow) document.getElementById('playerGlow').classList.add('active');
+  loadVid(item.videoId);
+  setQueueGif(item.title);
+  renderQueue();
+}
+function nextVideo() {
+  if (!isHost) return;
+  queue.splice(0, curIdx + 1);
+  curIdx = -1;
+  if (queue.length > 0) startPlayback(0);
+  else { showEmpty(); playEmptySound(); }
+}
+function showEmpty() {
+  curIdx = -1;
+  currentGifUrl = '';
+  document.getElementById('eover').classList.remove('gone');
+  document.getElementById('eoverText').innerHTML = isHost ? "Nenhum vídeo.<br>Use o chat" : "Aguardando Host...";
+  document.getElementById('npbar').style.display = 'none';
+  document.getElementById('playerGlow').classList.remove('active');
+  if (ytReady && ytPlayer) ytPlayer.stopVideo();
+  document.getElementById('qlistBg').style.backgroundImage = '';
+  renderQueue();
+}
+function loadVid(id) {
+  if(!id || !ytReady || !ytPlayer) return;
+  ytPlayer.loadVideoById({videoId:id, startSeconds:0});
+  if(!paused) ytPlayer.playVideo();
+}
 function renderQueue() {
   const list = document.getElementById('qlist');
   const empty = document.getElementById('qempty');
   document.getElementById('qcount').textContent = queue.length;
-  list.querySelectorAll('.qi').forEach(item => item.remove());
-  if (queue.length === 0) { if (empty) empty.style.display = 'flex'; return; }
-  if (empty) empty.style.display = 'none';
-  
-  queue.forEach((item, i) => {
-    const isCur = i === curIdx;
-    let pos = isCur ? '▶' : (curIdx >= 0 ? '#' + (i - curIdx) : '#' + (i + 1));
+  list.querySelectorAll('.qi').forEach(i=>i.remove());
+  if(queue.length===0){ empty.style.display='flex'; return; }
+  empty.style.display='none';
+  queue.forEach((item,i)=>{
+    const isCur = i===curIdx;
+    let pos = isCur ? '▶' : (curIdx>=0 ? '#'+(i-curIdx) : '#'+(i+1));
     const d = document.createElement('div');
-    d.className = 'qi' + (isCur ? ' cur' : '');
+    d.className = 'qi' + (isCur?' cur':'');
     d.innerHTML = `
-      <div class="qithumb"><img src="${esc(item.thumb)}" alt="" loading="lazy"></div>
+      <div class="qithumb"><img src="${esc(item.thumb)}" loading="lazy"></div>
       <div class="qibody">
         <div class="qititle" title="${esc(item.title)}">${esc(item.title)}</div>
-        <div class="qiuser">${esc(item.user)}</div>
+        <div class="qiuser" style="${item.color ? `color:${item.color}` : ''}">${esc(item.user)}</div>
       </div>
       ${!isCur ? `<span class="qinum">${pos}</span>` : ''}
-      <button class="qisave" data-i="${i}" title="Salvar na Playlist">💾</button>
+      <button class="qisave" data-i="${i}" title="Salvar">💾</button>
       ${isAdmin && !isCur ? `<button class="qidel" data-i="${i}" title="Remover">✕</button>` : ''}
     `;
     list.appendChild(d);
   });
-
-  list.querySelectorAll('.qisave').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const item = queue[parseInt(btn.dataset.i)];
-      if(!myPlaylist.find(v => v.videoId === item.videoId)) {
-        myPlaylist.push(item);
-        localStorage.setItem('simpPlaylist', JSON.stringify(myPlaylist));
-        renderPlaylist();
-        toast('Salvo na sua Playlist!', 'ok');
-      } else {
-        toast('Já está na Playlist', 'err');
-      }
-    });
+  list.querySelectorAll('.qisave').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation(); const item=queue[parseInt(btn.dataset.i)]; if(!myPlaylist.find(v=>v.videoId===item.videoId)){myPlaylist.push(item);localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist));renderPlaylist();toast('Salvo!', 'ok');}});
   });
-
-  if (isAdmin) {
-    list.querySelectorAll('.qidel').forEach(btn => {
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        const i = parseInt(btn.dataset.i);
-        queue.splice(i, 1);
-        if (i < curIdx) curIdx--;
-        else if (i === curIdx) { curIdx = -1; if(queue.length > 0) startPlayback(0); else showEmpty(); return; }
-        renderQueue();
-      });
+  if(isAdmin){
+    list.querySelectorAll('.qidel').forEach(btn=>{
+      btn.addEventListener('click',e=>{e.stopPropagation(); const i=parseInt(btn.dataset.i); queue.splice(i,1); if(i<curIdx)curIdx--; else if(i===curIdx){curIdx=-1;if(queue.length>0)startPlayback(0);else showEmpty();} renderQueue();});
     });
   }
 }
-
-// ======== PLAYLIST DROPDOWN ========
 function renderPlaylist() {
-  const c = document.getElementById('dropContent');
-  c.innerHTML = '';
-  if(myPlaylist.length === 0) {
-    c.innerHTML = '<div style="padding:15px; font-size:0.75rem; color:var(--muted); text-align:center;">Playlist vazia<br>Clique no 💾 ao lado dos vídeos na fila.</div>';
-    return;
-  }
-  myPlaylist.forEach((item, i) => {
-    const d = document.createElement('div');
-    d.className = 'plist-item';
-    d.innerHTML = `
-      <img class="plist-thumb" src="${esc(item.thumb)}" loading="lazy">
-      <div class="plist-title">${esc(item.title)}</div>
-      <button class="plist-del" data-i="${i}" title="Remover da Playlist">✕</button>
-    `;
-    d.addEventListener('click', (e) => {
-      if(e.target.classList.contains('plist-del')) return;
-      sendCmd('add', {url: `https://youtu.be/${item.videoId}`, user: isHost ? 'Host' : (isAdmin ? 'Admin' : 'Viewer')});
-      document.getElementById('dropContent').classList.remove('show');
-    });
+  const c = document.getElementById('dropContent'); c.innerHTML = '';
+  if(myPlaylist.length===0){ c.innerHTML = '<div style="padding:15px;font-size:0.75rem;color:var(--muted);text-align:center;">Playlist vazia</div>'; return; }
+  myPlaylist.forEach((item,i)=>{
+    const d = document.createElement('div'); d.className='plist-item';
+    d.innerHTML = `<img class="plist-thumb" src="${esc(item.thumb)}" loading="lazy"><div class="plist-title">${esc(item.title)}</div><button class="plist-del" data-i="${i}">✕</button>`;
+    d.addEventListener('click',e=>{ if(e.target.classList.contains('plist-del'))return; sendCmd('add',{url:`https://youtu.be/${item.videoId}`,user:myName||'Viewer'}); document.getElementById('dropContent').classList.remove('show'); });
     c.appendChild(d);
   });
-  
-  c.querySelectorAll('.plist-del').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      myPlaylist.splice(parseInt(btn.dataset.i), 1);
-      localStorage.setItem('simpPlaylist', JSON.stringify(myPlaylist));
-      renderPlaylist();
-    });
-  });
+  c.querySelectorAll('.plist-del').forEach(btn=>{ btn.addEventListener('click',e=>{e.stopPropagation(); myPlaylist.splice(parseInt(btn.dataset.i),1); localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist)); renderPlaylist();}); });
 }
-document.getElementById('dropBtn').addEventListener('click', () => {
-  document.getElementById('dropContent').classList.toggle('show');
-});
-window.onclick = function(e) {
-  if (!e.target.matches('#dropBtn') && !e.target.closest('.dropdown-content')) {
-    const dd = document.getElementById('dropContent');
-    if (dd.classList.contains('show')) dd.classList.remove('show');
-  }
-}
+document.getElementById('dropBtn').addEventListener('click',()=>document.getElementById('dropContent').classList.toggle('show'));
+window.onclick = e => { if(!e.target.matches('#dropBtn') && !e.target.closest('.dropdown-content')) document.getElementById('dropContent').classList.remove('show'); };
 renderPlaylist();
-
-// ======== CONTROLES E ADMIN ========
 function toggleAdmin(state) {
   isAdmin = state;
-  if (isAdmin) {
-    document.body.classList.add('is-admin');
-    document.getElementById('apanel').classList.add('show');
-    document.getElementById('adminBtn').classList.add('on');
-    document.getElementById('adminBtn').textContent = '🔓 admin';
-    if(!isHost) document.getElementById('cfgGeral').style.display = 'none';
-  } else {
-    document.body.classList.remove('is-admin');
-    document.getElementById('apanel').classList.remove('show');
-    document.getElementById('adminBtn').classList.remove('on');
-    document.getElementById('adminBtn').textContent = '🔒 admin';
+  if(isAdmin){ 
+    document.body.classList.add('is-admin'); 
+    document.getElementById('apanel').classList.add('show'); 
+    document.getElementById('adminBtn').classList.add('on'); 
+    document.getElementById('adminBtn').textContent='🔓 admin'; 
+    if(!isHost)document.getElementById('cfgGeral').style.display='none'; 
   }
+  else{ 
+    document.body.classList.remove('is-admin'); 
+    document.getElementById('apanel').classList.remove('show'); 
+    document.getElementById('adminBtn').classList.remove('on'); 
+    document.getElementById('adminBtn').textContent='🔒 admin'; 
+  }
+  const posRow = document.getElementById('publicSeekRow');
+  if(posRow) posRow.style.display = isAdmin ? 'flex' : 'none';
   renderQueue();
 }
-
-document.getElementById('adminBtn').addEventListener('click', () => {
-  if (isAdmin) toggleAdmin(false);
-  else {
-    document.getElementById('ovl').classList.add('open');
-    document.getElementById('pwdInput').value = '';
-    setTimeout(() => document.getElementById('pwdInput').focus(), 80);
+document.getElementById('adminBtn').addEventListener('click',()=>{ if(isAdmin)toggleAdmin(false); else{ document.getElementById('ovl').classList.add('open'); document.getElementById('pwdInput').focus(); }});
+document.getElementById('bok').addEventListener('click',()=>{ 
+  if(document.getElementById('pwdInput').value===ADMIN_PASS){
+    document.getElementById('ovl').classList.remove('open'); 
+    toggleAdmin(true); 
+    toast('Admin ativado','ok');
+  } else{ 
+    const i=document.getElementById('pwdInput'); 
+    i.classList.add('shake'); 
+    document.getElementById('emsg').classList.add('show'); 
+    setTimeout(()=>{i.classList.remove('shake');document.getElementById('emsg').classList.remove('show');},400); 
   }
 });
-document.getElementById('bok').addEventListener('click', checkPwd);
-document.getElementById('bcan').addEventListener('click', () => document.getElementById('ovl').classList.remove('open'));
-document.getElementById('pwdInput').addEventListener('keydown', e => { if(e.key === 'Enter') checkPwd(); });
-
-function checkPwd() {
-  if (document.getElementById('pwdInput').value === PASSWORD) {
-    document.getElementById('ovl').classList.remove('open');
-    toggleAdmin(true);
-    toast('Bem-vindo, Mod! 🎛️', 'ok');
-  } else {
-    const inp = document.getElementById('pwdInput');
-    inp.classList.add('shake');
-    document.getElementById('emsg').classList.add('show');
-    setTimeout(() => { inp.classList.remove('shake'); document.getElementById('emsg').classList.remove('show') }, 400);
-  }
-}
-
+document.getElementById('bcan').addEventListener('click',()=>document.getElementById('ovl').classList.remove('open'));
+document.getElementById('pwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('bok').click();});
 function sendCmd(action, payload={}) {
-  if (isHost) {
+  if(isHost){
+    if(action==='add') addToQueue(payload.url, payload.user, payload.color, payload.fromTwitch);
     if(action==='skip') nextVideo();
-    if(action==='pause') togglePause();
-    if(action==='clear') { queue=[]; showEmpty(); }
-    if(action==='add') addToQueue(payload.url, payload.user);
-  } else {
-    if(hostConnection) hostConnection.send({type: 'cmd', action, ...payload});
-    toast('Enviado ao Host', 'ok');
+    if(action==='pause') {
+      paused = !paused;
+      if (paused && ytPlayer) ytPlayer.pauseVideo();
+      else if (ytPlayer) ytPlayer.playVideo();
+    }
+    if(action==='clear') {queue=[];showEmpty();}
+    if(action==='seek' && payload.time !== undefined) {
+      if(ytPlayer) ytPlayer.seekTo(payload.time, true);
+    }
+  } else if(hostConnection && hostConnection.open){
+    hostConnection.send({type:'cmd', action, ...payload});
+    toast('Enviado ao Host','ok');
   }
 }
-
-function togglePause() {
-  if (!isHost || curIdx < 0) return;
-  if (paused) { ytPlayer.playVideo(); paused = false; }
-  else { ytPlayer.pauseVideo(); paused = true; }
-}
-
-document.getElementById('pauseBtn').addEventListener('click', () => sendCmd('pause'));
-document.getElementById('skipBtn').addEventListener('click', () => sendCmd('skip'));
-document.getElementById('clearBtn').addEventListener('click', () => sendCmd('clear'));
-
-document.getElementById('userAddBtn').addEventListener('click', () => {
-  const url = document.getElementById('userUrl').value.trim();
-  if (url) sendCmd('add', {url, user: isHost ? 'Host' : (isAdmin ? 'Admin' : 'Viewer')});
+document.getElementById('userAddBtn').addEventListener('click', async () => {
+  const raw = document.getElementById('userUrl').value.trim();
   document.getElementById('userUrl').value = '';
+  if(!raw) return;
+  if(raw.toLowerCase().startsWith('%yt ')) {
+    const query = raw.slice(4).trim();
+    if(!query) return;
+    toast('🔍 Buscando...', '');
+    const result = await searchYouTube(query);
+    if(!result) { toast('❌ Nada encontrado', 'err'); return; }
+    sendCmd('add', {url: `https://youtu.be/${result.videoId}`, user: myName||'Viewer'});
+    return;
+  }
+  sendCmd('add', {url: raw, user: myName||'Viewer'});
 });
-document.getElementById('userUrl').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('userAddBtn').click(); });
-
-document.getElementById('volSlider').addEventListener('input', function() {
-  config.vol = parseInt(this.value);
-  document.getElementById('volNum').textContent = config.vol + '%';
-  if (ytPlayer) ytPlayer.setVolume(config.vol);
+document.getElementById('userUrl').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('userAddBtn').click();});
+document.getElementById('pauseBtn').addEventListener('click',()=>sendCmd('pause'));
+document.getElementById('skipBtn').addEventListener('click',()=>sendCmd('skip'));
+document.getElementById('clearBtn').addEventListener('click',()=>sendCmd('clear'));
+document.getElementById('volSlider').addEventListener('input',function(){ config.vol=parseInt(this.value); document.getElementById('volNum').textContent=config.vol+'%'; if(ytPlayer)ytPlayer.setVolume(config.vol); saveConfig(); });
+document.getElementById('seekSlider').addEventListener('input',function(){if(ytPlayer&&isHost)ytPlayer.seekTo(parseFloat(this.value),true);});
+document.getElementById('cfgGlow').addEventListener('change',e=>{config.glow=e.target.checked; if(config.glow&&curIdx!==-1)document.getElementById('playerGlow').classList.add('active'); else document.getElementById('playerGlow').classList.remove('active'); saveConfig();});
+document.getElementById('cfgBpm').addEventListener('change',e=>{config.bpm=e.target.checked; saveConfig();});
+document.getElementById('cfgGifWords').addEventListener('change',e=>{config.gifWords=parseInt(e.target.value); saveConfig(); if(isHost&&curIdx>=0)setQueueGif(queue[curIdx].title);});
+document.getElementById('cfgEmptySound').addEventListener('change',e=>{config.emptySound=e.target.checked; if(!config.emptySound)stopEmptySound(); saveConfig(); toast(config.emptySound?'Som ativado':'Som desativado','ok');});
+document.getElementById('cfgAutoSkip').addEventListener('change',e=>{
+  config.autoSkip = e.target.checked;
+  saveConfig();
+  toast(config.autoSkip ? 'Pulo automático ativado' : 'Pulo automático desativado', 'ok');
+  if(!config.autoSkip) stopAutoSkip();
+  else if(isHost && curIdx >=0 && ytPlayer && ytPlayer.getPlayerState() === 1) startAutoSkip();
 });
-document.getElementById('cfgGlow').addEventListener('change', e => {
-  config.glow = e.target.checked;
-  applyVisualEffects();
+document.getElementById('cfgMaxDur').addEventListener('change',e=>{config.maxDuration=parseInt(e.target.value); saveConfig();});
+const seekClient = document.getElementById('seekSliderClient');
+const volClient = document.getElementById('volSliderClient');
+const seekTimeClient = document.getElementById('seekTimeClient');
+const volNumClient = document.getElementById('volNumClient');
+volClient.addEventListener('input',function(){
+  config.vol=parseInt(this.value);
+  volNumClient.textContent=config.vol+'%';
+  if(ytPlayer)ytPlayer.setVolume(config.vol);
+  const volAdmin = document.getElementById('volSlider');
+  if(volAdmin) volAdmin.value = this.value;
+  document.getElementById('volNum').textContent=config.vol+'%';
+  saveConfig();
 });
-document.getElementById('cfgBpm').addEventListener('change', e => {
-  config.bpm = e.target.checked;
+seekClient.addEventListener('input',function(){
+  if(isHost && ytPlayer){
+    ytPlayer.seekTo(parseFloat(this.value),true);
+  } else if(isAdmin && hostConnection && hostConnection.open){
+    hostConnection.send({type:'cmd', action:'seek', time: parseFloat(this.value)});
+  }
 });
-document.getElementById('cfgGifWords').addEventListener('change', e => {
-  config.gifWords = parseInt(e.target.value);
-  if (isHost && curIdx >= 0) setQueueGif(queue[curIdx].title);
-});
-document.getElementById('cfgEmptySound').addEventListener('change', e => {
-  config.emptySound = e.target.checked;
-  // Se desativou e estava tocando, para o som
-  if (!config.emptySound) stopEmptySound();
-  toast(config.emptySound ? '🔔 Som de fila vazia ativado' : '🔕 Som de fila vazia desativado', 'ok');
-});
-
-function applyVisualEffects() {
-  if(config.glow && curIdx !== -1) document.getElementById('playerGlow').classList.add('active');
-  else document.getElementById('playerGlow').classList.remove('active');
+if(!isHost){
+  setInterval(() => {
+    if(ytReady && ytPlayer){
+      const cur = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+      const dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
+      if(seekClient){
+        seekClient.max = dur || 100;
+        seekClient.value = cur;
+      }
+      const f = t => {
+        const m = Math.floor(t/60);
+        const ss = Math.floor(t%60).toString().padStart(2,'0');
+        return `${m}:${ss}`;
+      };
+      if(seekTimeClient) seekTimeClient.textContent = `${f(cur)}/${dur>0 ? f(dur) : '--:--'}`;
+    }
+  }, 500);
 }
-
-// Twitch e Utilitários
 function connectTwitch() {
   const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
-  const rnd = Math.floor(Math.random() * 99999);
-  ws.onopen = () => { ws.send(`PASS oauth:justinfan${rnd}`); ws.send(`NICK justinfan${rnd}`); ws.send(`JOIN #${CHANNEL}`); };
+  const rnd = Math.floor(Math.random()*99999);
+  ws.onopen = () => {
+    ws.send(`PASS oauth:justinfan${rnd}`);
+    ws.send(`NICK justinfan${rnd}`);
+    ws.send(`JOIN #${CHANNEL}`);
+    ws.send('CAP REQ :twitch.tv/tags');
+  };
   ws.onmessage = async (e) => {
     const raw = e.data.trim();
-    if (raw.startsWith('PING')) { ws.send('PONG :tmi.twitch.tv'); return; }
-    const m = raw.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.*)/);
-    if (!m) return;
-    const user = m[1], msg = m[2].trim();
-    if (msg.toLowerCase().startsWith(CMD.toLowerCase() + ' ')) await addToQueue(msg.slice(CMD.length).trim(), user);
-    else logChat(user, msg, false);
+    if(raw.startsWith('PING')){ ws.send('PONG :tmi.twitch.tv'); return; }
+    let tags = {};
+    let messagePart = raw;
+    if(raw.startsWith('@')) {
+      const tagEnd = raw.indexOf(' ');
+      const tagStr = raw.substring(1, tagEnd);
+      tagStr.split(';').forEach(t => {
+        const [k,v] = t.split('=');
+        tags[k] = v || '';
+      });
+      messagePart = raw.substring(tagEnd+1);
+    }
+    const m = messagePart.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.*)/);
+    if(!m) return;
+    const twitchUser = m[1];
+    const msg = m[2].trim();
+    const rawColor = tags.color && tags.color.startsWith('#') ? tags.color : null;
+    const color = rawColor || '#bf94ff';
+    const isMod = tags.mod === '1' || (tags.badges && tags.badges.includes('moderator'));
+    if(isMod) twitchMods.add(twitchUser);
+    if(!myTwitchName) myTwitchName = twitchUser;
+    if(rawColor) {
+      twitchColors[twitchUser] = rawColor;
+      localStorage.setItem('simpTwitchColors', JSON.stringify(twitchColors));
+    }
+    if(!twitchUsers.has(twitchUser)) {
+      twitchUsers.add(twitchUser);
+      localStorage.setItem('simpTwitchUsers', JSON.stringify([...twitchUsers]));
+    }
+    if(msg.toLowerCase().startsWith(CMD.toLowerCase()+' ')){
+      const cmdPart = msg.slice(CMD.length).trim();
+      const parts = cmdPart.split(' ');
+      const action = parts[0].toLowerCase();
+      const gifName = parts.slice(1).join(' ');
+      if(action==='yt'){
+        const searchQuery = parts.slice(1).join(' ');
+        if(!searchQuery) return;
+        logChat('SISTEMA', `🔍 Buscando: "${searchQuery}"...`, true);
+        const result = await searchYouTube(searchQuery);
+        if(!result){ logChat('SISTEMA', `❌ Nada encontrado para: ${searchQuery}`, true); return; }
+        await addToQueue(`https://youtu.be/${result.videoId}`, twitchUser, color, true);
+        return;
+      }
+      if(action==='skip'){
+        if(isMod || getUserPoints(twitchUser)>=50){
+          if(!isMod) spendPoints(twitchUser,50);
+          if(isHost) nextVideo();
+          else sendCmd('skip',{user: twitchUser});
+        }
+        return;
+      }
+      if(action==='troll' && getUserPoints(twitchUser)>=50){
+        spendPoints(twitchUser,50);
+        if(isHost){ queue=queue.sort(()=>Math.random()-0.5); renderQueue(); }
+        else sendCmd('troll',{user: twitchUser});
+        return;
+      }
+      if(action==='gif' && gifName && getUserPoints(twitchUser)>=20){
+        spendPoints(twitchUser,20);
+        if(isHost) setQueueGif(gifName);
+        else sendCmd('gif',{user: twitchUser, gifName});
+        return;
+      }
+      await addToQueue(cmdPart, twitchUser, color, true);
+    } else if(msg.toLowerCase().startsWith('%yt ')){
+      const searchQuery = msg.slice(4).trim();
+      if(!searchQuery) return;
+      logChat('SISTEMA', `🔍 Buscando: "${searchQuery}"...`, true);
+      const result = await searchYouTube(searchQuery);
+      if(!result){ logChat('SISTEMA', `❌ Nada encontrado para: ${searchQuery}`, true); return; }
+      await addToQueue(`https://youtu.be/${result.videoId}`, twitchUser, color, true);
+    } else {
+      logChat(twitchUser, msg, false, color, isMod);
+    }
   };
-  ws.onclose = () => { setTimeout(connectTwitch, 5000); };
+  ws.onclose = () => setTimeout(connectTwitch, 5000);
 }
-
 function playPing() {
-  if (!config.bpm) return;
-  try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+  if(!config.bpm) return;
+  try{
+    const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-  } catch(e){}
+    osc.frequency.setValueAtTime(800,audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1,audioCtx.currentTime);
+    osc.start(); osc.stop(audioCtx.currentTime+0.1);
+  }catch(e){}
 }
-
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function logChat(user, text, isCmd) {
+function logChat(user, text, isCmd, color='#bf94ff', isMod=false) {
   const box = document.getElementById('chatbox');
+  const points = getUserPoints(user);
+  const modTag = isMod ? ' <span style="color:#ff3c6e">[MOD]</span>' : '';
   const d = document.createElement('div');
   d.className = 'cm';
-  d.innerHTML = `<span class="cmu">${esc(user)}</span>: <span class="cmt">${esc(text)}</span>`;
-  box.appendChild(d); box.scrollTop = box.scrollHeight;
-  if (box.childNodes.length > 50) box.firstChild.remove();
+  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">(${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+  box.appendChild(d);
+  if(box.childNodes.length>50) box.firstChild.remove();
+  box.scrollTop = box.scrollHeight;
 }
 function toast(msg, type='') {
   const c = document.getElementById('toasts');
-  const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg;
-  c.appendChild(t); setTimeout(() => t.remove(), 3000);
+  const t = document.createElement('div'); t.className='toast '+type; t.textContent=msg;
+  c.appendChild(t); setTimeout(()=>t.remove(),3000);
 }
+if(!myName) setTimeout(askForName,800);
 </script>
 </body>
 </html>
