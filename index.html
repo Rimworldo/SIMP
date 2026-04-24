@@ -133,6 +133,26 @@ body.is-admin #ytFrame{pointer-events:auto}
 .toast.err{border-color:rgba(255,60,60,.4);color:#ff7070}
 @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tout{to{opacity:0}}
+
+/* Host transfer modal - special style */
+.host-transfer-modal { background: var(--surface); border: 1px solid rgba(145,71,255,.4); border-radius: 14px; padding: 2rem; width: 340px; }
+.host-transfer-modal h2 { font-size: 1.15rem; font-weight: 800; margin-bottom: .25rem; }
+.host-transfer-modal p { font-family:'Space Mono',monospace; font-size:.7rem; color:var(--muted); margin-bottom:1.1rem; line-height:1.7; }
+.pwd-wrap { position: relative; margin-bottom: .6rem; }
+.pwd-wrap input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:.65rem 2.5rem .65rem .9rem; color:var(--text); font-family:'Space Mono',monospace; font-size:.82rem; outline:none; transition:.2s; }
+.pwd-wrap input:focus { border-color: rgba(145,71,255,.6); }
+.pwd-wrap input.shake { animation:shk .35s ease; }
+.pwd-toggle { position:absolute; right:.7rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--muted); font-size:.85rem; padding:.2rem; transition:.2s; }
+.pwd-toggle:hover { color: var(--text); }
+.transfer-status { font-family:'Space Mono',monospace; font-size:.65rem; padding:.5rem .75rem; border-radius:6px; margin-bottom:.6rem; display:none; line-height:1.5; }
+.transfer-status.info  { background:rgba(145,71,255,.1); border:1px solid rgba(145,71,255,.3); color:#bf94ff; display:block; }
+.transfer-status.warn  { background:rgba(255,165,0,.1); border:1px solid rgba(255,165,0,.3); color:#ffb347; display:block; }
+.transfer-status.ok    { background:rgba(50,200,100,.1); border:1px solid rgba(50,200,100,.3); color:#5de89a; display:block; }
+.transfer-status.err   { background:rgba(255,60,60,.1); border:1px solid rgba(255,60,60,.3); color:#ff7070; display:block; }
+.countdown-bar { height: 3px; background: rgba(145,71,255,.15); border-radius: 3px; overflow: hidden; margin-bottom: .6rem; display: none; }
+.countdown-bar.show { display: block; }
+.countdown-fill { height: 100%; background: linear-gradient(90deg, #bf94ff, #ff3c6e); border-radius: 3px; transition: width .1s linear; }
+
 @media(max-width:760px){main{grid-template-columns:1fr}.qside{height:auto;position:static;max-height:420px}}
 body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:9998}
 </style>
@@ -238,6 +258,8 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
     </div>
   </div>
 </main>
+
+<!-- Modal: Nome do usuário -->
 <div class="ovl" id="nameOvl">
   <div class="modal">
     <h2>Seu Nome</h2>
@@ -250,11 +272,16 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
     </div>
   </div>
 </div>
+
+<!-- Modal: Admin -->
 <div class="ovl" id="ovl">
   <div class="modal">
     <h2>Acesso Admin</h2>
     <p>Digite a senha</p>
-    <input type="password" id="pwdInput" placeholder="••••••••">
+    <div class="pwd-wrap">
+      <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password">
+      <button class="pwd-toggle" id="pwdToggle" type="button" tabindex="-1">👁</button>
+    </div>
     <div class="emsg" id="emsg">Senha incorreta</div>
     <div class="mbtns">
       <button class="bcan" id="bcan">Cancelar</button>
@@ -262,6 +289,29 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
     </div>
   </div>
 </div>
+
+<!-- Modal: Virar Host (com transferência segura) -->
+<div class="ovl" id="hostOvl">
+  <div class="host-transfer-modal">
+    <h2>👑 Virar Host</h2>
+    <p>Digite a senha. O host atual será notificado e pausará para todos. Você assumirá após a transferência.</p>
+    <div class="pwd-wrap">
+      <input type="password" id="hostPwdInput" placeholder="••••••••" autocomplete="current-password">
+      <button class="pwd-toggle" id="hostPwdToggle" type="button" tabindex="-1">👁</button>
+    </div>
+    <div class="emsg" id="hostEmsg">Senha incorreta</div>
+    <div class="transfer-status" id="transferStatus"></div>
+    <div class="countdown-bar" id="countdownBar">
+      <div class="countdown-fill" id="countdownFill" style="width:100%"></div>
+    </div>
+    <div class="mbtns">
+      <button class="bcan" id="hostBcan">Cancelar</button>
+      <button class="bok" id="hostBok">Assumir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Simps -->
 <div class="ovl" id="simpsOvl">
   <div class="modal" style="width:380px">
     <h2>💰 Simps</h2>
@@ -271,6 +321,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
     </div>
   </div>
 </div>
+
 <div class="toasts" id="toasts"></div>
 <script>
 const CHANNEL = 'daenil';
@@ -278,6 +329,11 @@ const CMD = '%simp';
 const ADMIN_PASS = '40028922';
 const HOST_PASS = 'fabioémeuamor123';
 const ROOM_ID = `simp-room-${CHANNEL}`;
+
+// Delay que os clients vão aguardar antes de tentar reconectar ao novo host
+// Isso evita que alguém aleatório vire host durante a transição
+const HOST_TRANSFER_DELAY_MS = 6000; // 6 segundos de graça pra novo host subir
+
 const EMPTY_SOUNDS = ['https://files.catbox.moe/d5u8m3.mp3','https://files.catbox.moe/xjed0e.mp3','https://files.catbox.moe/5cq2ql.mp3','https://files.catbox.moe/6cxh3k.mp3','https://files.catbox.moe/qffscp.mp3'];
 let emptySoundAudio = null;
 let queue = [];
@@ -302,6 +358,12 @@ let clientConnections = [];
 let p2pInitializing = false;
 let clientCurrentVideoId = null;
 let clientLastSyncTime = 0;
+
+// Flag para controlar se estamos em transferência de host
+// Quando true, os clients NÃO tentam virar host se o ROOM_ID estiver livre
+let hostTransferring = false;
+let hostTransferTimer = null;
+
 const SYNC_TOLERANCE_SEC = 5;
 let twitchMods = new Set();
 let twitchUsers = new Set(JSON.parse(localStorage.getItem('simpTwitchUsers') || '[]'));
@@ -310,7 +372,24 @@ let audioContext, analyser, source, silenceTimer = null;
 let lastAudioTime = Date.now();
 let seekInterval = null;
 
-// FIX: inicializa os checkboxes e inputs com os valores salvos do config
+// ───────────── toggle visibilidade senha ─────────────
+function setupPasswordToggle(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  btn.addEventListener('click', () => {
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁';
+    }
+  });
+}
+setupPasswordToggle('pwdInput', 'pwdToggle');
+setupPasswordToggle('hostPwdInput', 'hostPwdToggle');
+
+// ───────────── Config UI ─────────────
 function initConfigUI() {
   document.getElementById('cfgGlow').checked = config.glow;
   document.getElementById('cfgBpm').checked = config.bpm;
@@ -323,8 +402,8 @@ function initConfigUI() {
   document.getElementById('volSliderClient').value = config.vol;
   document.getElementById('volNumClient').textContent = config.vol + '%';
 }
-
 function saveConfig() { localStorage.setItem('simpConfig', JSON.stringify(config)); }
+
 function cleanTitleForGif(title) {
   return title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, config.gifWords).join(' ');
 }
@@ -347,6 +426,7 @@ function updateClientsBadge() {
   badge.style.display = 'flex';
   count.textContent = clientConnections.filter(c => c.open).length;
 }
+
 async function searchYouTube(query) {
   try {
     const inv = await fetch(`https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video&page=1`);
@@ -365,9 +445,11 @@ async function searchYouTube(query) {
     } catch(e2) { return null; }
   }
 }
+
 async function getVideoDuration(id) {
-try{const r=await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);if(!r.ok)throw'';const d=await r.json();return d.lengthSeconds||0;}catch(e){return 0;}
+  try{const r=await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);if(!r.ok)throw'';const d=await r.json();return d.lengthSeconds||0;}catch(e){return 0;}
 }
+
 function playEmptySound() {
   if (!isHost || !config.emptySound) return;
   if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; }
@@ -378,7 +460,9 @@ function playEmptySound() {
 function stopEmptySound() {
   if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; }
 }
+
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
 function askForName() {
   if(myName) return;
   document.getElementById('nameOvl').classList.add('open');
@@ -393,6 +477,7 @@ document.getElementById('nameOk').addEventListener('click', () => {
 });
 document.getElementById('nameCancel').addEventListener('click', () => document.getElementById('nameOvl').classList.remove('open'));
 document.getElementById('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('nameOk').click(); });
+
 function showSimps() {
   let html = '<b>Rank Simps</b><br>';
   const sorted = Object.entries(simpsPoints).sort((a,b)=>b[1]-a[1]);
@@ -403,6 +488,7 @@ function showSimps() {
 }
 document.getElementById('simpsBtn').addEventListener('click', showSimps);
 document.getElementById('simpsClose').addEventListener('click', () => document.getElementById('simpsOvl').classList.remove('open'));
+
 function startAutoSkip() {
   if (!isHost || !config.autoSkip || !ytReady) return;
   stopAutoSkip();
@@ -432,6 +518,7 @@ function stopAutoSkip() {
   silenceTimer = null;
   if(source) source.disconnect();
 }
+
 function destroyPeers() {
   clientConnections.forEach(c => { try { c.close(); } catch(e) {} });
   clientConnections = [];
@@ -439,6 +526,148 @@ function destroyPeers() {
   if(hostPeer) { try { hostPeer.destroy(); } catch(e) {} hostPeer = null; }
   if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
 }
+
+// ═══════════════════════════════════════════════════════
+// LÓGICA DE TRANSFERÊNCIA DE HOST
+// Fluxo:
+// 1. Novo host digita a senha no modal
+// 2. Se correto → envia sinal "host-handoff-request" ao host atual (via conexão de client)
+// 3. Host atual recebe → pausa tudo → manda "host-transferring" pra todos os clients
+// 4. Clients recebem "host-transferring" → setam hostTransferring=true + timer de HOST_TRANSFER_DELAY_MS
+//    → Durante esse período, se o ROOM_ID ficar livre, NÃO tentam virar host
+// 5. O tab que pediu a transferência → destroi peers → tenta virar host (initP2P())
+// 6. Após HOST_TRANSFER_DELAY_MS, clients tentam reconectar normalmente ao novo host
+// ═══════════════════════════════════════════════════════
+
+// Broadcast de transferência para todos os clients conectados (chamado pelo host)
+function broadcastHostTransferring() {
+  const msg = { type: 'host-transferring', delay: HOST_TRANSFER_DELAY_MS };
+  clientConnections.forEach(c => { try { if(c.open) c.send(msg); } catch(e){} });
+  if(ytPlayer) { try { ytPlayer.pauseVideo(); } catch(e){} }
+  logChat('SISTEMA', '🔄 Transferência de host iniciada — pausando para todos', true);
+}
+
+// Chamado quando o client recebe sinal de transferência do host
+function onHostTransferringSignal(delay) {
+  hostTransferring = true;
+  logChat('SISTEMA', `⏳ Host sendo transferido... aguardando ${Math.round(delay/1000)}s`, true);
+  // Para o timer anterior se existir
+  if(hostTransferTimer) clearTimeout(hostTransferTimer);
+  hostTransferTimer = setTimeout(() => {
+    hostTransferring = false;
+    hostTransferTimer = null;
+    logChat('SISTEMA', '🔄 Reconectando ao novo host...', true);
+    // Tenta reconectar ao host (novo)
+    if(!isHost && clientPeer && !clientPeer.destroyed) setupClient();
+  }, delay);
+}
+
+// Abre o modal de virar host
+function openHostModal() {
+  const input = document.getElementById('hostPwdInput');
+  input.value = '';
+  input.type = 'password';
+  document.getElementById('hostPwdToggle').textContent = '👁';
+  document.getElementById('hostEmsg').classList.remove('show');
+  document.getElementById('transferStatus').className = 'transfer-status';
+  document.getElementById('transferStatus').textContent = '';
+  document.getElementById('countdownBar').classList.remove('show');
+  document.getElementById('hostBok').disabled = false;
+  document.getElementById('hostBok').textContent = 'Assumir';
+  document.getElementById('hostOvl').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeHostModal() {
+  document.getElementById('hostOvl').classList.remove('open');
+}
+
+function setTransferStatus(type, msg) {
+  const el = document.getElementById('transferStatus');
+  el.className = 'transfer-status ' + type;
+  el.textContent = msg;
+}
+
+function startCountdownBar(durationMs) {
+  const bar = document.getElementById('countdownBar');
+  const fill = document.getElementById('countdownFill');
+  bar.classList.add('show');
+  fill.style.width = '100%';
+  const start = Date.now();
+  const interval = setInterval(() => {
+    const elapsed = Date.now() - start;
+    const pct = Math.max(0, 100 - (elapsed / durationMs) * 100);
+    fill.style.width = pct + '%';
+    if(elapsed >= durationMs) {
+      clearInterval(interval);
+      bar.classList.remove('show');
+    }
+  }, 100);
+}
+
+async function executeHostTransfer() {
+  const input = document.getElementById('hostPwdInput');
+  const pass = input.value;
+
+  if(pass !== HOST_PASS) {
+    input.classList.add('shake');
+    document.getElementById('hostEmsg').classList.add('show');
+    setTimeout(() => {
+      input.classList.remove('shake');
+      document.getElementById('hostEmsg').classList.remove('show');
+    }, 400);
+    return;
+  }
+
+  document.getElementById('hostBok').disabled = true;
+  document.getElementById('hostBok').textContent = 'Transferindo...';
+
+  // Se já somos host, apenas reiniciamos sem precisar avisar ninguém
+  if(isHost) {
+    setTransferStatus('ok', '✓ Você já é o host!');
+    setTimeout(closeHostModal, 1500);
+    return;
+  }
+
+  // Se estamos conectados ao host atual, mandamos o sinal de handoff
+  if(hostConnection && hostConnection.open) {
+    setTransferStatus('info', '📡 Avisando o host atual...');
+    hostConnection.send({ type: 'cmd', action: 'host-handoff-request' });
+
+    // Aguarda um tempo para o host processar e avisar os clients
+    await new Promise(r => setTimeout(r, 1200));
+    setTransferStatus('warn', '⏳ Aguardando clients pausarem...');
+    startCountdownBar(HOST_TRANSFER_DELAY_MS);
+
+    // Aguarda um momento extra antes de assumir
+    await new Promise(r => setTimeout(r, 800));
+  } else {
+    setTransferStatus('warn', '⚠️ Sem conexão ao host atual. Assumindo direto...');
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  setTransferStatus('info', '🔄 Destruindo conexões antigas...');
+  destroyPeers();
+  isHost = false;
+  clientSynced = false;
+  clientCurrentVideoId = null;
+
+  await new Promise(r => setTimeout(r, 400));
+  setTransferStatus('info', '👑 Iniciando como novo Host...');
+  initP2P();
+
+  // Fecha o modal após tentar virar host
+  setTimeout(closeHostModal, 2000);
+}
+
+document.getElementById('hostBok').addEventListener('click', executeHostTransfer);
+document.getElementById('hostBcan').addEventListener('click', closeHostModal);
+document.getElementById('hostPwdInput').addEventListener('keydown', e => { if(e.key==='Enter') executeHostTransfer(); });
+
+// Botão Host agora abre o modal seguro
+document.getElementById('roleBtn').addEventListener('click', openHostModal);
+
+// ───────────── P2P ─────────────
 function initP2P() {
   if(p2pInitializing) return;
   p2pInitializing = true;
@@ -450,6 +679,7 @@ function initP2P() {
   hostPeer.on('open', () => {
     p2pInitializing = false;
     isHost = true;
+    hostTransferring = false;
     document.getElementById('roleBadge').textContent = '👑 HOST';
     document.getElementById('roleBadge').className = 'role-badge role-host';
     document.getElementById('eoverText').innerHTML = `Host iniciado.<br>Manda vídeos no chat!`;
@@ -461,7 +691,13 @@ function initP2P() {
       p2pInitializing = false;
       try { hostPeer.destroy(); } catch(e) {}
       hostPeer = null;
-      startAsClient();
+      // Se estamos em processo de transferência, aguarda antes de virar client
+      // para não pegar o ID logo após o host anterior sair
+      if(hostTransferring) {
+        setTimeout(startAsClient, HOST_TRANSFER_DELAY_MS);
+      } else {
+        startAsClient();
+      }
       return;
     }
     console.warn('[P2P] Erro no hostPeer:', err.type, err.message);
@@ -471,7 +707,10 @@ function initP2P() {
     }
   });
 }
+
 function startAsClient() {
+  // Se está em transferência de host ativa, não tenta virar client ainda
+  // (o timer em onHostTransferringSignal vai chamar setupClient quando der)
   if(p2pInitializing) return;
   p2pInitializing = true;
   isHost = false;
@@ -491,10 +730,10 @@ function startAsClient() {
   clientPeer.on('error', (err) => {
     console.warn('[P2P] Erro no clientPeer:', err.type, err.message);
     p2pInitializing = false;
-    // FIX: só reconecta como client se ainda não virou host
     if(!isHost) setTimeout(startAsClient, 4000);
   });
 }
+
 function setupHost() {
   connectTwitch();
   hostPeer.on('connection', (conn) => {
@@ -505,6 +744,24 @@ function setupHost() {
     });
     conn.on('data', async (data) => {
       if (data.type === 'cmd') {
+        // ─── Pedido de transferência de host ───
+        if(data.action === 'host-handoff-request') {
+          logChat('SISTEMA', '🔄 Pedido de transferência recebido. Pausando e avisando clients...', true);
+          broadcastHostTransferring();
+          // Após avisar os clients, destruímos as conexões do host
+          setTimeout(() => {
+            destroyPeers();
+            isHost = false;
+            document.getElementById('roleBadge').textContent = '🎧 CLIENT';
+            document.getElementById('roleBadge').className = 'role-badge role-client';
+            // Aguarda o delay antes de tentar reconectar como client
+            setTimeout(() => {
+              startAsClient();
+            }, HOST_TRANSFER_DELAY_MS + 1000);
+          }, 600);
+          return;
+        }
+
         if (data.action === 'add') await addToQueue(data.url, data.user, data.color, data.fromTwitch);
         if (data.action === 'skip') {
           if(twitchMods.has(data.user) || getUserPoints(data.user) >= 50) {
@@ -549,6 +806,8 @@ function setupHost() {
       updateClientsBadge();
     });
   });
+
+  // Sync periódico para os clients
   setInterval(() => {
     if (!ytReady || !ytPlayer || clientConnections.length === 0) return;
     const time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function')
@@ -567,6 +826,7 @@ function setupHost() {
     clientConnections.forEach(c => { if(c.open) c.send(syncData); });
   }, 2000);
 }
+
 function setupClient() {
   if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
   hostConnection = clientPeer.connect(ROOM_ID, { reliable: true });
@@ -575,12 +835,22 @@ function setupClient() {
     document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
   });
   hostConnection.on('data', (data) => {
+    // ─── Sinal de transferência vindo do host ───
+    if(data.type === 'host-transferring') {
+      onHostTransferringSignal(data.delay || HOST_TRANSFER_DELAY_MS);
+      return;
+    }
     if (data.type === 'sync') handleSync(data);
   });
   hostConnection.on('close', () => {
-    logChat('SISTEMA', 'Desconectado do Host. Reconectando...', true);
+    logChat('SISTEMA', 'Desconectado do Host.', true);
     hostConnection = null;
     clientCurrentVideoId = null;
+    // Se em transferência, aguarda o timer de onHostTransferringSignal
+    if(hostTransferring) {
+      logChat('SISTEMA', `⏳ Aguardando novo host (${Math.round(HOST_TRANSFER_DELAY_MS/1000)}s)...`, true);
+      return;
+    }
     setTimeout(() => {
       if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
     }, 3000);
@@ -589,11 +859,13 @@ function setupClient() {
     console.warn('[P2P] Erro na conexão com host:', err);
     hostConnection = null;
     clientCurrentVideoId = null;
+    if(hostTransferring) return; // timer cuida da reconexão
     setTimeout(() => {
       if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
     }, 3000);
   });
 }
+
 function handleSync(data) {
   if(data.simpsPoints) simpsPoints = data.simpsPoints;
   const queueChanged = JSON.stringify(queue) !== JSON.stringify(data.queue);
@@ -660,20 +932,14 @@ function handleSync(data) {
     }
   }
 }
+
 document.getElementById('syncBtn').addEventListener('click', () => {
   clientSynced = true;
   document.getElementById('syncBtn').style.display = 'none';
   document.getElementById('eover').classList.add('gone');
 });
-document.getElementById('roleBtn').addEventListener('click', () => {
-  const pass = prompt('Senha para virar Host:');
-  if (pass !== HOST_PASS) return toast('Senha incorreta', 'err');
-  destroyPeers();
-  isHost = false;
-  clientSynced = false;
-  clientCurrentVideoId = null;
-  initP2P();
-});
+
+// ───────────── YouTube IFrame ─────────────
 (function(){ const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s); })();
 window.onYouTubeIframeAPIReady = function(){
   ytPlayer = new YT.Player('ytFrame', {
@@ -682,7 +948,7 @@ window.onYouTubeIframeAPIReady = function(){
       onReady: function(e) {
         ytReady = true;
         e.target.setVolume(config.vol);
-        initConfigUI(); // FIX: inicializa a UI de config com os valores salvos
+        initConfigUI();
         if(!myName) askForName();
         initP2P();
       },
@@ -694,7 +960,6 @@ window.onYouTubeIframeAPIReady = function(){
           if(!seekInterval) seekInterval = setInterval(updateSeekBar,500);
           if(config.autoSkip) startAutoSkip();
         } else {
-          // FIX: zera seekInterval para null após limpar, evitando acúmulo de intervalos
           if(seekInterval){ clearInterval(seekInterval); seekInterval = null; }
           stopAutoSkip();
         }
@@ -702,15 +967,17 @@ window.onYouTubeIframeAPIReady = function(){
     }
   });
 };
+
 function updateSeekBar(){
-if(!isHost||!ytPlayer||!ytReady)return;
-const cur=ytPlayer.getCurrentTime?ytPlayer.getCurrentTime():0;
-const dur=ytPlayer.getDuration?ytPlayer.getDuration():0;
-const s=document.getElementById('seekSlider');
-if(dur>0){s.max=dur;s.value=cur;}
-const f=t=>{const m=Math.floor(t/60);const ss=Math.floor(t%60).toString().padStart(2,'0');return `${m}:${ss}`;};
-document.getElementById('seekTime').textContent=`${f(cur)}/${dur>0?f(dur):'--:--'}`;
+  if(!isHost||!ytPlayer||!ytReady)return;
+  const cur=ytPlayer.getCurrentTime?ytPlayer.getCurrentTime():0;
+  const dur=ytPlayer.getDuration?ytPlayer.getDuration():0;
+  const s=document.getElementById('seekSlider');
+  if(dur>0){s.max=dur;s.value=cur;}
+  const f=t=>{const m=Math.floor(t/60);const ss=Math.floor(t%60).toString().padStart(2,'0');return `${m}:${ss}`;};
+  document.getElementById('seekTime').textContent=`${f(cur)}/${dur>0?f(dur):'--:--'}`;
 }
+
 async function addToQueue(rawUrl, user, color, fromTwitch) {
   if(!user) user = myName || 'Anônimo';
   const id = extractId(rawUrl);
@@ -739,6 +1006,7 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   if (isHost && curIdx === -1) startPlayback(0);
   else renderQueue();
 }
+
 function extractId(url) {
   url = String(url).trim();
   let m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
@@ -753,6 +1021,7 @@ async function fetchTitle(id) {
     return d.title || 'Vídeo do YouTube';
   } catch { return 'Vídeo do YouTube'; }
 }
+
 async function setQueueGif(title) {
   if (!isHost) return;
   const clean = cleanTitleForGif(title || 'anime');
@@ -763,6 +1032,7 @@ async function setQueueGif(title) {
   } catch(e) { currentGifUrl = ''; }
   document.getElementById('qlistBg').style.backgroundImage = currentGifUrl ? `url(${currentGifUrl})` : '';
 }
+
 function startPlayback(idx) {
   if (!isHost || idx < 0 || idx >= queue.length) return;
   stopEmptySound();
@@ -779,6 +1049,7 @@ function startPlayback(idx) {
   setQueueGif(item.title);
   renderQueue();
 }
+
 function nextVideo() {
   if (!isHost) return;
   queue.splice(0, curIdx + 1);
@@ -786,6 +1057,7 @@ function nextVideo() {
   if (queue.length > 0) startPlayback(0);
   else { showEmpty(); playEmptySound(); }
 }
+
 function showEmpty() {
   curIdx = -1;
   currentGifUrl = '';
@@ -797,11 +1069,13 @@ function showEmpty() {
   document.getElementById('qlistBg').style.backgroundImage = '';
   renderQueue();
 }
+
 function loadVid(id) {
   if(!id || !ytReady || !ytPlayer) return;
   ytPlayer.loadVideoById({videoId:id, startSeconds:0});
   if(!paused) ytPlayer.playVideo();
 }
+
 function renderQueue() {
   const list = document.getElementById('qlist');
   const empty = document.getElementById('qempty');
@@ -835,6 +1109,7 @@ function renderQueue() {
     });
   }
 }
+
 function renderPlaylist() {
   const c = document.getElementById('dropContent'); c.innerHTML = '';
   if(myPlaylist.length===0){ c.innerHTML = '<div style="padding:15px;font-size:0.75rem;color:var(--muted);text-align:center;">Playlist vazia</div>'; return; }
@@ -849,6 +1124,7 @@ function renderPlaylist() {
 document.getElementById('dropBtn').addEventListener('click',()=>document.getElementById('dropContent').classList.toggle('show'));
 window.onclick = e => { if(!e.target.matches('#dropBtn') && !e.target.closest('.dropdown-content')) document.getElementById('dropContent').classList.remove('show'); };
 renderPlaylist();
+
 function toggleAdmin(state) {
   isAdmin = state;
   if(isAdmin){ 
@@ -868,7 +1144,8 @@ function toggleAdmin(state) {
   if(posRow) posRow.style.display = isAdmin ? 'flex' : 'none';
   renderQueue();
 }
-document.getElementById('adminBtn').addEventListener('click',()=>{ if(isAdmin)toggleAdmin(false); else{ document.getElementById('ovl').classList.add('open'); document.getElementById('pwdInput').focus(); }});
+
+document.getElementById('adminBtn').addEventListener('click',()=>{ if(isAdmin)toggleAdmin(false); else{ document.getElementById('ovl').classList.add('open'); document.getElementById('pwdInput').value=''; document.getElementById('pwdInput').focus(); }});
 document.getElementById('bok').addEventListener('click',()=>{ 
   if(document.getElementById('pwdInput').value===ADMIN_PASS){
     document.getElementById('ovl').classList.remove('open'); 
@@ -883,6 +1160,7 @@ document.getElementById('bok').addEventListener('click',()=>{
 });
 document.getElementById('bcan').addEventListener('click',()=>document.getElementById('ovl').classList.remove('open'));
 document.getElementById('pwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('bok').click();});
+
 function sendCmd(action, payload={}) {
   if(isHost){
     if(action==='add') addToQueue(payload.url, payload.user, payload.color, payload.fromTwitch);
@@ -901,6 +1179,7 @@ function sendCmd(action, payload={}) {
     toast('Enviado ao Host','ok');
   }
 }
+
 document.getElementById('userAddBtn').addEventListener('click', async () => {
   const raw = document.getElementById('userUrl').value.trim();
   document.getElementById('userUrl').value = '';
@@ -934,6 +1213,7 @@ document.getElementById('cfgAutoSkip').addEventListener('change',e=>{
   else if(isHost && curIdx >=0 && ytPlayer && ytPlayer.getPlayerState() === 1) startAutoSkip();
 });
 document.getElementById('cfgMaxDur').addEventListener('change',e=>{config.maxDuration=parseInt(e.target.value); saveConfig();});
+
 const seekClient = document.getElementById('seekSliderClient');
 const volClient = document.getElementById('volSliderClient');
 const seekTimeClient = document.getElementById('seekTimeClient');
@@ -954,6 +1234,7 @@ seekClient.addEventListener('input',function(){
     hostConnection.send({type:'cmd', action:'seek', time: parseFloat(this.value)});
   }
 });
+
 if(!isHost){
   setInterval(() => {
     if(ytReady && ytPlayer){
@@ -972,6 +1253,7 @@ if(!isHost){
     }
   }, 500);
 }
+
 function connectTwitch() {
   const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
   const rnd = Math.floor(Math.random()*99999);
@@ -1060,6 +1342,7 @@ function connectTwitch() {
   };
   ws.onclose = () => setTimeout(connectTwitch, 5000);
 }
+
 function playPing() {
   if(!config.bpm) return;
   try{
@@ -1071,6 +1354,7 @@ function playPing() {
     osc.start(); osc.stop(audioCtx.currentTime+0.1);
   }catch(e){}
 }
+
 function logChat(user, text, isCmd, color='#bf94ff', isMod=false) {
   const box = document.getElementById('chatbox');
   const points = getUserPoints(user);
@@ -1082,11 +1366,13 @@ function logChat(user, text, isCmd, color='#bf94ff', isMod=false) {
   if(box.childNodes.length>50) box.firstChild.remove();
   box.scrollTop = box.scrollHeight;
 }
+
 function toast(msg, type='') {
   const c = document.getElementById('toasts');
   const t = document.createElement('div'); t.className='toast '+type; t.textContent=msg;
   c.appendChild(t); setTimeout(()=>t.remove(),3000);
 }
+
 if(!myName) setTimeout(askForName,800);
 </script>
 </body>
