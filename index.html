@@ -14,7 +14,7 @@
   --text:#f0f0f5;--muted:#6b6b80;--item:#16161f;--hh:58px;
 }
 body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
-header{height:var(--hh);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;background:rgba(10,10,15,.95);backdrop-filter:blur(14px)}
+header{height:var(--hh);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;background:rgba(10,10,15,.95)}
 .logo{font-size:1.5rem;font-weight:800;letter-spacing:-.02em; display:flex; align-items:center; gap:10px;}
 .logo span{color:var(--accent)}
 .role-badge{font-size:0.6rem; padding:0.2rem 0.5rem; border-radius:10px; font-family:'Space Mono'; text-transform:uppercase; font-weight:bold; letter-spacing:1px; background:#333;}
@@ -42,9 +42,10 @@ main{display:grid;grid-template-columns:1fr 350px;min-height:calc(100vh - var(--
 .theater-stage{position:relative;width:100%}
 .player-glow{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(50px) saturate(200%);opacity:0;transition:opacity 0.6s ease;z-index:0;pointer-events:none;border-radius:12px;transform:scale(1.05)}
 .player-glow.active{opacity:0.25}
-.player-wrap{background:#000;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;border:1px solid var(--border);width:100%;z-index:2}
+.player-wrap{background:#000;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;border:1px solid var(--border);width:100%;z-index:2; display:flex; align-items:center; justify-content:center;}
 #ytFrame{width:100%;height:100%;border:none;display:block;pointer-events:none}
 body.is-admin #ytFrame{pointer-events:auto}
+#rawAudio { width: 90%; margin: auto; display: none; }
 .eover{position:absolute;inset:0;background:rgba(10,10,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;transition:opacity .3s;z-index:3}
 .eover.gone{opacity:0; pointer-events:none;}
 .eover .ei{font-size:2.5rem;opacity:.2}
@@ -112,7 +113,7 @@ body.is-admin #ytFrame{pointer-events:auto}
 .cm{font-family:'Space Mono',monospace;font-size:.66rem;line-height:1.6;padding:.1rem 0;border-bottom:1px solid rgba(255,255,255,.025);animation:fdin .2s ease}
 @keyframes fdin{from{opacity:0}to{opacity:1}}
 .cmu{color:#bf94ff;font-weight:700}.cmc{color:var(--accent)}.cmt{color:var(--muted)}
-.ovl{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:999}
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:999}
 .ovl.open{display:flex}
 .modal{background:var(--surface);border:1px solid rgba(255,60,110,.25);border-radius:14px;padding:2rem;width:320px}
 .modal h2{font-size:1.15rem;font-weight:800;margin-bottom:.25rem}
@@ -134,7 +135,6 @@ body.is-admin #ytFrame{pointer-events:auto}
 @keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tout{to{opacity:0}}
 
-/* Host transfer modal - special style */
 .host-transfer-modal { background: var(--surface); border: 1px solid rgba(145,71,255,.4); border-radius: 14px; padding: 2rem; width: 340px; }
 .host-transfer-modal h2 { font-size: 1.15rem; font-weight: 800; margin-bottom: .25rem; }
 .host-transfer-modal p { font-family:'Space Mono',monospace; font-size:.7rem; color:var(--muted); margin-bottom:1.1rem; line-height:1.7; }
@@ -178,10 +178,11 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <div id="playerGlow" class="player-glow"></div>
       <div class="player-wrap">
         <div id="ytFrame"></div>
+        <audio id="rawAudio" controls style="display:none; width: 90%; z-index: 5; margin: 10px;"></audio>
         <div class="eover" id="eover">
           <div class="ei">🎬</div>
           <p id="eoverText">Conectando ao sistema P2P...</p>
-          <span class="ec">%simp link • %yt titulo</span>
+          <span class="ec">Links MP3 / YouTube</span>
           <button class="sync-btn" id="syncBtn">Sincronizar Player</button>
         </div>
       </div>
@@ -210,16 +211,6 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <div class="aprow">
         <button class="cbtn" id="pauseBtn">⏸ Pausar</button>
         <button class="cbtn" id="skipBtn">⏭ Pular</button>
-        <div class="volrow">
-          <label>POSIÇÃO</label>
-          <input type="range" min="0" max="100" value="0" id="seekSlider">
-          <span class="volnum" id="seekTime">0:00/--:--</span>
-        </div>
-        <div class="volrow">
-          <label>VOL</label>
-          <input type="range" min="0" max="100" value="80" id="volSlider">
-          <span class="volnum" id="volNum">80%</span>
-        </div>
         <button class="cbtn red" id="clearBtn">🗑 Limpar fila</button>
       </div>
       <div class="madd" id="cfgGeral">
@@ -230,7 +221,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
           <label><input type="checkbox" id="cfgBpm"> Beep ao adicionar</label>
           <label><input type="checkbox" id="cfgEmptySound"> 🔔 Som de fila vazia</label>
           <label><input type="checkbox" id="cfgAutoSkip"> Pulo Automático</label>
-          <label>Max dur.(min): <input type="number" id="cfgMaxDur" min="1" value="20"></label>
+          <label>Max dur.(min): <input type="number" id="cfgMaxDur" min="1" value="5"></label>
         </div>
       </div>
     </div>
@@ -241,7 +232,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <span class="qcount" id="qcount">0</span>
     </div>
     <div class="user-add-box">
-      <input type="text" id="userUrl" placeholder="Link do YouTube ou %yt fusca preto...">
+      <input type="text" id="userUrl" placeholder="Link YouTube, Áudio ou Pesquisa..." autocomplete="off">
       <button id="userAddBtn">Add</button>
     </div>
     <div class="qlist-wrap">
@@ -259,7 +250,6 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
   </div>
 </main>
 
-<!-- Modal: Nome do usuário -->
 <div class="ovl" id="nameOvl">
   <div class="modal">
     <h2>Seu Nome</h2>
@@ -273,7 +263,6 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
   </div>
 </div>
 
-<!-- Modal: Admin -->
 <div class="ovl" id="ovl">
   <div class="modal">
     <h2>Acesso Admin</h2>
@@ -290,7 +279,6 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
   </div>
 </div>
 
-<!-- Modal: Virar Host (com transferência segura) -->
 <div class="ovl" id="hostOvl">
   <div class="host-transfer-modal">
     <h2>👑 Virar Host</h2>
@@ -311,7 +299,6 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
   </div>
 </div>
 
-<!-- Modal: Simps -->
 <div class="ovl" id="simpsOvl">
   <div class="modal" style="width:380px">
     <h2>💰 Simps</h2>
@@ -330,10 +317,7 @@ const ADMIN_PASS = '40028922';
 const HOST_PASS = 'fabioémeuamor123';
 const ROOM_ID = `simp-room-${CHANNEL}`;
 
-// Delay que os clients vão aguardar antes de tentar reconectar ao novo host
-// Isso evita que alguém aleatório vire host durante a transição
-const HOST_TRANSFER_DELAY_MS = 6000; // 6 segundos de graça pra novo host subir
-
+const HOST_TRANSFER_DELAY_MS = 6000;
 const EMPTY_SOUNDS = ['https://files.catbox.moe/d5u8m3.mp3','https://files.catbox.moe/xjed0e.mp3','https://files.catbox.moe/5cq2ql.mp3','https://files.catbox.moe/6cxh3k.mp3','https://files.catbox.moe/qffscp.mp3'];
 let emptySoundAudio = null;
 let queue = [];
@@ -349,7 +333,7 @@ let myPlaylist = JSON.parse(localStorage.getItem('simpPlaylist') || '[]');
 let myName = localStorage.getItem('simpMyName') || '';
 let myTwitchName = '';
 let config = JSON.parse(localStorage.getItem('simpConfig') || '{}');
-if(!config.gifWords) config = { gifWords: 3, glow: true, bpm: true, vol: 80, emptySound: true, autoSkip: true, maxDuration: 20 };
+if(!config.gifWords) config = { gifWords: 3, glow: true, bpm: true, vol: 80, emptySound: true, autoSkip: true, maxDuration: 5 };
 let simpsPoints = JSON.parse(localStorage.getItem('simpPoints') || '{}');
 let hostPeer = null;
 let clientPeer = null;
@@ -359,20 +343,13 @@ let p2pInitializing = false;
 let clientCurrentVideoId = null;
 let clientLastSyncTime = 0;
 
-// Flag para controlar se estamos em transferência de host
-// Quando true, os clients NÃO tentam virar host se o ROOM_ID estiver livre
 let hostTransferring = false;
 let hostTransferTimer = null;
-
 const SYNC_TOLERANCE_SEC = 5;
 let twitchMods = new Set();
 let twitchUsers = new Set(JSON.parse(localStorage.getItem('simpTwitchUsers') || '[]'));
 let twitchColors = JSON.parse(localStorage.getItem('simpTwitchColors') || '{}');
-let audioContext, analyser, source, silenceTimer = null;
-let lastAudioTime = Date.now();
-let seekInterval = null;
 
-// ───────────── toggle visibilidade senha ─────────────
 function setupPasswordToggle(inputId, btnId) {
   const input = document.getElementById(inputId);
   const btn = document.getElementById(btnId);
@@ -389,18 +366,17 @@ function setupPasswordToggle(inputId, btnId) {
 setupPasswordToggle('pwdInput', 'pwdToggle');
 setupPasswordToggle('hostPwdInput', 'hostPwdToggle');
 
-// ───────────── Config UI ─────────────
 function initConfigUI() {
   document.getElementById('cfgGlow').checked = config.glow;
   document.getElementById('cfgBpm').checked = config.bpm;
   document.getElementById('cfgEmptySound').checked = config.emptySound;
   document.getElementById('cfgAutoSkip').checked = config.autoSkip;
   document.getElementById('cfgGifWords').value = config.gifWords;
-  document.getElementById('cfgMaxDur').value = config.maxDuration;
-  document.getElementById('volSlider').value = config.vol;
-  document.getElementById('volNum').textContent = config.vol + '%';
+  document.getElementById('cfgMaxDur').value = config.maxDuration || 5;
   document.getElementById('volSliderClient').value = config.vol;
   document.getElementById('volNumClient').textContent = config.vol + '%';
+  const rawAudio = document.getElementById('rawAudio');
+  if(rawAudio) rawAudio.volume = config.vol / 100;
 }
 function saveConfig() { localStorage.setItem('simpConfig', JSON.stringify(config)); }
 
@@ -427,27 +403,52 @@ function updateClientsBadge() {
   count.textContent = clientConnections.filter(c => c.open).length;
 }
 
+// RESTAURAÇÃO DA FUNÇÃO DE BUSCA DO YOUTUBE
 async function searchYouTube(query) {
   try {
-    const inv = await fetch(`https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video&page=1`);
-    if (!inv.ok) throw new Error('invidious falhou');
-    const data = await inv.json();
-    if (!data || !data.length) return null;
-    const first = data[0];
-    return { videoId: first.videoId, title: first.title };
+    const response = await fetch(`https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
+    if (!response.ok) throw new Error('Busca falhou');
+    const data = await response.json();
+    if (!data || !Array.isArray(data) || data.length === 0) return null;
+    
+    const result = data[0];
+    if (!result.videoId || !result.title) return null;
+    
+    return { 
+      videoId: result.videoId, 
+      title: result.title 
+    };
   } catch(e) {
+    console.error('Erro na busca:', e);
     try {
-      const r2 = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-      if (!r2.ok) throw new Error();
-      const d2 = await r2.json();
-      if (!d2 || !d2.length) return null;
-      return { videoId: d2[0].videoId, title: d2[0].title };
-    } catch(e2) { return null; }
+      const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
+      if (!response2.ok) throw new Error('Fallback falhou');
+      const data2 = await response2.json();
+      if (!data2 || !Array.isArray(data2) || data2.length === 0) return null;
+      
+      const result2 = data2[0];
+      return { 
+        videoId: result2.videoId, 
+        title: result2.title 
+      };
+    } catch(e2) { 
+      console.error('Erro no fallback:', e2);
+      return null; 
+    }
   }
 }
 
 async function getVideoDuration(id) {
-  try{const r=await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);if(!r.ok)throw'';const d=await r.json();return d.lengthSeconds||0;}catch(e){return 0;}
+  if(id.match(/\.(mp3|wav|ogg|flac)$/i)) return 0;
+  try{
+    const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
+    if(!r.ok) throw new Error('Falha ao buscar duração');
+    const d = await r.json();
+    return d.lengthSeconds || 0;
+  }catch(e){
+    console.error('Erro ao pegar duração:', e);
+    return 0;
+  }
 }
 
 function playEmptySound() {
@@ -482,42 +483,12 @@ function showSimps() {
   let html = '<b>Rank Simps</b><br>';
   const sorted = Object.entries(simpsPoints).sort((a,b)=>b[1]-a[1]);
   sorted.forEach(([u,p]) => html += `${u} — ${p} Simps<br>`);
-  html += '<br><b>Comandos:</b><br>%simp skip → -50 Simps<br>%simp troll → -50 Simps<br>%simp gif (nome) → -20 Simps<br>%simp yt (titulo) → busca no YT<br>%yt (titulo) → busca no YT<br>Mods pulam grátis';
+  html += '<br><b>Comandos:</b><br>%simp skip → -50 Simps<br>%simp trocar → -50 Simps<br>%simp gif (nome) → -20 Simps<br>%simp (url/busca) → Adiciona à fila';
   document.getElementById('simpsContent').innerHTML = html;
   document.getElementById('simpsOvl').classList.add('open');
 }
 document.getElementById('simpsBtn').addEventListener('click', showSimps);
 document.getElementById('simpsClose').addEventListener('click', () => document.getElementById('simpsOvl').classList.remove('open'));
-
-function startAutoSkip() {
-  if (!isHost || !config.autoSkip || !ytReady) return;
-  stopAutoSkip();
-  try {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      source = audioContext.createMediaStreamSource(stream);
-      source.connect(analyser);
-      silenceTimer = setInterval(() => {
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
-        const avg = sum / bufferLength;
-        if(avg < 8) {
-          if(Date.now() - lastAudioTime > 10000) nextVideo();
-        } else lastAudioTime = Date.now();
-      }, 400);
-    }).catch(() => {});
-  } catch(e) {}
-}
-function stopAutoSkip() {
-  if(silenceTimer) clearInterval(silenceTimer);
-  silenceTimer = null;
-  if(source) source.disconnect();
-}
 
 function destroyPeers() {
   clientConnections.forEach(c => { try { c.close(); } catch(e) {} });
@@ -527,42 +498,27 @@ function destroyPeers() {
   if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
 }
 
-// ═══════════════════════════════════════════════════════
-// LÓGICA DE TRANSFERÊNCIA DE HOST
-// Fluxo:
-// 1. Novo host digita a senha no modal
-// 2. Se correto → envia sinal "host-handoff-request" ao host atual (via conexão de client)
-// 3. Host atual recebe → pausa tudo → manda "host-transferring" pra todos os clients
-// 4. Clients recebem "host-transferring" → setam hostTransferring=true + timer de HOST_TRANSFER_DELAY_MS
-//    → Durante esse período, se o ROOM_ID ficar livre, NÃO tentam virar host
-// 5. O tab que pediu a transferência → destroi peers → tenta virar host (initP2P())
-// 6. Após HOST_TRANSFER_DELAY_MS, clients tentam reconectar normalmente ao novo host
-// ═══════════════════════════════════════════════════════
-
-// Broadcast de transferência para todos os clients conectados (chamado pelo host)
 function broadcastHostTransferring() {
   const msg = { type: 'host-transferring', delay: HOST_TRANSFER_DELAY_MS };
   clientConnections.forEach(c => { try { if(c.open) c.send(msg); } catch(e){} });
   if(ytPlayer) { try { ytPlayer.pauseVideo(); } catch(e){} }
+  const rawAudio = document.getElementById('rawAudio');
+  if(rawAudio) rawAudio.pause();
   logChat('SISTEMA', '🔄 Transferência de host iniciada — pausando para todos', true);
 }
 
-// Chamado quando o client recebe sinal de transferência do host
 function onHostTransferringSignal(delay) {
   hostTransferring = true;
   logChat('SISTEMA', `⏳ Host sendo transferido... aguardando ${Math.round(delay/1000)}s`, true);
-  // Para o timer anterior se existir
   if(hostTransferTimer) clearTimeout(hostTransferTimer);
   hostTransferTimer = setTimeout(() => {
     hostTransferring = false;
     hostTransferTimer = null;
     logChat('SISTEMA', '🔄 Reconectando ao novo host...', true);
-    // Tenta reconectar ao host (novo)
     if(!isHost && clientPeer && !clientPeer.destroyed) setupClient();
   }, delay);
 }
 
-// Abre o modal de virar host
 function openHostModal() {
   const input = document.getElementById('hostPwdInput');
   input.value = '';
@@ -578,9 +534,7 @@ function openHostModal() {
   setTimeout(() => input.focus(), 50);
 }
 
-function closeHostModal() {
-  document.getElementById('hostOvl').classList.remove('open');
-}
+function closeHostModal() { document.getElementById('hostOvl').classList.remove('open'); }
 
 function setTransferStatus(type, msg) {
   const el = document.getElementById('transferStatus');
@@ -622,27 +576,21 @@ async function executeHostTransfer() {
   document.getElementById('hostBok').disabled = true;
   document.getElementById('hostBok').textContent = 'Transferindo...';
 
-  // Se já somos host, apenas reiniciamos sem precisar avisar ninguém
   if(isHost) {
     setTransferStatus('ok', '✓ Você já é o host!');
     setTimeout(closeHostModal, 1500);
     return;
   }
 
-  // Se estamos conectados ao host atual, mandamos o sinal de handoff
   if(hostConnection && hostConnection.open) {
     setTransferStatus('info', '📡 Avisando o host atual...');
     hostConnection.send({ type: 'cmd', action: 'host-handoff-request' });
-
-    // Aguarda um tempo para o host processar e avisar os clients
     await new Promise(r => setTimeout(r, 1200));
     setTransferStatus('warn', '⏳ Aguardando clients pausarem...');
     startCountdownBar(HOST_TRANSFER_DELAY_MS);
-
-    // Aguarda um momento extra antes de assumir
     await new Promise(r => setTimeout(r, 800));
   } else {
-    setTransferStatus('warn', '⚠️ Sem conexão ao host atual. Assumindo direto...');
+    setTransferStatus('warn', '⚠️ Sem conexão. Assumindo direto...');
     await new Promise(r => setTimeout(r, 800));
   }
 
@@ -654,23 +602,47 @@ async function executeHostTransfer() {
 
   await new Promise(r => setTimeout(r, 400));
   setTransferStatus('info', '👑 Iniciando como novo Host...');
-  initP2P();
-
-  // Fecha o modal após tentar virar host
+  startAsHost();
   setTimeout(closeHostModal, 2000);
 }
 
 document.getElementById('hostBok').addEventListener('click', executeHostTransfer);
 document.getElementById('hostBcan').addEventListener('click', closeHostModal);
 document.getElementById('hostPwdInput').addEventListener('keydown', e => { if(e.key==='Enter') executeHostTransfer(); });
-
-// Botão Host agora abre o modal seguro
 document.getElementById('roleBtn').addEventListener('click', openHostModal);
 
-// ───────────── P2P ─────────────
 function initP2P() {
   if(p2pInitializing) return;
   p2pInitializing = true;
+  document.getElementById('eoverText').innerHTML = `Checando host existente...`;
+
+  let hostFound = false;
+  let tempPeer = new Peer({ config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+
+  tempPeer.on('open', () => {
+     const conn = tempPeer.connect(ROOM_ID, { reliable: true });
+     conn.on('open', () => {
+         hostFound = true;
+         conn.close();
+         tempPeer.destroy();
+         p2pInitializing = false;
+         startAsClient();
+     });
+     conn.on('error', () => { });
+  });
+
+  setTimeout(() => {
+     if(!hostFound) {
+         tempPeer.destroy();
+         p2pInitializing = false;
+         startAsHost();
+     }
+  }, 2500);
+}
+
+function startAsHost() {
+  isHost = true;
+  hostTransferring = false;
   destroyPeers();
   hostPeer = new Peer(ROOM_ID, {
     debug: 0,
@@ -678,8 +650,6 @@ function initP2P() {
   });
   hostPeer.on('open', () => {
     p2pInitializing = false;
-    isHost = true;
-    hostTransferring = false;
     document.getElementById('roleBadge').textContent = '👑 HOST';
     document.getElementById('roleBadge').className = 'role-badge role-host';
     document.getElementById('eoverText').innerHTML = `Host iniciado.<br>Manda vídeos no chat!`;
@@ -687,31 +657,13 @@ function initP2P() {
     setupHost();
   });
   hostPeer.on('error', (err) => {
-    if (err.type === 'unavailable-id') {
-      p2pInitializing = false;
-      try { hostPeer.destroy(); } catch(e) {}
-      hostPeer = null;
-      // Se estamos em processo de transferência, aguarda antes de virar client
-      // para não pegar o ID logo após o host anterior sair
-      if(hostTransferring) {
-        setTimeout(startAsClient, HOST_TRANSFER_DELAY_MS);
-      } else {
-        startAsClient();
-      }
-      return;
-    }
-    console.warn('[P2P] Erro no hostPeer:', err.type, err.message);
     p2pInitializing = false;
-    if(!isHost) {
-      setTimeout(startAsClient, 3000);
-    }
+    startAsClient();
   });
 }
 
 function startAsClient() {
-  // Se está em transferência de host ativa, não tenta virar client ainda
-  // (o timer em onHostTransferringSignal vai chamar setupClient quando der)
-  if(p2pInitializing) return;
+  if(p2pInitializing) return; 
   p2pInitializing = true;
   isHost = false;
   document.getElementById('roleBadge').textContent = '🎧 CLIENT';
@@ -728,7 +680,6 @@ function startAsClient() {
     setupClient();
   });
   clientPeer.on('error', (err) => {
-    console.warn('[P2P] Erro no clientPeer:', err.type, err.message);
     p2pInitializing = false;
     if(!isHost) setTimeout(startAsClient, 4000);
   });
@@ -744,46 +695,52 @@ function setupHost() {
     });
     conn.on('data', async (data) => {
       if (data.type === 'cmd') {
-        // ─── Pedido de transferência de host ───
         if(data.action === 'host-handoff-request') {
           logChat('SISTEMA', '🔄 Pedido de transferência recebido. Pausando e avisando clients...', true);
           broadcastHostTransferring();
-          // Após avisar os clients, destruímos as conexões do host
           setTimeout(() => {
             destroyPeers();
             isHost = false;
             document.getElementById('roleBadge').textContent = '🎧 CLIENT';
             document.getElementById('roleBadge').className = 'role-badge role-client';
-            // Aguarda o delay antes de tentar reconectar como client
-            setTimeout(() => {
-              startAsClient();
-            }, HOST_TRANSFER_DELAY_MS + 1000);
+            logChat('SISTEMA', '👑 Novo host assumiu! Recarregando página...', true);
+            setTimeout(() => { location.reload(); }, 2000);
           }, 600);
           return;
         }
-
         if (data.action === 'add') await addToQueue(data.url, data.user, data.color, data.fromTwitch);
         if (data.action === 'skip') {
-          if(twitchMods.has(data.user) || getUserPoints(data.user) >= 50) {
-            if(!twitchMods.has(data.user)) spendPoints(data.user, 50);
+          if(data.isAdmin || twitchMods.has(data.user) || getUserPoints(data.user) >= 50) {
+            if(!data.isAdmin && !twitchMods.has(data.user)) spendPoints(data.user, 50);
             nextVideo();
           }
         }
         if (data.action === 'pause') {
           paused = !paused;
-          if (paused && ytPlayer) ytPlayer.pauseVideo();
-          else if (ytPlayer) ytPlayer.playVideo();
+          const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+          const rawAudio = document.getElementById('rawAudio');
+          if(isAudio) {
+             if(paused) rawAudio.pause();
+             else rawAudio.play();
+          } else {
+             if (paused && ytPlayer) ytPlayer.pauseVideo();
+             else if (ytPlayer) ytPlayer.playVideo();
+          }
         }
         if (data.action === 'clear') {
           queue = [];
           showEmpty();
         }
         if (data.action === 'seek' && data.time !== undefined) {
-          if (ytPlayer) ytPlayer.seekTo(data.time, true);
+          const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+          if(isAudio) {
+              const rawAudio = document.getElementById('rawAudio');
+              if(rawAudio) rawAudio.currentTime = data.time;
+          } else if (ytPlayer) ytPlayer.seekTo(data.time, true);
         }
-        if (data.action === 'troll') {
-          if(getUserPoints(data.user) >= 50) {
-            spendPoints(data.user, 50);
+        if (data.action === 'trocar') {
+          if(data.isAdmin || getUserPoints(data.user) >= 50) {
+            if(!data.isAdmin) spendPoints(data.user, 50);
             queue = queue.sort(() => Math.random() - 0.5);
             renderQueue();
           }
@@ -800,19 +757,24 @@ function setupHost() {
       clientConnections = clientConnections.filter(c => c !== conn);
       updateClientsBadge();
     });
-    conn.on('error', (err) => {
-      console.warn('[P2P] Erro na conexão com client:', err);
+    conn.on('error', () => {
       clientConnections = clientConnections.filter(c => c !== conn);
       updateClientsBadge();
     });
   });
 
-  // Sync periódico para os clients
   setInterval(() => {
-    if (!ytReady || !ytPlayer || clientConnections.length === 0) return;
-    const time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function')
-      ? ytPlayer.getCurrentTime()
-      : 0;
+    if (clientConnections.length === 0) return;
+    let time = 0;
+    if(curIdx >= 0 && queue[curIdx]) {
+       const isAudio = queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+       if(isAudio) {
+           const rawAudio = document.getElementById('rawAudio');
+           time = rawAudio ? rawAudio.currentTime : 0;
+       } else if(ytReady && ytPlayer) {
+           time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function') ? ytPlayer.getCurrentTime() : 0;
+       }
+    }
     const syncData = {
       type: 'sync',
       queue,
@@ -835,7 +797,6 @@ function setupClient() {
     document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
   });
   hostConnection.on('data', (data) => {
-    // ─── Sinal de transferência vindo do host ───
     if(data.type === 'host-transferring') {
       onHostTransferringSignal(data.delay || HOST_TRANSFER_DELAY_MS);
       return;
@@ -846,23 +807,17 @@ function setupClient() {
     logChat('SISTEMA', 'Desconectado do Host.', true);
     hostConnection = null;
     clientCurrentVideoId = null;
-    // Se em transferência, aguarda o timer de onHostTransferringSignal
     if(hostTransferring) {
       logChat('SISTEMA', `⏳ Aguardando novo host (${Math.round(HOST_TRANSFER_DELAY_MS/1000)}s)...`, true);
       return;
     }
-    setTimeout(() => {
-      if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
-    }, 3000);
+    setTimeout(() => { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
   });
-  hostConnection.on('error', (err) => {
-    console.warn('[P2P] Erro na conexão com host:', err);
+  hostConnection.on('error', () => {
     hostConnection = null;
     clientCurrentVideoId = null;
-    if(hostTransferring) return; // timer cuida da reconexão
-    setTimeout(() => {
-      if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
-    }, 3000);
+    if(hostTransferring) return;
+    setTimeout(() => { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
   });
 }
 
@@ -879,6 +834,7 @@ function handleSync(data) {
   bgEl.style.backgroundImage = data.gifUrl ? `url(${data.gifUrl})` : '';
   if (data.glow && curIdx !== -1) document.getElementById('playerGlow').classList.add('active');
   else document.getElementById('playerGlow').classList.remove('active');
+  
   if (curIdx < 0 || curIdx >= queue.length) {
     document.getElementById('eover').classList.remove('gone');
     document.getElementById('eoverText').innerHTML = 'Aguardando Host...';
@@ -887,49 +843,69 @@ function handleSync(data) {
     return;
   }
   if (!clientSynced) return;
-  if (!ytReady || !ytPlayer) return;
   const item = queue[curIdx];
   document.getElementById('eover').classList.add('gone');
   document.getElementById('npbar').style.display = 'flex';
   document.getElementById('npTitle').textContent = item.title;
   document.getElementById('npUser').textContent = item.user;
   document.getElementById('npUser').style.color = item.color || '';
+  
   const expectedId = item.videoId;
   const hostTime = data.time || 0;
   const now = Date.now();
+  const isAudio = expectedId.match(/\.(mp3|wav|ogg|flac)$/i);
+  const rawAudio = document.getElementById('rawAudio');
+  const ytFrame = document.getElementById('ytFrame');
+
   if (clientCurrentVideoId !== expectedId) {
     clientCurrentVideoId = expectedId;
     clientLastSyncTime = now;
-    ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: hostTime });
-    if (data.paused) ytPlayer.pauseVideo();
-    else ytPlayer.playVideo();
+    
+    if(isAudio) {
+        ytFrame.style.display = 'none';
+        if(ytReady && ytPlayer) ytPlayer.stopVideo();
+        rawAudio.style.display = 'block';
+        rawAudio.src = expectedId;
+        rawAudio.currentTime = hostTime;
+        rawAudio.volume = config.vol / 100;
+        if(data.paused) rawAudio.pause();
+        else rawAudio.play();
+    } else {
+        rawAudio.style.display = 'none';
+        rawAudio.pause();
+        ytFrame.style.display = 'block';
+        if(ytReady && ytPlayer) {
+            ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: hostTime });
+            if (data.paused) ytPlayer.pauseVideo();
+            else ytPlayer.playVideo();
+        }
+    }
     return;
   }
+  
   if (now - clientLastSyncTime > 5000) {
     clientLastSyncTime = now;
-    try {
-      const currentTime = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
-      const diff = Math.abs(currentTime - hostTime);
-      if (diff > SYNC_TOLERANCE_SEC) {
-        ytPlayer.seekTo(hostTime, true);
-      }
-    } catch(e) {}
-  }
-  try {
-    const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1;
-    if (data.paused && state === 1) ytPlayer.pauseVideo();
-    else if (!data.paused && state === 2) ytPlayer.playVideo();
-  } catch(e) {}
-  if(!isHost){
-    const seekClient = document.getElementById('seekSliderClient');
-    const seekTimeClient = document.getElementById('seekTimeClient');
-    if(seekClient && seekTimeClient){
-      const dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 100;
-      seekClient.max = dur;
-      seekClient.value = hostTime;
-      const f=t=>{const m=Math.floor(t/60);const ss=Math.floor(t%60).toString().padStart(2,'0');return `${m}:${ss}`;};
-      seekTimeClient.textContent=`${f(hostTime)}/${dur>0?f(dur):'--:--'}`;
+    if(isAudio) {
+       const diff = Math.abs(rawAudio.currentTime - hostTime);
+       if(diff > SYNC_TOLERANCE_SEC) rawAudio.currentTime = hostTime;
+    } else {
+       try {
+         const currentTime = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+         const diff = Math.abs(currentTime - hostTime);
+         if (diff > SYNC_TOLERANCE_SEC) ytPlayer.seekTo(hostTime, true);
+       } catch(e) {}
     }
+  }
+  
+  if(isAudio) {
+      if(data.paused && !rawAudio.paused) rawAudio.pause();
+      else if(!data.paused && rawAudio.paused) rawAudio.play();
+  } else {
+      try {
+        const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1;
+        if (data.paused && state === 1) ytPlayer.pauseVideo();
+        else if (!data.paused && state === 2) ytPlayer.playVideo();
+      } catch(e) {}
   }
 }
 
@@ -939,7 +915,6 @@ document.getElementById('syncBtn').addEventListener('click', () => {
   document.getElementById('eover').classList.add('gone');
 });
 
-// ───────────── YouTube IFrame ─────────────
 (function(){ const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s); })();
 window.onYouTubeIframeAPIReady = function(){
   ytPlayer = new YT.Player('ytFrame', {
@@ -954,41 +929,69 @@ window.onYouTubeIframeAPIReady = function(){
       },
       onStateChange: function(e) {
         if(!isHost) return;
-        if(e.data === YT.PlayerState.ENDED) nextVideo();
-        paused = (e.data === YT.PlayerState.PAUSED);
-        if(e.data === YT.PlayerState.PLAYING){
-          if(!seekInterval) seekInterval = setInterval(updateSeekBar,500);
-          if(config.autoSkip) startAutoSkip();
-        } else {
-          if(seekInterval){ clearInterval(seekInterval); seekInterval = null; }
-          stopAutoSkip();
+        
+        if(e.data === YT.PlayerState.PLAYING) {
+           const dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
+           if(dur > config.maxDuration * 60) {
+               logChat('SISTEMA', `⏭️ Pulando vídeo muito longo (> ${config.maxDuration} min).`, true);
+               nextVideo();
+               return;
+           }
         }
+        
+        if(e.data === YT.PlayerState.ENDED) {
+           if(config.autoSkip) nextVideo();
+        }
+        paused = (e.data === YT.PlayerState.PAUSED);
       }
     }
   });
 };
 
-function updateSeekBar(){
-  if(!isHost||!ytPlayer||!ytReady)return;
-  const cur=ytPlayer.getCurrentTime?ytPlayer.getCurrentTime():0;
-  const dur=ytPlayer.getDuration?ytPlayer.getDuration():0;
-  const s=document.getElementById('seekSlider');
-  if(dur>0){s.max=dur;s.value=cur;}
-  const f=t=>{const m=Math.floor(t/60);const ss=Math.floor(t%60).toString().padStart(2,'0');return `${m}:${ss}`;};
-  document.getElementById('seekTime').textContent=`${f(cur)}/${dur>0?f(dur):'--:--'}`;
-}
+document.getElementById('rawAudio').onended = () => {
+    if(isHost && config.autoSkip) nextVideo();
+};
+
+document.getElementById('rawAudio').addEventListener('loadedmetadata', function() {
+    if(isHost && this.duration > config.maxDuration * 60) {
+        logChat('SISTEMA', `⏭️ Pulando áudio muito longo (> ${config.maxDuration} min).`, true);
+        nextVideo();
+    }
+});
 
 async function addToQueue(rawUrl, user, color, fromTwitch) {
   if(!user) user = myName || 'Anônimo';
-  const id = extractId(rawUrl);
-  if (!id) { toast('Link inválido!', 'err'); return; }
-  if (queue.find(q => q.videoId === id)) { toast('Já na fila!', 'err'); return; }
+  let id = extractId(rawUrl);
+  
+  if (!id) {
+     if (rawUrl.match(/\.(mp3|wav|ogg|flac)$/i)) {
+         id = rawUrl;
+     } else {
+         logChat('SISTEMA', `🔍 Buscando: "${rawUrl}"...`, true);
+         const result = await searchYouTube(rawUrl);
+         if (result) {
+             id = result.videoId;
+         } else {
+             if(fromTwitch) logChat('SISTEMA', `❌ Nada encontrado para: ${rawUrl}`, true);
+             else toast('❌ Nada encontrado / Link inválido', 'err');
+             return;
+         }
+     }
+  }
+
+  if (queue.find(q => q.videoId === id)) { 
+      if(!fromTwitch) toast('Já na fila!', 'err'); 
+      return; 
+  }
+  
   const title = await fetchTitle(id);
   const duration = await getVideoDuration(id);
   if(duration > 0 && duration > config.maxDuration * 60) {
-    toast(`❌ >${config.maxDuration}min`, 'err');
+    if(fromTwitch) logChat('SISTEMA', `❌ Vídeo rejeitado por ser > ${config.maxDuration}min`, true);
+    else toast(`❌ >${config.maxDuration}min`, 'err');
     return;
   }
+  
   if(color && color.startsWith('#') && color !== '#bf94ff') {
     twitchColors[user] = color;
     localStorage.setItem('simpTwitchColors', JSON.stringify(twitchColors));
@@ -997,24 +1000,36 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
     twitchUsers.add(user);
     localStorage.setItem('simpTwitchUsers', JSON.stringify([...twitchUsers]));
   }
+  
   const userColor = twitchColors[user] || null;
-  queue.push({videoId:id, title, user, color: userColor, thumb:`https://img.youtube.com/vi/${id}/hqdefault.jpg`});
+  const isAudio = id.match(/\.(mp3|wav|ogg|flac)$/i);
+  const thumb = isAudio ? 'https://files.catbox.moe/tq0gqz.png' : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  
+  queue.push({videoId:id, title, user, color: userColor, thumb});
+  
   if(isHost && twitchUsers.has(user)) addPoints(user, 10);
   logChat(user, rawUrl, true, userColor || '#bf94ff');
   if(isHost) playPing();
-  toast(`✅ ${user} adicionou`, 'ok');
+  if(!fromTwitch) toast(`✅ Adicionado`, 'ok');
+  
   if (isHost && curIdx === -1) startPlayback(0);
   else renderQueue();
 }
 
 function extractId(url) {
   url = String(url).trim();
+  if(url.match(/\.(mp3|wav|ogg|flac)$/i)) return url; 
   let m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
   if (m) return m[1];
   if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
   return null;
 }
+
 async function fetchTitle(id) {
+  if(id.match(/\.(mp3|wav|ogg|flac)$/i)) {
+      let parts = id.split('/');
+      return decodeURIComponent(parts[parts.length-1]) || 'Áudio Adicionado';
+  }
   try {
     const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
     const d = await r.json();
@@ -1066,14 +1081,34 @@ function showEmpty() {
   document.getElementById('npbar').style.display = 'none';
   document.getElementById('playerGlow').classList.remove('active');
   if (ytReady && ytPlayer) ytPlayer.stopVideo();
+  document.getElementById('rawAudio').pause();
+  document.getElementById('rawAudio').style.display = 'none';
   document.getElementById('qlistBg').style.backgroundImage = '';
   renderQueue();
 }
 
 function loadVid(id) {
-  if(!id || !ytReady || !ytPlayer) return;
-  ytPlayer.loadVideoById({videoId:id, startSeconds:0});
-  if(!paused) ytPlayer.playVideo();
+  if(!id) return;
+  const isAudio = id.match(/\.(mp3|wav|ogg|flac)$/i);
+  const rawAudio = document.getElementById('rawAudio');
+  const ytFrame = document.getElementById('ytFrame');
+
+  if(isAudio) {
+      ytFrame.style.display = 'none';
+      if(ytPlayer && ytReady) ytPlayer.stopVideo();
+      rawAudio.style.display = 'block';
+      rawAudio.src = id;
+      rawAudio.volume = config.vol / 100;
+      if(!paused) rawAudio.play();
+  } else {
+      rawAudio.style.display = 'none';
+      rawAudio.pause();
+      ytFrame.style.display = 'block';
+      if(ytReady && ytPlayer) {
+          ytPlayer.loadVideoById({videoId:id, startSeconds:0});
+          if(!paused) ytPlayer.playVideo();
+      }
+  }
 }
 
 function renderQueue() {
@@ -1116,7 +1151,7 @@ function renderPlaylist() {
   myPlaylist.forEach((item,i)=>{
     const d = document.createElement('div'); d.className='plist-item';
     d.innerHTML = `<img class="plist-thumb" src="${esc(item.thumb)}" loading="lazy"><div class="plist-title">${esc(item.title)}</div><button class="plist-del" data-i="${i}">✕</button>`;
-    d.addEventListener('click',e=>{ if(e.target.classList.contains('plist-del'))return; sendCmd('add',{url:`https://youtu.be/${item.videoId}`,user:myName||'Viewer'}); document.getElementById('dropContent').classList.remove('show'); });
+    d.addEventListener('click',e=>{ if(e.target.classList.contains('plist-del'))return; sendCmd('add',{url: item.videoId.match(/\.(mp3|wav|ogg|flac)$/i) ? item.videoId : `https://youtu.be/${item.videoId}`,user:myName||'Viewer'}); document.getElementById('dropContent').classList.remove('show'); });
     c.appendChild(d);
   });
   c.querySelectorAll('.plist-del').forEach(btn=>{ btn.addEventListener('click',e=>{e.stopPropagation(); myPlaylist.splice(parseInt(btn.dataset.i),1); localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist)); renderPlaylist();}); });
@@ -1167,40 +1202,41 @@ function sendCmd(action, payload={}) {
     if(action==='skip') nextVideo();
     if(action==='pause') {
       paused = !paused;
-      if (paused && ytPlayer) ytPlayer.pauseVideo();
-      else if (ytPlayer) ytPlayer.playVideo();
+      const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+      const rawAudio = document.getElementById('rawAudio');
+      if(isAudio) {
+          if(paused) rawAudio.pause();
+          else rawAudio.play();
+      } else {
+          if (paused && ytPlayer) ytPlayer.pauseVideo();
+          else if (ytPlayer) ytPlayer.playVideo();
+      }
     }
     if(action==='clear') {queue=[];showEmpty();}
     if(action==='seek' && payload.time !== undefined) {
-      if(ytPlayer) ytPlayer.seekTo(payload.time, true);
+      const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+      if(isAudio) {
+          const rawAudio = document.getElementById('rawAudio');
+          if(rawAudio) rawAudio.currentTime = payload.time;
+      } else if(ytPlayer) ytPlayer.seekTo(payload.time, true);
     }
   } else if(hostConnection && hostConnection.open){
     hostConnection.send({type:'cmd', action, ...payload});
-    toast('Enviado ao Host','ok');
+    if(action !== 'seek') toast('Enviado ao Host','ok');
   }
 }
 
-document.getElementById('userAddBtn').addEventListener('click', async () => {
+document.getElementById('userAddBtn').addEventListener('click', () => {
   const raw = document.getElementById('userUrl').value.trim();
   document.getElementById('userUrl').value = '';
   if(!raw) return;
-  if(raw.toLowerCase().startsWith('%yt ')) {
-    const query = raw.slice(4).trim();
-    if(!query) return;
-    toast('🔍 Buscando...', '');
-    const result = await searchYouTube(query);
-    if(!result) { toast('❌ Nada encontrado', 'err'); return; }
-    sendCmd('add', {url: `https://youtu.be/${result.videoId}`, user: myName||'Viewer'});
-    return;
-  }
   sendCmd('add', {url: raw, user: myName||'Viewer'});
 });
 document.getElementById('userUrl').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('userAddBtn').click();});
-document.getElementById('pauseBtn').addEventListener('click',()=>sendCmd('pause'));
-document.getElementById('skipBtn').addEventListener('click',()=>sendCmd('skip'));
-document.getElementById('clearBtn').addEventListener('click',()=>sendCmd('clear'));
-document.getElementById('volSlider').addEventListener('input',function(){ config.vol=parseInt(this.value); document.getElementById('volNum').textContent=config.vol+'%'; if(ytPlayer)ytPlayer.setVolume(config.vol); saveConfig(); });
-document.getElementById('seekSlider').addEventListener('input',function(){if(ytPlayer&&isHost)ytPlayer.seekTo(parseFloat(this.value),true);});
+document.getElementById('pauseBtn').addEventListener('click',()=>sendCmd('pause', {isAdmin: isAdmin}));
+document.getElementById('skipBtn').addEventListener('click',()=>sendCmd('skip', {isAdmin: isAdmin, user: myName}));
+document.getElementById('clearBtn').addEventListener('click',()=>sendCmd('clear', {isAdmin: isAdmin}));
+
 document.getElementById('cfgGlow').addEventListener('change',e=>{config.glow=e.target.checked; if(config.glow&&curIdx!==-1)document.getElementById('playerGlow').classList.add('active'); else document.getElementById('playerGlow').classList.remove('active'); saveConfig();});
 document.getElementById('cfgBpm').addEventListener('change',e=>{config.bpm=e.target.checked; saveConfig();});
 document.getElementById('cfgGifWords').addEventListener('change',e=>{config.gifWords=parseInt(e.target.value); saveConfig(); if(isHost&&curIdx>=0)setQueueGif(queue[curIdx].title);});
@@ -1209,8 +1245,6 @@ document.getElementById('cfgAutoSkip').addEventListener('change',e=>{
   config.autoSkip = e.target.checked;
   saveConfig();
   toast(config.autoSkip ? 'Pulo automático ativado' : 'Pulo automático desativado', 'ok');
-  if(!config.autoSkip) stopAutoSkip();
-  else if(isHost && curIdx >=0 && ytPlayer && ytPlayer.getPlayerState() === 1) startAutoSkip();
 });
 document.getElementById('cfgMaxDur').addEventListener('change',e=>{config.maxDuration=parseInt(e.target.value); saveConfig();});
 
@@ -1218,41 +1252,53 @@ const seekClient = document.getElementById('seekSliderClient');
 const volClient = document.getElementById('volSliderClient');
 const seekTimeClient = document.getElementById('seekTimeClient');
 const volNumClient = document.getElementById('volNumClient');
+
 volClient.addEventListener('input',function(){
   config.vol=parseInt(this.value);
   volNumClient.textContent=config.vol+'%';
   if(ytPlayer)ytPlayer.setVolume(config.vol);
-  const volAdmin = document.getElementById('volSlider');
-  if(volAdmin) volAdmin.value = this.value;
-  document.getElementById('volNum').textContent=config.vol+'%';
+  const rawAudio = document.getElementById('rawAudio');
+  if(rawAudio) rawAudio.volume = config.vol / 100;
   saveConfig();
 });
+
 seekClient.addEventListener('input',function(){
-  if(isHost && ytPlayer){
-    ytPlayer.seekTo(parseFloat(this.value),true);
+  if(isHost){
+      const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+      if(isAudio) {
+          const rawAudio = document.getElementById('rawAudio');
+          if(rawAudio) rawAudio.currentTime = parseFloat(this.value);
+      } else if(ytPlayer) ytPlayer.seekTo(parseFloat(this.value),true);
   } else if(isAdmin && hostConnection && hostConnection.open){
-    hostConnection.send({type:'cmd', action:'seek', time: parseFloat(this.value)});
+      hostConnection.send({type:'cmd', action:'seek', time: parseFloat(this.value), isAdmin: true});
   }
 });
 
-if(!isHost){
-  setInterval(() => {
-    if(ytReady && ytPlayer){
-      const cur = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
-      const dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
-      if(seekClient){
-        seekClient.max = dur || 100;
-        seekClient.value = cur;
+setInterval(() => {
+  let cur = 0;
+  let dur = 0;
+  if(curIdx >= 0 && queue[curIdx]) {
+      const isAudio = queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+      if(isAudio) {
+          const rawAudio = document.getElementById('rawAudio');
+          if(rawAudio) { cur = rawAudio.currentTime; dur = rawAudio.duration || 0; }
+      } else if(ytReady && ytPlayer) {
+          cur = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+          dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
       }
-      const f = t => {
-        const m = Math.floor(t/60);
-        const ss = Math.floor(t%60).toString().padStart(2,'0');
-        return `${m}:${ss}`;
-      };
-      if(seekTimeClient) seekTimeClient.textContent = `${f(cur)}/${dur>0 ? f(dur) : '--:--'}`;
-    }
-  }, 500);
-}
+  }
+  
+  if(seekClient){
+    seekClient.max = dur || 100;
+    seekClient.value = cur;
+  }
+  const f = t => {
+    const m = Math.floor(t/60);
+    const ss = Math.floor(t%60).toString().padStart(2,'0');
+    return `${m}:${ss}`;
+  };
+  if(seekTimeClient) seekTimeClient.textContent = `${f(cur)}/${dur>0 ? f(dur) : '--:--'}`;
+}, 500);
 
 function connectTwitch() {
   const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
@@ -1294,20 +1340,13 @@ function connectTwitch() {
       twitchUsers.add(twitchUser);
       localStorage.setItem('simpTwitchUsers', JSON.stringify([...twitchUsers]));
     }
+    
     if(msg.toLowerCase().startsWith(CMD.toLowerCase()+' ')){
       const cmdPart = msg.slice(CMD.length).trim();
       const parts = cmdPart.split(' ');
       const action = parts[0].toLowerCase();
       const gifName = parts.slice(1).join(' ');
-      if(action==='yt'){
-        const searchQuery = parts.slice(1).join(' ');
-        if(!searchQuery) return;
-        logChat('SISTEMA', `🔍 Buscando: "${searchQuery}"...`, true);
-        const result = await searchYouTube(searchQuery);
-        if(!result){ logChat('SISTEMA', `❌ Nada encontrado para: ${searchQuery}`, true); return; }
-        await addToQueue(`https://youtu.be/${result.videoId}`, twitchUser, color, true);
-        return;
-      }
+      
       if(action==='skip'){
         if(isMod || getUserPoints(twitchUser)>=50){
           if(!isMod) spendPoints(twitchUser,50);
@@ -1316,10 +1355,10 @@ function connectTwitch() {
         }
         return;
       }
-      if(action==='troll' && getUserPoints(twitchUser)>=50){
+      if(action==='trocar' && getUserPoints(twitchUser)>=50){
         spendPoints(twitchUser,50);
         if(isHost){ queue=queue.sort(()=>Math.random()-0.5); renderQueue(); }
-        else sendCmd('troll',{user: twitchUser});
+        else sendCmd('trocar',{user: twitchUser});
         return;
       }
       if(action==='gif' && gifName && getUserPoints(twitchUser)>=20){
@@ -1328,14 +1367,8 @@ function connectTwitch() {
         else sendCmd('gif',{user: twitchUser, gifName});
         return;
       }
+      // Qualquer outra coisa após "%simp" é tratado como URL ou busca
       await addToQueue(cmdPart, twitchUser, color, true);
-    } else if(msg.toLowerCase().startsWith('%yt ')){
-      const searchQuery = msg.slice(4).trim();
-      if(!searchQuery) return;
-      logChat('SISTEMA', `🔍 Buscando: "${searchQuery}"...`, true);
-      const result = await searchYouTube(searchQuery);
-      if(!result){ logChat('SISTEMA', `❌ Nada encontrado para: ${searchQuery}`, true); return; }
-      await addToQueue(`https://youtu.be/${result.videoId}`, twitchUser, color, true);
     } else {
       logChat(twitchUser, msg, false, color, isMod);
     }
