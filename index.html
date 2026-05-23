@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simp. P2P</title>
+<title>Simp.</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
@@ -318,7 +318,19 @@ const HOST_PASS = 'fabioémeuamor123';
 const ROOM_ID = `simp-room-${CHANNEL}`;
 
 const HOST_TRANSFER_DELAY_MS = 6000;
-const EMPTY_SOUNDS = ['https://files.catbox.moe/d5u8m3.mp3','https://files.catbox.moe/xjed0e.mp3','https://files.catbox.moe/5cq2ql.mp3','https://files.catbox.moe/6cxh3k.mp3','https://files.catbox.moe/qffscp.mp3'];
+const EMPTY_SOUNDS = [
+  'https://files.catbox.moe/d5u8m3.mp3',
+  'https://files.catbox.moe/xjed0e.mp3',
+  'https://files.catbox.moe/5cq2ql.mp3',
+  'https://files.catbox.moe/6cxh3k.mp3',
+  'https://files.catbox.moe/qffscp.mp3',
+  'https://files.catbox.moe/5vcs5t.mp3',
+  'https://files.catbox.moe/jdc5e6.mp3',
+  'https://files.catbox.moe/q0cbgh.mp3',
+  'https://files.catbox.moe/140wxa.mp3',
+  'https://files.catbox.moe/8ycll7.mp3'
+];
+
 let emptySoundAudio = null;
 let queue = [];
 let curIdx = -1;
