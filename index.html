@@ -373,7 +373,7 @@ function assignRolesAndStart() {
     const PRIMARY_HOST = 'daenil';
     const SECONDARY_HOST = 'daniloamorimking';
     
-    if (myName === PRIMARY_HOST || myName === SECONDARY_HOST) {
+    if (myName === PRIMARY_HOST) {
         isAdmin = true;
         isHost = true;
         document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
@@ -381,16 +381,36 @@ function assignRolesAndStart() {
         toggleAdmin(true);
         startAsHost();
     } else {
-        if (ADMIN_USERS.includes(myName)) {
+        if (myName === SECONDARY_HOST || ADMIN_USERS.includes(myName)) {
             isAdmin = true;
             toggleAdmin(true);
             document.getElementById('roleBadge').textContent = '🔒 ADMIN';
-            document.getElementById('roleBadge').className = 'role-badge';
+            document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
+            document.getElementById('roleBadge').style.color = '#ffb347';
+            document.getElementById('roleBadge').style.borderColor = '#ffb347';
         } else {
             document.getElementById('roleBadge').textContent = '🎧 CLIENT';
             document.getElementById('roleBadge').className = 'role-badge role-client';
         }
+        
         startAsClient();
+
+        if (myName === SECONDARY_HOST) {
+            setTimeout(function() {
+                if (!isHost && (!hostConnection || !hostConnection.open)) {
+                    toast('Host principal não encontrado. Assumindo a sala...', 'ok');
+                    isAdmin = true;
+                    isHost = true;
+                    
+                    document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
+                    document.getElementById('roleBadge').className = 'role-badge role-host';
+                    document.getElementById('roleBadge').style = '';
+                    toggleAdmin(true);
+                    
+                    startAsHost();
+                }
+            }, 10000);
+        }
     }
 }
 
@@ -540,7 +560,6 @@ function setupHost() {
     conn.on('open', function() {
       clientConnections.push(conn);
       updateClientsBadge();
-      logChat('SISTEMA', `Client conectado (${clientConnections.filter(function(c){return c.open;}).length} total)`, true);
     });
     
     conn.on('data', async function(data) {
@@ -623,14 +642,12 @@ function setupClient() {
   if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
   hostConnection = clientPeer.connect(ROOM_ID, { reliable: true });
   hostConnection.on('open', function() {
-    logChat('SISTEMA', 'Conectado ao Host!', true);
     document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
   });
   hostConnection.on('data', function(data) {
     if (data.type === 'sync') handleSync(data);
   });
   hostConnection.on('close', function() {
-    logChat('SISTEMA', 'Desconectado do Host.', true);
     hostConnection = null; clientCurrentVideoId = null;
     setTimeout(function() { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
   });
