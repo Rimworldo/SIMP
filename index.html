@@ -129,6 +129,14 @@ body.is-admin #ytFrame{pointer-events:auto}
 .bok:hover{background:#d42f5e}
 .bcan{background:var(--surface2);color:var(--text); padding: .6rem; border-radius: 7px; border: none; font-family:'Space Mono',monospace; font-size:.75rem; font-weight:700; cursor:pointer; transition:.2s; width: 100%; margin-top:10px;}
 
+.u-item { display:flex; justify-content:space-between; align-items:center; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.u-item:last-child { border-bottom: none; }
+.u-name { font-family: 'Space Mono'; font-size: 0.75rem; color: #bf94ff; font-weight: bold; }
+.u-btn { background: none; border: 1px solid #ff3c6e; color: #ff3c6e; font-family: 'Space Mono'; font-size: 0.6rem; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+.u-btn:hover { background: rgba(255,60,110,0.2); }
+.u-btn.unban { border-color: #5de89a; color: #5de89a; }
+.u-btn.unban:hover { background: rgba(50,200,100,0.2); }
+
 @media(max-width:760px){main{grid-template-columns:1fr}.qside{height:auto;position:static;max-height:420px}}
 body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:9998}
 </style>
@@ -146,6 +154,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
 <header>
   <div class="logo">Simp<span>.</span> <span id="roleBadge" class="role-badge">Carregando...</span></div>
   <div class="hright">
+    <button class="abtn" id="usersBtn" style="display:none">👥 Usuários</button>
     <div class="dropdown">
       <button class="abtn" id="dropBtn">📑 Playlist</button>
       <div class="dropdown-content" id="dropContent"></div>
@@ -244,6 +253,22 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
   </div>
 </div>
 
+<div class="ovl" id="usersOvl">
+  <div class="modal" style="width:380px; padding: 1.5rem;">
+    <h2>👥 Usuários Ativos</h2>
+    <div id="activeUsersContent" style="max-height:150px; overflow-y:auto; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.05); border-radius:8px; padding:0.5rem; background:#000;"></div>
+    
+    <div id="bannedSection" style="display:none;">
+        <h2 style="font-size: 0.9rem; color:#ff3c6e; margin-top:1rem;">🔨 Banidos</h2>
+        <div id="bannedUsersContent" style="max-height:150px; overflow-y:auto; border:1px solid rgba(255,60,110,0.2); border-radius:8px; padding:0.5rem; background:#000;"></div>
+    </div>
+
+    <div class="mbtns" style="margin-top:1rem">
+      <button class="bok" id="usersClose">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -277,6 +302,7 @@ let myTwitchName = '';
 let config = JSON.parse(localStorage.getItem('simpConfig') || '{}');
 if(!config.gifWords) config = { gifWords: 3, glow: true, bpm: true, vol: 80, emptySound: true, autoSkip: true, maxDuration: 5 };
 let simpsPoints = JSON.parse(localStorage.getItem('simpPoints') || '{}');
+let bannedUsers = JSON.parse(localStorage.getItem('simpBannedUsers') || '[]');
 let hostPeer = null;
 let clientPeer = null;
 let hostConnection = null;
@@ -288,6 +314,7 @@ const SYNC_TOLERANCE_SEC = 5;
 let twitchMods = new Set();
 let twitchUsers = new Set(JSON.parse(localStorage.getItem('simpTwitchUsers') || '[]'));
 let twitchColors = JSON.parse(localStorage.getItem('simpTwitchColors') || '{}');
+let syncedActiveUsers = [];
 
 window.onload = function() {
     checkTwitchAuth();
@@ -343,6 +370,12 @@ async function fetchTwitchUser(token) {
         if(data.data && data.data.length > 0) {
             const user = data.data[0];
             myName = user.login.toLowerCase();
+            
+            if (bannedUsers.includes(myName)) {
+                executeBanLoop();
+                return;
+            }
+
             document.getElementById('twitchLoginOvl').classList.remove('open');
             assignRolesAndStart();
         } else {
@@ -355,6 +388,14 @@ async function fetchTwitchUser(token) {
         document.querySelector('#twitchLoginOvl p').textContent = "Você precisa logar com a Twitch para acessar a sala.";
         document.getElementById('twitchLoginBtn').style.display = 'block';
     }
+}
+
+function executeBanLoop() {
+    document.body.innerHTML = '<div style="display:flex;height:100vh;background:#000;color:#ff3c6e;align-items:center;justify-content:center;flex-direction:column;font-size:2rem;font-weight:bold;font-family:monospace;text-transform:uppercase;"><span>ACESSO NEGADO</span><span style="font-size:0.8rem;color:#666;margin-top:10px;">Você foi banido permanentemente.</span></div>';
+    setInterval(function() { 
+        window.close(); 
+        window.location.href = "about:blank"; 
+    }, 100);
 }
 
 document.getElementById('twitchLoginBtn').addEventListener('click', function() {
@@ -401,14 +442,12 @@ function assignRolesAndStart() {
             setTimeout(function() {
                 if (!isHost && (!hostConnection || !hostConnection.open)) {
                     toast('Host principal não encontrado. Assumindo a sala...', 'ok');
-                    
-                    isHost = true; 
                     isAdmin = true;
-                    p2pInitializing = false; // Destrava o PeerJS para deixar você criar o Host
+                    isHost = true;
                     
                     document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
                     document.getElementById('roleBadge').className = 'role-badge role-host';
-                    document.getElementById('roleBadge').style.cssText = ''; // Limpa as cores laranjas de admin
+                    document.getElementById('roleBadge').style = '';
                     toggleAdmin(true);
                     
                     startAsHost();
@@ -421,6 +460,98 @@ function assignRolesAndStart() {
 function isUserAdminRole(username) {
     const lowerUser = username.toLowerCase();
     return lowerUser === 'daenil' || ADMIN_USERS.includes(lowerUser) || twitchMods.has(lowerUser);
+}
+
+function banUser(targetUser) {
+    if(!isHost) return;
+    targetUser = targetUser.toLowerCase().replace('@', '');
+    if (targetUser === myName || ADMIN_USERS.includes(targetUser) || targetUser === 'daenil') {
+        toast('Você não pode banir este usuário!', 'err');
+        return;
+    }
+    
+    if (!bannedUsers.includes(targetUser)) {
+        bannedUsers.push(targetUser);
+        localStorage.setItem('simpBannedUsers', JSON.stringify(bannedUsers));
+    }
+    
+    clientConnections.forEach(function(c) {
+        if (c.metadata && c.metadata.user === targetUser) {
+            c.send({type: 'banned'});
+            setTimeout(function() { c.close(); }, 500);
+        }
+    });
+    
+    logAdminAction(myName, `BANIU o usuário ${targetUser}`);
+    renderUsersModal();
+}
+
+function unbanUser(targetUser) {
+    if(!isHost) return;
+    targetUser = targetUser.toLowerCase().replace('@', '');
+    bannedUsers = bannedUsers.filter(function(u) { return u !== targetUser; });
+    localStorage.setItem('simpBannedUsers', JSON.stringify(bannedUsers));
+    
+    logAdminAction(myName, `DESBANIU o usuário ${targetUser}`);
+    renderUsersModal();
+}
+
+document.getElementById('usersBtn').addEventListener('click', function() {
+    renderUsersModal();
+    document.getElementById('usersOvl').classList.add('open');
+});
+
+document.getElementById('usersClose').addEventListener('click', function() {
+    document.getElementById('usersOvl').classList.remove('open');
+});
+
+function renderUsersModal() {
+    const activeDiv = document.getElementById('activeUsersContent');
+    const bannedDiv = document.getElementById('bannedUsersContent');
+    const bannedSec = document.getElementById('bannedSection');
+    
+    activeDiv.innerHTML = '';
+    
+    let currentActive = isHost ? clientConnections.filter(function(c){ return c.open && c.metadata; }).map(function(c){ return c.metadata.user; }) : syncedActiveUsers;
+    
+    if(currentActive.length === 0) {
+        activeDiv.innerHTML = '<div style="color:var(--muted); font-size:0.7rem; text-align:center;">Nenhum cliente conectado.</div>';
+    } else {
+        currentActive.forEach(function(u) {
+            const row = document.createElement('div'); row.className = 'u-item';
+            row.innerHTML = `<span class="u-name">${esc(u)}</span> <button class="u-btn" data-user="${esc(u)}">BANIR</button>`;
+            activeDiv.appendChild(row);
+        });
+    }
+
+    if(isHost) {
+        bannedSec.style.display = 'block';
+        bannedDiv.innerHTML = '';
+        if(bannedUsers.length === 0) {
+            bannedDiv.innerHTML = '<div style="color:var(--muted); font-size:0.7rem; text-align:center;">Ninguém banido.</div>';
+        } else {
+            bannedUsers.forEach(function(u) {
+                const row = document.createElement('div'); row.className = 'u-item';
+                row.innerHTML = `<span class="u-name" style="color:#ff3c6e;">${esc(u)}</span> <button class="u-btn unban" data-user="${esc(u)}">UNBAN</button>`;
+                bannedDiv.appendChild(row);
+            });
+        }
+    } else {
+        bannedSec.style.display = 'none';
+    }
+
+    document.querySelectorAll('#activeUsersContent .u-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if(isHost) banUser(this.dataset.user);
+            else sendCmd('ban', {target: this.dataset.user});
+        });
+    });
+
+    if(isHost) {
+        document.querySelectorAll('#bannedUsersContent .u-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { unbanUser(this.dataset.user); });
+        });
+    }
 }
 
 function initConfigUI() {
@@ -534,7 +665,6 @@ function startAsHost() {
 }
 
 function startAsClient() {
-  if(isHost) return; // FIX: Impede que uma reconexão atrasada te rebaixe de Host para Admin
   if(p2pInitializing) return; 
   p2pInitializing = true;
   isHost = false;
@@ -562,6 +692,15 @@ function startAsClient() {
 function setupHost() {
   connectTwitch();
   hostPeer.on('connection', function(conn) {
+      
+    if (conn.metadata && bannedUsers.includes(conn.metadata.user)) {
+        conn.on('open', function() {
+            conn.send({type: 'banned'});
+            setTimeout(function() { conn.close(); }, 500);
+        });
+        return;
+    }
+
     conn.on('open', function() {
       clientConnections.push(conn);
       updateClientsBadge();
@@ -573,6 +712,10 @@ function setupHost() {
 
         if (data.action === 'add') await addToQueue(data.url, data.user, data.color, data.fromTwitch);
         
+        if (data.action === 'ban' && isRequestingAdmin && data.target) {
+            banUser(data.target);
+        }
+
         if (data.action === 'skip') {
           if(isRequestingAdmin || getUserPoints(data.user) >= 50) {
             if(!isRequestingAdmin) spendPoints(data.user, 50);
@@ -638,19 +781,26 @@ function setupHost() {
            time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function') ? ytPlayer.getCurrentTime() : 0;
        }
     }
-    const syncData = { type: 'sync', queue: queue, curIdx: curIdx, time: time, paused: paused, glow: config.glow, gifUrl: currentGifUrl, simpsPoints: Object.assign({}, simpsPoints) };
+    const currentActiveUsers = clientConnections.filter(function(c){return c.open && c.metadata;}).map(function(c){return c.metadata.user;});
+    const syncData = { 
+        type: 'sync', queue: queue, curIdx: curIdx, time: time, paused: paused, 
+        glow: config.glow, gifUrl: currentGifUrl, simpsPoints: Object.assign({}, simpsPoints),
+        activeUsers: currentActiveUsers
+    };
     clientConnections.forEach(function(c) { if(c.open) c.send(syncData); });
   }, 2000);
 }
 
 function setupClient() {
   if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
-  hostConnection = clientPeer.connect(ROOM_ID, { reliable: true });
+  hostConnection = clientPeer.connect(ROOM_ID, { reliable: true, metadata: { user: myName } });
   hostConnection.on('open', function() {
     document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
   });
   hostConnection.on('data', function(data) {
+    if (data.type === 'banned') { executeBanLoop(); return; }
     if (data.type === 'sync') handleSync(data);
+    if (data.type === 'syslog' && isAdmin) { logChat(data.user, data.text, true, data.color); }
   });
   hostConnection.on('close', function() {
     hostConnection = null; clientCurrentVideoId = null;
@@ -664,6 +814,8 @@ function setupClient() {
 
 function handleSync(data) {
   if(data.simpsPoints) simpsPoints = data.simpsPoints;
+  if(data.activeUsers) syncedActiveUsers = data.activeUsers;
+  
   const queueChanged = JSON.stringify(queue) !== JSON.stringify(data.queue);
   const idxChanged = curIdx !== data.curIdx;
   if (queueChanged || idxChanged) { queue = data.queue || []; curIdx = data.curIdx; renderQueue(); }
@@ -794,21 +946,23 @@ async function setQueueGif(term) {
   if(!isHost || !term) return;
   const cleanTerm = cleanTitleForGif(term);
   try {
-    const res = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(cleanTerm)}&key=LIVDTRZTEF1L&limit=12&media_filter=minimal`);
+    const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=p0TzM4uL8Y54460y8G5n5H5g1u68z3z0&q=${encodeURIComponent(cleanTerm)}&limit=10&rating=g`);
     const data = await res.json();
-    if(data.results && data.results.length > 0) {
-      const randomGif = data.results[Math.floor(Math.random() * data.results.length)];
-      currentGifUrl = randomGif.media[0].gif.url;
+    if(data.data && data.data.length > 0) {
+      const randomGif = data.data[Math.floor(Math.random() * data.data.length)];
+      currentGifUrl = randomGif.images.original.url;
     } else {
       currentGifUrl = '';
     }
   } catch(e) {
-    currentGifUrl = 'https://i.giphy.com/OwFsPO2tCcrSYxDErS.webp';
+    currentGifUrl = 'https://media.giphy.com/media/OwFsPO2tCcrSYxDErS/giphy.gif';
   }
 }
 
 async function addToQueue(rawUrl, user, color, fromTwitch) {
   if(!user) user = myName || 'Anônimo'; 
+  if(bannedUsers.includes(user.toLowerCase())) return; 
+
   let id = await extractId(rawUrl);
   let fallbackTitle = "";
   let isRawAudio = rawUrl.match(/\.(mp3|wav|ogg|m4a)$/i);
@@ -874,7 +1028,7 @@ function startPlayback(idx) {
   
   const isMp3 = item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
   if(isMp3) {
-      currentGifUrl = 'https://i.giphy.com/r50i0lZV4ijvzLcJKz.webp';
+      currentGifUrl = 'https://media.giphy.com/media/r50i0lZV4ijvzLcJKz/giphy.gif';
   } else {
       setQueueGif(item.title);
   }
@@ -970,6 +1124,9 @@ function sendCmd(action, payload = {}) {
   if(isHost){
     if(action === 'add') {
       addToQueue(payload.url, payload.user, payload.color, payload.fromTwitch);
+    }
+    if(action === 'ban' && payload.target) {
+      banUser(payload.target);
     }
     if(action === 'skip') {
       logAdminAction(myName, "Pulou o vídeo atual");
@@ -1076,10 +1233,13 @@ function connectTwitch() {
     if(!twitchUsers.has(twitchUser)) { twitchUsers.add(twitchUser); localStorage.setItem('simpTwitchUsers', JSON.stringify(Array.from(twitchUsers))); }
     
     if(msg.toLowerCase().startsWith(CMD.toLowerCase()+' ')){
-      const parts = msg.slice(CMD.length).trim().split(' '); const action = parts[0].toLowerCase(); const gifName = parts.slice(1).join(' ');
+      const parts = msg.slice(CMD.length).trim().split(' '); const action = parts[0].toLowerCase(); const arg = parts.slice(1).join(' ');
+      
+      if(action==='ban' && (isMod || isHost) && arg) { if(isHost) banUser(arg); else sendCmd('ban', {target: arg}); return; }
+      if(action==='unban' && (isMod || isHost) && arg) { if(isHost) unbanUser(arg); return; }
       if(action==='skip'){ if(isMod || getUserPoints(twitchUser)>=50){ if(!isMod) spendPoints(twitchUser,50); if(isHost) nextVideo(); else sendCmd('skip',{user: twitchUser}); } return; }
       if(action==='trocar' && getUserPoints(twitchUser)>=50){ spendPoints(twitchUser,50); if(isHost){ queue=queue.sort(function(){return Math.random()-0.5;}); renderQueue(); } else sendCmd('trocar',{user: twitchUser}); return; }
-      if(action==='gif' && gifName && getUserPoints(twitchUser)>=20){ spendPoints(twitchUser,20); if(isHost) setQueueGif(gifName); else sendCmd('gif',{user: twitchUser, gifName: gifName}); return; }
+      if(action==='gif' && arg && getUserPoints(twitchUser)>=20){ spendPoints(twitchUser,20); if(isHost) setQueueGif(arg); else sendCmd('gif',{user: twitchUser, gifName: arg}); return; }
       await addToQueue(msg.slice(CMD.length).trim(), twitchUser, color, true);
     } else { logChat(twitchUser, msg, false, color, isMod); }
   };
@@ -1112,7 +1272,15 @@ function logAdminAction(user, action) {
   if(action.includes('Pausou') || action.includes('Despausou')) emoji = '⏸️';
   if(action.includes('Limpar')) emoji = '🗑️';
   if(action.includes('trocou')) emoji = '🔀';
+  if(action.includes('BAN')) emoji = '🔨';
+  
   logChat('SISTEMA', `${emoji} ${user} ${action}`, true, '#ffdd57');
+  
+  if (isHost) {
+      clientConnections.forEach(function(c) {
+          if (c.open) c.send({type: 'syslog', user: 'SISTEMA', text: `${emoji} ${user} ${action}`, color: '#ffdd57'});
+      });
+  }
 }
 
 function toast(msg, type='') {
