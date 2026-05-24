@@ -419,18 +419,19 @@ function updateClientsBadge() {
 async function searchYouTube(query) {
   try {
     const response = await fetch(`https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-    if (!response.ok) throw new Error('Busca falhou');
+    if (!response.ok) throw new Error('Busca 1 falhou');
     const data = await response.json();
-    if (!data || !Array.isArray(data) || data.length === 0) return null;
-    return { videoId: data[0].videoId, title: data[0].title };
+    if (data && data[0] && data[0].title) return { videoId: data[0].videoId, title: data[0].title };
   } catch(e) {
     try {
       const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-      if (!response2.ok) throw new Error('Fallback falhou');
+      if (!response2.ok) throw new Error('Busca 2 falhou');
       const data2 = await response2.json();
-      if (!data2 || !Array.isArray(data2) || data2.length === 0) return null;
-      return { videoId: data2[0].videoId, title: data2[0].title };
+      if (data2 && data2[0] && data2[0].title) return { videoId: data2[0].videoId, title: data2[0].title };
     } catch(e2) { return null; }
+  }
+  return null;
+}
   }
 }
 
@@ -690,19 +691,22 @@ async function fetchTitle(id) {
   try {
     const response = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
     const data = await response.json();
-    if(data && data.title) return data.title;
-    throw new Error('Fallback necessário');
+    if (data && data.title) return data.title;
+    throw new Error('Falha na API 1');
   } catch (e) {
     try {
       const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/videos/${id}`);
       const data2 = await response2.json();
-      if(data2 && data2.title) return data2.title;
-      throw new Error('Buscando via pesquisa...');
+      if (data2 && data2.title) return data2.title;
+      throw new Error('Falha na API 2');
     } catch(e2) {
-      // SE AS APIS DE DETECÇÃO DIRETA FALHAREM: Ele usa o próprio buscador interno por ID para trazer o nome real do vídeo
-      const searchResult = await searchYouTube(id);
-      if(searchResult && searchResult.title) return searchResult.title;
-      return "Link do YouTube";
+      try {
+        // SISTEMA INFALÍVEL: Busca o título real direto do oEmbed oficial do YouTube
+        const response3 = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
+        const data3 = await response3.json();
+        if (data3 && data3.title) return data3.title;
+      } catch(e3) {}
+      return "Título Indisponível";
     }
   }
 }
@@ -729,11 +733,11 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   let id = await extractId(rawUrl);
   let fallbackTitle = "";
   
-  // Se não for um link direto válido do YT, assume que é um termo de busca
+  // Se não for um link direto do YT, trata como texto de pesquisa
   if (!id) {
      logChat('SISTEMA', `🔍 Buscando: "${rawUrl}"...`, true);
      const result = await searchYouTube(rawUrl);
-     if (result) { 
+     if (result && result.videoId) { 
          id = result.videoId; 
          fallbackTitle = result.title; 
      } else { 
@@ -743,10 +747,12 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
 
   if (queue.find(q => q.videoId === id)) { if(!fromTwitch) toast('Já na fila!', 'err'); return; }
   
-  // Busca o título real usando a função blindada contra falhas
+  // Captura o título real usando o novo motor de busca triplo
   let title = await fetchTitle(id);
-  if (title === "Link do YouTube" && fallbackTitle) { title = fallbackTitle; }
-  
+  if ((title === "Título Indisponível" || !title) && fallbackTitle) { 
+      title = fallbackTitle; 
+  }
+
   const duration = await getVideoDuration(id);
   if(duration > 0 && duration > config.maxDuration * 60) { if(fromTwitch) logChat('SISTEMA', `❌ Vídeo rejeitado por ser > ${config.maxDuration}min`, true); else toast(`❌ >${config.maxDuration}min`, 'err'); return; }
   
