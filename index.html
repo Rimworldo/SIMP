@@ -108,7 +108,8 @@ body.is-admin #ytFrame{pointer-events:auto}
 .qempty p{font-family:'Space Mono',monospace;font-size:.7rem;line-height:1.8}
 .qempty .qc{color:var(--accent)}
 .chatbox{border-top:1px solid var(--border);padding:.7rem 1rem;max-height:130px;overflow-y:auto;background:var(--surface);flex-shrink:0}
-.chatbox::-webkit-scrollbar{width:3px}.chatbox::-webkit-scrollbar-thumb{background:var(--border)}
+.chatbox::-webkit-scrollbar{width:3px}
+.chatbox::-webkit-scrollbar-thumb{background:var(--border)}
 .cblbl{font-family:'Space Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
 .cm{font-family:'Space Mono',monospace;font-size:.66rem;line-height:1.6;padding:.1rem 0;border-bottom:1px solid rgba(255,255,255,.025);animation:fdin .2s ease}
 @keyframes fdin{from{opacity:0}to{opacity:1}}
@@ -161,7 +162,6 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <div id="playerGlow" class="player-glow"></div>
       <div class="player-wrap">
         <div id="ytFrame"></div>
-        <audio id="rawAudio" controls style="display:none; width: 90%; z-index: 5; margin: 10px;"></audio>
         <div class="eover" id="eover">
           <div class="ei">🎬</div>
           <p id="eoverText">Conectando ao sistema P2P...</p>
@@ -215,7 +215,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <span class="qcount" id="qcount">0</span>
     </div>
     <div class="user-add-box">
-      <input type="text" id="userUrl" placeholder="Link YouTube, Áudio ou Pesquisa..." autocomplete="off">
+      <input type="text" id="userUrl" placeholder="Link YouTube ou Pesquisa..." autocomplete="off">
       <button id="userAddBtn">Add</button>
     </div>
     <div class="qlist-wrap">
@@ -392,8 +392,6 @@ function initConfigUI() {
   document.getElementById('cfgMaxDur').value = config.maxDuration || 5;
   document.getElementById('volSliderClient').value = config.vol;
   document.getElementById('volNumClient').textContent = config.vol + '%';
-  const rawAudio = document.getElementById('rawAudio');
-  if(rawAudio) rawAudio.volume = config.vol / 100;
 }
 function saveConfig() { localStorage.setItem('simpConfig', JSON.stringify(config)); }
 
@@ -437,7 +435,6 @@ async function searchYouTube(query) {
 }
 
 async function getVideoDuration(id) {
-  if(id.match(/\.(mp3|wav|ogg|flac)$/i)) return 0;
   try{
     const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
     if(!r.ok) throw new Error('Falha ao buscar duração');
@@ -548,10 +545,7 @@ function setupHost() {
         if (data.action === 'pause') {
           if(isRequestingAdmin) {
             paused = !paused;
-            const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-            const rawAudio = document.getElementById('rawAudio');
-            if(isAudio) { if(paused) rawAudio.pause(); else rawAudio.play(); } 
-            else { if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo(); }
+            if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo();
           }
         }
         
@@ -561,9 +555,7 @@ function setupHost() {
         
         if (data.action === 'seek' && data.time !== undefined) {
           if(isRequestingAdmin) {
-              const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-              if(isAudio) { const rawAudio = document.getElementById('rawAudio'); if(rawAudio) rawAudio.currentTime = data.time; } 
-              else if (ytPlayer) ytPlayer.seekTo(data.time, true);
+              if (ytPlayer) ytPlayer.seekTo(data.time, true);
           }
         }
         
@@ -588,9 +580,7 @@ function setupHost() {
     if (clientConnections.length === 0) return;
     let time = 0;
     if(curIdx >= 0 && queue[curIdx]) {
-       const isAudio = queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-       if(isAudio) { const rawAudio = document.getElementById('rawAudio'); time = rawAudio ? rawAudio.currentTime : 0; } 
-       else if(ytReady && ytPlayer) { time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function') ? ytPlayer.getCurrentTime() : 0; }
+       if(ytReady && ytPlayer) { time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function') ? ytPlayer.getCurrentTime() : 0; }
     }
     const syncData = { type: 'sync', queue, curIdx, time, paused, glow: config.glow, gifUrl: currentGifUrl, simpsPoints: {...simpsPoints} };
     clientConnections.forEach(c => { if(c.open) c.send(syncData); });
@@ -644,31 +634,22 @@ function handleSync(data) {
   document.getElementById('npUser').style.color = item.color || '';
   
   const expectedId = item.videoId; const hostTime = data.time || 0; const now = Date.now();
-  const isAudio = expectedId.match(/\.(mp3|wav|ogg|flac)$/i);
-  const rawAudio = document.getElementById('rawAudio'); const ytFrame = document.getElementById('ytFrame');
+  const ytFrame = document.getElementById('ytFrame');
 
   if (clientCurrentVideoId !== expectedId) {
     clientCurrentVideoId = expectedId; clientLastSyncTime = now;
-    if(isAudio) {
-        ytFrame.style.display = 'none'; if(ytReady && ytPlayer) ytPlayer.stopVideo();
-        rawAudio.style.display = 'block'; rawAudio.src = expectedId; rawAudio.currentTime = hostTime;
-        rawAudio.volume = config.vol / 100; if(data.paused) rawAudio.pause(); else rawAudio.play();
-    } else {
-        rawAudio.style.display = 'none'; rawAudio.pause(); ytFrame.style.display = 'block';
-        if(ytReady && ytPlayer) { ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: hostTime });
-            if (data.paused) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); }
-    }
+    ytFrame.style.display = 'block';
+    if(ytReady && ytPlayer) { ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: hostTime });
+        if (data.paused) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); }
     return;
   }
   
   if (now - clientLastSyncTime > 5000) {
     clientLastSyncTime = now;
-    if(isAudio) { const diff = Math.abs(rawAudio.currentTime - hostTime); if(diff > SYNC_TOLERANCE_SEC) rawAudio.currentTime = hostTime; } 
-    else { try { const diff = Math.abs((ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0) - hostTime); if (diff > SYNC_TOLERANCE_SEC) ytPlayer.seekTo(hostTime, true); } catch(e) {} }
+    try { const diff = Math.abs((ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0) - hostTime); if (diff > SYNC_TOLERANCE_SEC) ytPlayer.seekTo(hostTime, true); } catch(e) {}
   }
   
-  if(isAudio) { if(data.paused && !rawAudio.paused) rawAudio.pause(); else if(!data.paused && rawAudio.paused) rawAudio.play(); } 
-  else { try { const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1; if (data.paused && state === 1) ytPlayer.pauseVideo(); else if (!data.paused && state === 2) ytPlayer.playVideo(); } catch(e) {} }
+  try { const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1; if (data.paused && state === 1) ytPlayer.pauseVideo(); else if (!data.paused && state === 2) ytPlayer.playVideo(); } catch(e) {}
 }
 
 document.getElementById('syncBtn').addEventListener('click', () => {
@@ -698,9 +679,6 @@ window.onYouTubeIframeAPIReady = function(){
   });
 };
 
-document.getElementById('rawAudio').onended = () => { if(isHost && config.autoSkip) nextVideo(); };
-document.getElementById('rawAudio').addEventListener('loadedmetadata', function() { if(isHost && this.duration > config.maxDuration * 60) { logChat('SISTEMA', `⏭️ Pulando áudio muito longo (> ${config.maxDuration} min).`, true); nextVideo(); } });
-
 async function extractId(url) {
   if (!url) return null;
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -709,17 +687,23 @@ async function extractId(url) {
 }
 
 async function fetchTitle(id) {
-  if (id.match(/\.(mp3|wav|ogg|flac)$/i)) { return id.split('/').pop(); }
   try {
     const response = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
     const data = await response.json();
-    return data.title || "Vídeo do YouTube";
+    if(data && data.title) return data.title;
+    throw new Error('Fallback necessário');
   } catch (e) {
     try {
       const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/videos/${id}`);
       const data2 = await response2.json();
-      return data2.title || "Vídeo do YouTube (Fallback)";
-    } catch(e2) { return "Vídeo do YouTube"; }
+      if(data2 && data2.title) return data2.title;
+      throw new Error('Buscando via pesquisa...');
+    } catch(e2) {
+      // SE AS APIS DE DETECÇÃO DIRETA FALHAREM: Ele usa o próprio buscador interno por ID para trazer o nome real do vídeo
+      const searchResult = await searchYouTube(id);
+      if(searchResult && searchResult.title) return searchResult.title;
+      return "Link do YouTube";
+    }
   }
 }
 
@@ -741,46 +725,28 @@ async function setQueueGif(term) {
 }
 
 async function addToQueue(rawUrl, user, color, fromTwitch) {
-  if(!user) user = myName || 'Anônimo';
+  if(!user) user = myName || 'Anônimo'; 
+  let id = await extractId(rawUrl);
+  let fallbackTitle = "";
   
-  // Deteta se há um link de áudio direto na mensagem (mesmo que venha com texto junto)
-  let audioMatch = rawUrl.match(/(https?:\/\/[^\s]+?\.(mp3|wav|ogg|flac))/i);
-  let id = null;
-  let customTitle = "";
-
-  if (audioMatch) {
-    id = audioMatch[1];
-    // Remove o link do texto para tentar usar o resto como o título do vídeo/áudio
-    customTitle = rawUrl.replace(id, '').trim();
-  } else {
-    id = await extractId(rawUrl);
-  }
-
-  let fallbackTitle = rawUrl;
+  // Se não for um link direto válido do YT, assume que é um termo de busca
   if (!id) {
      logChat('SISTEMA', `🔍 Buscando: "${rawUrl}"...`, true);
      const result = await searchYouTube(rawUrl);
-     if (result) { id = result.videoId; fallbackTitle = result.title; } 
-     else { if(fromTwitch) logChat('SISTEMA', `❌ Nada encontrado para: ${rawUrl}`, true); else toast('❌ Nada encontrado / Link inválido', 'err'); return; }
+     if (result) { 
+         id = result.videoId; 
+         fallbackTitle = result.title; 
+     } else { 
+         if(fromTwitch) logChat('SISTEMA', `❌ Nada encontrado para: ${rawUrl}`, true); else toast('❌ Nada encontrado / Link inválido', 'err'); return; 
+     }
   }
 
   if (queue.find(q => q.videoId === id)) { if(!fromTwitch) toast('Já na fila!', 'err'); return; }
   
+  // Busca o título real usando a função blindada contra falhas
   let title = await fetchTitle(id);
+  if (title === "Link do YouTube" && fallbackTitle) { title = fallbackTitle; }
   
-  // SE FOR ÁUDIO: Se o usuário escreveu um nome junto com o link, usa esse nome. 
-  // Caso contrário, limpa o link para exibir apenas o nome do arquivo final (tirando o .mp3 e o site)
-  if (id.match(/\.(mp3|wav|ogg|flac)$/i)) {
-    if (customTitle) {
-      title = customTitle;
-    } else {
-      title = id.split('/').pop().replace(/\.(mp3|wav|ogg|flac)$/i, decodeURIComponent);
-      title = decodeURIComponent(title).replace(/[_-]/g, ' '); // embeleza trocando hífens por espaços
-    }
-  } else if (title.includes("Vídeo do YouTube")) { 
-    title = fallbackTitle; 
-  }
-
   const duration = await getVideoDuration(id);
   if(duration > 0 && duration > config.maxDuration * 60) { if(fromTwitch) logChat('SISTEMA', `❌ Vídeo rejeitado por ser > ${config.maxDuration}min`, true); else toast(`❌ >${config.maxDuration}min`, 'err'); return; }
   
@@ -788,11 +754,7 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   if(fromTwitch && !twitchUsers.has(user)) { twitchUsers.add(user); localStorage.setItem('simpTwitchUsers', JSON.stringify([...twitchUsers])); }
   
   const userColor = twitchColors[user] || null;
-  const isAudio = id.match(/\.(mp3|wav|ogg|flac)$/i);
-  
-  let thumb = isAudio 
-    ? 'https://i.giphy.com/8H3aqJH7FFfVGW31NI.webp' 
-    : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  let thumb = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   
   queue.push({videoId:id, title, user, color: userColor, thumb});
   if(isHost && twitchUsers.has(user)) addPoints(user, 10);
@@ -809,15 +771,7 @@ function startPlayback(idx) {
   document.getElementById('npUser').style.color = item.color || ''; document.getElementById('playerGlow').style.backgroundImage = `url(${item.thumb})`;
   if(config.glow) document.getElementById('playerGlow').classList.add('active');
   loadVid(item.videoId);
-  
-  const isAudio = item.videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-  
-  if (isAudio) {
-    currentGifUrl = 'https://i.giphy.com/r50i0lZV4ijvzLcJKz.webp';
-  } else {
-    setQueueGif(item.title);
-  }
-  
+  setQueueGif(item.title);
   renderQueue();
 }
 
@@ -829,18 +783,13 @@ function nextVideo() {
 function showEmpty() {
   curIdx = -1; currentGifUrl = ''; document.getElementById('eover').classList.remove('gone');
   document.getElementById('eoverText').innerHTML = isHost ? "Nenhum vídeo.<br>Use o chat" : "Aguardando Host..."; document.getElementById('npbar').style.display = 'none';
-  document.getElementById('playerGlow').classList.remove('active'); if (ytReady && ytPlayer) ytPlayer.stopVideo(); document.getElementById('rawAudio').pause(); document.getElementById('rawAudio').style.display = 'none'; document.getElementById('qlistBg').style.backgroundImage = ''; renderQueue();
+  document.getElementById('playerGlow').classList.remove('active'); if (ytReady && ytPlayer) ytPlayer.stopVideo(); document.getElementById('qlistBg').style.backgroundImage = ''; renderQueue();
 }
 
 function loadVid(id) {
-  if(!id) return; const isAudio = id.match(/\.(mp3|wav|ogg|flac)$/i); const rawAudio = document.getElementById('rawAudio'); const ytFrame = document.getElementById('ytFrame');
-  if(isAudio) {
-      ytFrame.style.display = 'none'; if(ytPlayer && ytReady) ytPlayer.stopVideo();
-      rawAudio.style.display = 'block'; rawAudio.src = id; rawAudio.volume = config.vol / 100; if(!paused) rawAudio.play();
-  } else {
-      rawAudio.style.display = 'none'; rawAudio.pause(); ytFrame.style.display = 'block';
-      if(ytReady && ytPlayer) { ytPlayer.loadVideoById({videoId:id, startSeconds:0}); if(!paused) ytPlayer.playVideo(); }
-  }
+  if(!id) return; const ytFrame = document.getElementById('ytFrame');
+  ytFrame.style.display = 'block';
+  if(ytReady && ytPlayer) { ytPlayer.loadVideoById({videoId:id, startSeconds:0}); if(!paused) ytPlayer.playVideo(); }
 }
 
 function renderQueue() {
@@ -869,7 +818,7 @@ function renderPlaylist() {
   myPlaylist.forEach((item,i)=>{
     const d = document.createElement('div'); d.className='plist-item';
     d.innerHTML = `<img class="plist-thumb" src="${esc(item.thumb)}" loading="lazy"><div class="plist-title">${esc(item.title)}</div><button class="plist-del" data-i="${i}">✕</button>`;
-    d.addEventListener('click',e=>{ if(e.target.classList.contains('plist-del'))return; sendCmd('add',{url: item.videoId.match(/\.(mp3|wav|ogg|flac)$/i) ? item.videoId : `https://youtu.be/${item.videoId}`,user:myName||'Viewer'}); document.getElementById('dropContent').classList.remove('show'); });
+    d.addEventListener('click',e=>{ if(e.target.classList.contains('plist-del'))return; sendCmd('add',{url: `https://youtu.be/${item.videoId}`,user:myName||'Viewer'}); document.getElementById('dropContent').classList.remove('show'); });
     c.appendChild(d);
   });
   c.querySelectorAll('.plist-del').forEach(btn=>{ btn.addEventListener('click',e=>{e.stopPropagation(); myPlaylist.splice(parseInt(btn.dataset.i),1); localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist)); renderPlaylist();}); });
@@ -903,16 +852,7 @@ function sendCmd(action, payload = {}) {
       paused = !paused;
       const status = paused ? "Pausou" : "Despausou";
       logAdminAction(myName, status + " o player");
-      
-      const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-      const rawAudio = document.getElementById('rawAudio');
-      if(isAudio) { 
-        if(paused) rawAudio.pause(); 
-        else rawAudio.play(); 
-      } else { 
-        if (paused && ytPlayer) ytPlayer.pauseVideo(); 
-        else if (ytPlayer) ytPlayer.playVideo(); 
-      }
+      if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo();
     }
     if(action === 'clear') {
       logAdminAction(myName, "Limpou a fila");
@@ -920,11 +860,7 @@ function sendCmd(action, payload = {}) {
       showEmpty();
     }
     if(action === 'seek' && payload.time !== undefined) {
-      const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-      if(isAudio) { 
-        const rawAudio = document.getElementById('rawAudio'); 
-        if(rawAudio) rawAudio.currentTime = payload.time; 
-      } else if(ytPlayer) ytPlayer.seekTo(payload.time, true);
+      if(ytPlayer) ytPlayer.seekTo(payload.time, true);
     }
   } 
   else if(hostConnection && hostConnection.open){
@@ -947,20 +883,17 @@ document.getElementById('cfgAutoSkip').addEventListener('change',e=>{ config.aut
 document.getElementById('cfgMaxDur').addEventListener('change',e=>{config.maxDuration=parseInt(e.target.value); saveConfig();});
 
 const seekClient = document.getElementById('seekSliderClient'); const volClient = document.getElementById('volSliderClient'); const seekTimeClient = document.getElementById('seekTimeClient'); const volNumClient = document.getElementById('volNumClient');
-volClient.addEventListener('input',function(){ config.vol=parseInt(this.value); volNumClient.textContent=config.vol+'%'; if(ytPlayer)ytPlayer.setVolume(config.vol); const rawAudio = document.getElementById('rawAudio'); if(rawAudio) rawAudio.volume = config.vol / 100; saveConfig(); });
+volClient.addEventListener('input',function(){ config.vol=parseInt(this.value); volNumClient.textContent=config.vol+'%'; if(ytPlayer)ytPlayer.setVolume(config.vol); saveConfig(); });
 seekClient.addEventListener('input',function(){
   if(isHost){
-      const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-      if(isAudio) { const rawAudio = document.getElementById('rawAudio'); if(rawAudio) rawAudio.currentTime = parseFloat(this.value); } else if(ytPlayer) ytPlayer.seekTo(parseFloat(this.value),true);
+      if(ytPlayer) ytPlayer.seekTo(parseFloat(this.value),true);
   } else if(isAdmin && hostConnection && hostConnection.open){ hostConnection.send({type:'cmd', action:'seek', time: parseFloat(this.value), user: myName}); }
 });
 
 setInterval(() => {
   let cur = 0; let dur = 0;
   if(curIdx >= 0 && queue[curIdx]) {
-      const isAudio = queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-      if(isAudio) { const rawAudio = document.getElementById('rawAudio'); if(rawAudio) { cur = rawAudio.currentTime; dur = rawAudio.duration || 0; } } 
-      else if(ytReady && ytPlayer) { cur = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0; dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0; }
+      if(ytReady && ytPlayer) { cur = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0; dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0; }
   }
   if(seekClient){ seekClient.max = dur || 100; seekClient.value = cur; }
   const f = t => `${Math.floor(t/60)}:${Math.floor(t%60).toString().padStart(2,'0')}`;
@@ -1003,7 +936,7 @@ function logChat(user, text, isCmd = false, color = '#bf94ff', isMod = false) {
   
   const d = document.createElement('div');
   d.className = 'cm';
-  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">(${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">Round Simps (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
   
   box.appendChild(d);
   if(box.childNodes.length > 60) box.firstChild.remove();
