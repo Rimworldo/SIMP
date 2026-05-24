@@ -432,9 +432,6 @@ async function searchYouTube(query) {
   }
   return null;
 }
-  }
-}
-
 async function getVideoDuration(id) {
   try{
     const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
