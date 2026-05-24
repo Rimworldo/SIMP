@@ -45,7 +45,7 @@ main{display:grid;grid-template-columns:1fr 350px;min-height:calc(100vh - var(--
 .player-wrap{background:#000;border-radius:12px;overflow:hidden;position:relative;aspect-ratio:16/9;border:1px solid var(--border);width:100%;z-index:2; display:flex; align-items:center; justify-content:center;}
 #ytFrame{width:100%;height:100%;border:none;display:block;pointer-events:none}
 body.is-admin #ytFrame{pointer-events:auto}
-#rawAudio { width: 90%; margin: auto; display: none; }
+#rawAudio { width: 90%; margin: auto; display: none; z-index: 5; position: relative; }
 .eover{position:absolute;inset:0;background:rgba(10,10,15,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;transition:opacity .3s;z-index:3}
 .eover.gone{opacity:0; pointer-events:none;}
 .eover .ei{font-size:2.5rem;opacity:.2}
@@ -162,6 +162,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       <div id="playerGlow" class="player-glow"></div>
       <div class="player-wrap">
         <div id="ytFrame"></div>
+        <audio id="rawAudio" controls></audio>
         <div class="eover" id="eover">
           <div class="ei">🎬</div>
           <p id="eoverText">Conectando ao sistema P2P...</p>
@@ -288,9 +289,24 @@ let twitchMods = new Set();
 let twitchUsers = new Set(JSON.parse(localStorage.getItem('simpTwitchUsers') || '[]'));
 let twitchColors = JSON.parse(localStorage.getItem('simpTwitchColors') || '{}');
 
-window.onload = () => {
+window.onload = function() {
     checkTwitchAuth();
 };
+
+window.addEventListener('DOMContentLoaded', function() {
+    const rawAudio = document.getElementById('rawAudio');
+    if (rawAudio) {
+        rawAudio.onended = function() {
+            if(isHost && config.autoSkip) nextVideo();
+        };
+    }
+});
+
+function sanitizeColor(c) {
+    if(!c) return '';
+    if(c.match(/^#[0-9a-fA-F]{3,8}$/) || c.match(/^[a-zA-Z]+$/)) return c;
+    return '#bf94ff';
+}
 
 function checkTwitchAuth() {
     const hash = window.location.hash;
@@ -341,12 +357,12 @@ async function fetchTwitchUser(token) {
     }
 }
 
-document.getElementById('twitchLoginBtn').addEventListener('click', () => {
+document.getElementById('twitchLoginBtn').addEventListener('click', function() {
     const url = `https://id.twitch.tv/oauth2/authorize?client_id=${TWITCH_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=user:read:email`;
     window.location.href = url;
 });
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
+document.getElementById('logoutBtn').addEventListener('click', function() {
     localStorage.removeItem('simpTwitchToken');
     window.location.reload();
 });
@@ -413,19 +429,19 @@ function updateClientsBadge() {
   const count = document.getElementById('clientsCount');
   if (!isHost) { badge.style.display = 'none'; return; }
   badge.style.display = 'flex';
-  count.textContent = clientConnections.filter(c => c.open).length;
+  count.textContent = clientConnections.filter(function(c){ return c.open; }).length;
 }
 
 async function searchYouTube(query) {
   try {
     const response = await fetch(`https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-    if (!response.ok) throw new Error('Busca 1');
+    if (!response.ok) throw new Error('Falha1');
     const data = await response.json();
     if (data && data[0] && data[0].title) return { videoId: data[0].videoId, title: data[0].title };
   } catch(e) {
     try {
       const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-      if (!response2.ok) throw new Error('Busca 2');
+      if (!response2.ok) throw new Error('Falha2');
       const data2 = await response2.json();
       if (data2 && data2[0] && data2[0].title) return { videoId: data2[0].videoId, title: data2[0].title };
     } catch(e2) { return null; }
@@ -435,7 +451,7 @@ async function searchYouTube(query) {
 async function getVideoDuration(id) {
   try{
     const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
-    if(!r.ok) throw new Error('Falha ao buscar duração');
+    if(!r.ok) throw new Error('Falha');
     const d = await r.json();
     return d.lengthSeconds || 0;
   }catch(e){ return 0; }
@@ -446,24 +462,24 @@ function playEmptySound() {
   if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; }
   const url = EMPTY_SOUNDS[Math.floor(Math.random() * EMPTY_SOUNDS.length)];
   emptySoundAudio = new Audio(url); emptySoundAudio.volume = 0.85;
-  emptySoundAudio.play().catch(() => {});
+  emptySoundAudio.play().catch(function(){});
 }
 function stopEmptySound() { if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; } }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showSimps() {
   let html = '<b>Rank Simps</b><br>';
-  const sorted = Object.entries(simpsPoints).sort((a,b)=>b[1]-a[1]);
-  sorted.forEach(([u,p]) => html += `${u} — ${p} Simps<br>`);
+  const sorted = Object.entries(simpsPoints).sort(function(a,b){ return b[1]-a[1]; });
+  sorted.forEach(function(item) { html += `${item[0]} — ${item[1]} Simps<br>`; });
   html += '<br><b>Comandos:</b><br>%simp skip → -50 Simps<br>%simp trocar → -50 Simps<br>%simp gif (nome) → -20 Simps<br>%simp (url/busca) → Adiciona à fila';
   document.getElementById('simpsContent').innerHTML = html;
   document.getElementById('simpsOvl').classList.add('open');
 }
 document.getElementById('simpsBtn').addEventListener('click', showSimps);
-document.getElementById('simpsClose').addEventListener('click', () => document.getElementById('simpsOvl').classList.remove('open'));
+document.getElementById('simpsClose').addEventListener('click', function() { document.getElementById('simpsOvl').classList.remove('open'); });
 
 function destroyPeers() {
-  clientConnections.forEach(c => { try { c.close(); } catch(e) {} });
+  clientConnections.forEach(function(c) { try { c.close(); } catch(e) {} });
   clientConnections = [];
   if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
   if(hostPeer) { try { hostPeer.destroy(); } catch(e) {} hostPeer = null; }
@@ -478,7 +494,7 @@ function startAsHost() {
   
   hostPeer = new Peer(ROOM_ID, { debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
   
-  hostPeer.on('open', () => {
+  hostPeer.on('open', function() {
     p2pInitializing = false;
     document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
     document.getElementById('roleBadge').className = 'role-badge role-host';
@@ -487,7 +503,7 @@ function startAsHost() {
     setupHost();
   });
   
-  hostPeer.on('error', (err) => { 
+  hostPeer.on('error', function(err) { 
     p2pInitializing = false; 
     toast('Erro ao iniciar Host. O ID está ocupado.', 'err'); 
   });
@@ -514,20 +530,20 @@ function startAsClient() {
   if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
   clientPeer = new Peer({ debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
   
-  clientPeer.on('open', () => { p2pInitializing = false; setupClient(); });
-  clientPeer.on('error', () => { p2pInitializing = false; setTimeout(startAsClient, 4000); });
+  clientPeer.on('open', function() { p2pInitializing = false; setupClient(); });
+  clientPeer.on('error', function() { p2pInitializing = false; setTimeout(startAsClient, 4000); });
 }
 
 function setupHost() {
   connectTwitch();
-  hostPeer.on('connection', (conn) => {
-    conn.on('open', () => {
+  hostPeer.on('connection', function(conn) {
+    conn.on('open', function() {
       clientConnections.push(conn);
       updateClientsBadge();
-      logChat('SISTEMA', `Client conectado (${clientConnections.filter(c=>c.open).length} total)`, true);
+      logChat('SISTEMA', `Client conectado (${clientConnections.filter(function(c){return c.open;}).length} total)`, true);
     });
     
-    conn.on('data', async (data) => {
+    conn.on('data', async function(data) {
       if (data.type === 'cmd') {
         const isRequestingAdmin = isUserAdminRole(data.user);
 
@@ -543,7 +559,13 @@ function setupHost() {
         if (data.action === 'pause') {
           if(isRequestingAdmin) {
             paused = !paused;
-            if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo();
+            const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+            const rawAudio = document.getElementById('rawAudio');
+            if (isMp3 && rawAudio) {
+                if (paused) rawAudio.pause(); else rawAudio.play().catch(function(){});
+            } else {
+                if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo();
+            }
           }
         }
         
@@ -553,14 +575,20 @@ function setupHost() {
         
         if (data.action === 'seek' && data.time !== undefined) {
           if(isRequestingAdmin) {
-              if (ytPlayer) ytPlayer.seekTo(data.time, true);
+              const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+              const rawAudio = document.getElementById('rawAudio');
+              if (isMp3 && rawAudio) {
+                  rawAudio.currentTime = data.time;
+              } else {
+                  if (ytPlayer) ytPlayer.seekTo(data.time, true);
+              }
           }
         }
         
         if (data.action === 'trocar') {
           if(isRequestingAdmin || getUserPoints(data.user) >= 50) {
             if(!isRequestingAdmin) spendPoints(data.user, 50);
-            queue = queue.sort(() => Math.random() - 0.5);
+            queue = queue.sort(function() { return Math.random() - 0.5; });
             renderQueue();
           }
         }
@@ -570,39 +598,45 @@ function setupHost() {
         }
       }
     });
-    conn.on('close', () => { clientConnections = clientConnections.filter(c => c !== conn); updateClientsBadge(); });
-    conn.on('error', () => { clientConnections = clientConnections.filter(c => c !== conn); updateClientsBadge(); });
+    conn.on('close', function() { clientConnections = clientConnections.filter(function(c){return c!==conn;}); updateClientsBadge(); });
+    conn.on('error', function() { clientConnections = clientConnections.filter(function(c){return c!==conn;}); updateClientsBadge(); });
   });
 
-  setInterval(() => {
+  setInterval(function() {
     if (clientConnections.length === 0) return;
     let time = 0;
     if(curIdx >= 0 && queue[curIdx]) {
-       if(ytReady && ytPlayer) { time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function') ? ytPlayer.getCurrentTime() : 0; }
+       const isMp3 = queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+       const rawAudio = document.getElementById('rawAudio');
+       if(isMp3 && rawAudio) {
+           time = rawAudio.currentTime || 0;
+       } else if(ytReady && ytPlayer) {
+           time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function') ? ytPlayer.getCurrentTime() : 0;
+       }
     }
-    const syncData = { type: 'sync', queue, curIdx, time, paused, glow: config.glow, gifUrl: currentGifUrl, simpsPoints: {...simpsPoints} };
-    clientConnections.forEach(c => { if(c.open) c.send(syncData); });
+    const syncData = { type: 'sync', queue: queue, curIdx: curIdx, time: time, paused: paused, glow: config.glow, gifUrl: currentGifUrl, simpsPoints: Object.assign({}, simpsPoints) };
+    clientConnections.forEach(function(c) { if(c.open) c.send(syncData); });
   }, 2000);
 }
 
 function setupClient() {
   if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
   hostConnection = clientPeer.connect(ROOM_ID, { reliable: true });
-  hostConnection.on('open', () => {
+  hostConnection.on('open', function() {
     logChat('SISTEMA', 'Conectado ao Host!', true);
     document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
   });
-  hostConnection.on('data', (data) => {
+  hostConnection.on('data', function(data) {
     if (data.type === 'sync') handleSync(data);
   });
-  hostConnection.on('close', () => {
+  hostConnection.on('close', function() {
     logChat('SISTEMA', 'Desconectado do Host.', true);
     hostConnection = null; clientCurrentVideoId = null;
-    setTimeout(() => { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
+    setTimeout(function() { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
   });
-  hostConnection.on('error', () => {
+  hostConnection.on('error', function() {
     hostConnection = null; clientCurrentVideoId = null;
-    setTimeout(() => { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
+    setTimeout(function() { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
   });
 }
 
@@ -629,28 +663,55 @@ function handleSync(data) {
   document.getElementById('npbar').style.display = 'flex';
   document.getElementById('npTitle').textContent = item.title;
   document.getElementById('npUser').textContent = item.user;
-  document.getElementById('npUser').style.color = item.color || '';
+  document.getElementById('npUser').style.color = sanitizeColor(item.color) || '';
   
   const expectedId = item.videoId; const hostTime = data.time || 0; const now = Date.now();
   const ytFrame = document.getElementById('ytFrame');
+  const rawAudio = document.getElementById('rawAudio');
+  const isMp3 = expectedId.match(/\.(mp3|wav|ogg|m4a)$/i);
 
   if (clientCurrentVideoId !== expectedId) {
     clientCurrentVideoId = expectedId; clientLastSyncTime = now;
-    ytFrame.style.display = 'block';
-    if(ytReady && ytPlayer) { ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: hostTime });
-        if (data.paused) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); }
+    if (isMp3) {
+      if(ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+      ytFrame.style.display = 'none';
+      if(rawAudio) {
+          rawAudio.style.display = 'block';
+          rawAudio.src = expectedId;
+          rawAudio.currentTime = hostTime;
+          rawAudio.volume = config.vol / 100;
+          if (data.paused) rawAudio.pause(); else rawAudio.play().catch(function(){});
+      }
+    } else {
+      if(rawAudio) { rawAudio.pause(); rawAudio.style.display = 'none'; }
+      ytFrame.style.display = 'block';
+      if(ytReady && ytPlayer && ytPlayer.loadVideoById) { 
+          ytPlayer.loadVideoById({ videoId: expectedId, startSeconds: hostTime });
+          if (data.paused) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); 
+      }
+    }
     return;
   }
   
   if (now - clientLastSyncTime > 5000) {
     clientLastSyncTime = now;
-    try { const diff = Math.abs((ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0) - hostTime); if (diff > SYNC_TOLERANCE_SEC) ytPlayer.seekTo(hostTime, true); } catch(e) {}
+    if (isMp3 && rawAudio) {
+      const diff = Math.abs(rawAudio.currentTime - hostTime);
+      if (diff > SYNC_TOLERANCE_SEC) rawAudio.currentTime = hostTime;
+    } else {
+      try { const diff = Math.abs((ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0) - hostTime); if (diff > SYNC_TOLERANCE_SEC) ytPlayer.seekTo(hostTime, true); } catch(e) {}
+    }
   }
   
-  try { const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1; if (data.paused && state === 1) ytPlayer.pauseVideo(); else if (!data.paused && state === 2) ytPlayer.playVideo(); } catch(e) {}
+  if (isMp3 && rawAudio) {
+    if (data.paused && !rawAudio.paused) rawAudio.pause();
+    else if (!data.paused && rawAudio.paused) rawAudio.play().catch(function(){});
+  } else {
+    try { const state = ytPlayer.getPlayerState ? ytPlayer.getPlayerState() : -1; if (data.paused && state === 1) ytPlayer.pauseVideo(); else if (!data.paused && state === 2) ytPlayer.playVideo(); } catch(e) {}
+  }
 }
 
-document.getElementById('syncBtn').addEventListener('click', () => {
+document.getElementById('syncBtn').addEventListener('click', function() {
   clientSynced = true; document.getElementById('syncBtn').style.display = 'none'; document.getElementById('eover').classList.add('gone');
 });
 
@@ -668,7 +729,7 @@ window.onYouTubeIframeAPIReady = function(){
         if(!isHost) return;
         if(e.data === YT.PlayerState.PLAYING) {
            const dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
-           if(dur > config.maxDuration * 60) { logChat('SISTEMA', `⏭️ Pulando vídeo muito longo (> ${config.maxDuration} min).`, true); nextVideo(); return; }
+           if(dur > config.maxDuration * 60) { logChat('SISTEMA', `Vídeo pulado: muito longo (> ${config.maxDuration} min).`, true); nextVideo(); return; }
         }
         if(e.data === YT.PlayerState.ENDED) { if(config.autoSkip) nextVideo(); }
         paused = (e.data === YT.PlayerState.PAUSED);
@@ -689,13 +750,13 @@ async function fetchTitle(id) {
     const response = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
     const data = await response.json();
     if (data && data.title) return data.title;
-    throw new Error('API 1');
+    throw new Error('API1');
   } catch (e) {
     try {
       const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/videos/${id}`);
       const data2 = await response2.json();
       if (data2 && data2.title) return data2.title;
-      throw new Error('API 2');
+      throw new Error('API2');
     } catch(e2) {
       try {
         const response3 = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
@@ -731,13 +792,13 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   let isRawAudio = rawUrl.match(/\.(mp3|wav|ogg|m4a)$/i);
   
   if (!id && !isRawAudio) {
-     logChat('SISTEMA', `🔍 Buscando: "${rawUrl}"...`, true);
+     logChat('SISTEMA', `Buscando: "${rawUrl}"...`, true);
      const result = await searchYouTube(rawUrl);
      if (result && result.videoId) { 
          id = result.videoId; 
          fallbackTitle = result.title; 
      } else { 
-         if(fromTwitch) logChat('SISTEMA', `❌ Nada encontrado para: ${rawUrl}`, true); else toast('❌ Nada encontrado / Link inválido', 'err'); return; 
+         if(fromTwitch) logChat('SISTEMA', `Nada encontrado para: ${rawUrl}`, true); else toast('Nada encontrado', 'err'); return; 
      }
   }
 
@@ -746,7 +807,7 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
      fallbackTitle = rawUrl.split('/').pop(); 
   }
 
-  if (queue.find(q => q.videoId === id)) { if(!fromTwitch) toast('Já na fila!', 'err'); return; }
+  if (queue.find(function(q){ return q.videoId === id; })) { if(!fromTwitch) toast('Já na fila!', 'err'); return; }
   
   let title = "";
   let duration = 0;
@@ -761,23 +822,23 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
      }
      duration = await getVideoDuration(id);
      if(duration > 0 && duration > config.maxDuration * 60) { 
-         if(fromTwitch) logChat('SISTEMA', `❌ Vídeo rejeitado por ser > ${config.maxDuration}min`, true); 
-         else toast(`❌ >${config.maxDuration}min`, 'err'); 
+         if(fromTwitch) logChat('SISTEMA', `Vídeo rejeitado por ser > ${config.maxDuration}min`, true); 
+         else toast(`>${config.maxDuration}min`, 'err'); 
          return; 
      }
   }
   
   if(color && color.startsWith('#') && color !== '#bf94ff') { twitchColors[user] = color; localStorage.setItem('simpTwitchColors', JSON.stringify(twitchColors)); }
-  if(fromTwitch && !twitchUsers.has(user)) { twitchUsers.add(user); localStorage.setItem('simpTwitchUsers', JSON.stringify([...twitchUsers])); }
+  if(fromTwitch && !twitchUsers.has(user)) { twitchUsers.add(user); localStorage.setItem('simpTwitchUsers', JSON.stringify(Array.from(twitchUsers))); }
   
   const userColor = twitchColors[user] || null;
   let thumb = isRawAudio ? 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?q=80&w=120&auto=format&fit=crop' : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   
-  queue.push({videoId:id, title, user, color: userColor, thumb});
+  queue.push({videoId:id, title:title, user:user, color:userColor, thumb:thumb});
   if(isHost && twitchUsers.has(user)) addPoints(user, 10);
   logChat(user, title, true, userColor || '#bf94ff');
   if(isHost) playPing();
-  if(!fromTwitch) toast(`✅ Adicionado`, 'ok');
+  if(!fromTwitch) toast(`Adicionado`, 'ok');
   if (isHost && curIdx === -1) startPlayback(0); else renderQueue();
 }
 
@@ -785,10 +846,17 @@ function startPlayback(idx) {
   if (!isHost || idx < 0 || idx >= queue.length) return; stopEmptySound(); curIdx = idx; const item = queue[curIdx];
   document.getElementById('eover').classList.add('gone'); document.getElementById('npbar').style.display = 'flex';
   document.getElementById('npTitle').textContent = item.title; document.getElementById('npUser').textContent = item.user;
-  document.getElementById('npUser').style.color = item.color || ''; document.getElementById('playerGlow').style.backgroundImage = `url(${item.thumb})`;
+  document.getElementById('npUser').style.color = sanitizeColor(item.color) || ''; document.getElementById('playerGlow').style.backgroundImage = `url(${item.thumb})`;
   if(config.glow) document.getElementById('playerGlow').classList.add('active');
   loadVid(item.videoId);
-  setQueueGif(item.title);
+  
+  const isMp3 = item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+  if(isMp3) {
+      currentGifUrl = 'https://i.giphy.com/r50i0lZV4ijvzLcJKz.webp';
+  } else {
+      setQueueGif(item.title);
+  }
+  
   renderQueue();
 }
 
@@ -800,48 +868,68 @@ function nextVideo() {
 function showEmpty() {
   curIdx = -1; currentGifUrl = ''; document.getElementById('eover').classList.remove('gone');
   document.getElementById('eoverText').innerHTML = isHost ? "Nenhum vídeo.<br>Use o chat" : "Aguardando Host..."; document.getElementById('npbar').style.display = 'none';
-  document.getElementById('playerGlow').classList.remove('active'); if (ytReady && ytPlayer) ytPlayer.stopVideo(); document.getElementById('qlistBg').style.backgroundImage = ''; renderQueue();
+  document.getElementById('playerGlow').classList.remove('active'); 
+  if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); 
+  const rawAudio = document.getElementById('rawAudio');
+  if(rawAudio) { rawAudio.pause(); rawAudio.style.display = 'none'; }
+  document.getElementById('qlistBg').style.backgroundImage = ''; renderQueue();
 }
 
 function loadVid(id) {
-  if(!id) return; const ytFrame = document.getElementById('ytFrame');
-  ytFrame.style.display = 'block';
-  if(ytReady && ytPlayer) { ytPlayer.loadVideoById({videoId:id, startSeconds:0}); if(!paused) ytPlayer.playVideo(); }
+  if(!id) return; 
+  const ytFrame = document.getElementById('ytFrame');
+  const rawAudio = document.getElementById('rawAudio');
+  const isMp3 = id.match(/\.(mp3|wav|ogg|m4a)$/i);
+  
+  if (isMp3) {
+      if(ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+      ytFrame.style.display = 'none';
+      if(rawAudio) {
+          rawAudio.style.display = 'block';
+          rawAudio.src = id;
+          rawAudio.volume = config.vol / 100;
+          if(!paused) rawAudio.play().catch(function(){});
+      }
+  } else {
+      if(rawAudio) { rawAudio.pause(); rawAudio.style.display = 'none'; }
+      ytFrame.style.display = 'block';
+      if(ytReady && ytPlayer && ytPlayer.loadVideoById) { ytPlayer.loadVideoById({videoId:id, startSeconds:0}); if(!paused) ytPlayer.playVideo(); }
+  }
 }
 
 function renderQueue() {
   const list = document.getElementById('qlist'); const empty = document.getElementById('qempty');
-  document.getElementById('qcount').textContent = queue.length; list.querySelectorAll('.qi').forEach(i=>i.remove());
+  document.getElementById('qcount').textContent = queue.length; list.querySelectorAll('.qi').forEach(function(i){i.remove();});
   if(queue.length===0){ empty.style.display='flex'; return; } empty.style.display='none';
-  queue.forEach((item,i)=>{
+  queue.forEach(function(item,i){
     const isCur = i===curIdx; let pos = isCur ? '▶' : (curIdx>=0 ? '#'+(i-curIdx) : '#'+(i+1));
     const d = document.createElement('div'); d.className = 'qi' + (isCur?' cur':'');
     d.innerHTML = `
       <div class="qithumb"><img src="${esc(item.thumb)}" loading="lazy"></div>
-      <div class="qibody"><div class="qititle" title="${esc(item.title)}">${esc(item.title)}</div><div class="qiuser" style="${item.color ? `color:${item.color}` : ''}">${esc(item.user)}</div></div>
+      <div class="qibody"><div class="qititle" title="${esc(item.title)}">${esc(item.title)}</div><div class="qiuser" style="${item.color ? `color:${sanitizeColor(item.color)}` : ''}">${esc(item.user)}</div></div>
       ${!isCur ? `<span class="qinum">${pos}</span>` : ''}
       <button class="qisave" data-i="${i}" title="Salvar">💾</button>
       ${isAdmin && !isCur ? `<button class="qidel" data-i="${i}" title="Remover">✕</button>` : ''}
     `;
     list.appendChild(d);
   });
-  list.querySelectorAll('.qisave').forEach(btn=>{ btn.addEventListener('click',e=>{e.stopPropagation(); const item=queue[parseInt(btn.dataset.i)]; if(!myPlaylist.find(v=>v.videoId===item.videoId)){myPlaylist.push(item);localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist));renderPlaylist();toast('Salvo!', 'ok');}}); });
-  if(isAdmin){ list.querySelectorAll('.qidel').forEach(btn=>{ btn.addEventListener('click',e=>{e.stopPropagation(); const i=parseInt(btn.dataset.i); queue.splice(i,1); if(i<curIdx)curIdx--; else if(i===curIdx){curIdx=-1;if(queue.length>0)startPlayback(0);else showEmpty();} renderQueue();}); }); }
+  list.querySelectorAll('.qisave').forEach(function(btn){ btn.addEventListener('click',function(e){e.stopPropagation(); const item=queue[parseInt(btn.dataset.i)]; if(!myPlaylist.find(function(v){return v.videoId===item.videoId;})){myPlaylist.push(item);localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist));renderPlaylist();toast('Salvo!', 'ok');}}); });
+  if(isAdmin){ list.querySelectorAll('.qidel').forEach(function(btn){ btn.addEventListener('click',function(e){e.stopPropagation(); const i=parseInt(btn.dataset.i); queue.splice(i,1); if(i<curIdx)curIdx--; else if(i===curIdx){curIdx=-1;if(queue.length>0)startPlayback(0);else showEmpty();} renderQueue();}); }); }
 }
 
 function renderPlaylist() {
   const c = document.getElementById('dropContent'); c.innerHTML = '';
   if(myPlaylist.length===0){ c.innerHTML = '<div style="padding:15px;font-size:0.75rem;color:var(--muted);text-align:center;">Playlist vazia</div>'; return; }
-  myPlaylist.forEach((item,i)=>{
+  myPlaylist.forEach(function(item,i){
     const d = document.createElement('div'); d.className='plist-item';
     d.innerHTML = `<img class="plist-thumb" src="${esc(item.thumb)}" loading="lazy"><div class="plist-title">${esc(item.title)}</div><button class="plist-del" data-i="${i}">✕</button>`;
-    d.addEventListener('click',e=>{ if(e.target.classList.contains('plist-del'))return; sendCmd('add',{url: `https://youtu.be/${item.videoId}`,user:myName||'Viewer'}); document.getElementById('dropContent').classList.remove('show'); });
+    d.addEventListener('click',function(e){ if(e.target.classList.contains('plist-del'))return; sendCmd('add',{url: item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i) ? item.videoId : `https://youtu.be/${item.videoId}`,user:myName||'Viewer'}); document.getElementById('dropContent').classList.remove('show'); });
     c.appendChild(d);
   });
-  c.querySelectorAll('.plist-del').forEach(btn=>{ btn.addEventListener('click',e=>{e.stopPropagation(); myPlaylist.splice(parseInt(btn.dataset.i),1); localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist)); renderPlaylist();}); });
+  c.querySelectorAll('.plist-del').forEach(function(btn){ btn.addEventListener('click',function(e){e.stopPropagation(); myPlaylist.splice(parseInt(btn.dataset.i),1); localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist)); renderPlaylist();}); });
 }
-document.getElementById('dropBtn').addEventListener('click',()=>document.getElementById('dropContent').classList.toggle('show'));
-window.onclick = e => { if(!e.target.matches('#dropBtn') && !e.target.closest('.dropdown-content')) document.getElementById('dropContent').classList.remove('show'); };
+document.getElementById('dropBtn').addEventListener('click',function(){document.getElementById('dropContent').classList.toggle('show');});
+window.onclick = function(e) { if(!e.target.matches('#dropBtn') && !e.target.closest('.dropdown-content')) document.getElementById('dropContent').classList.remove('show'); };
 renderPlaylist();
 
 function toggleAdmin(state) {
@@ -869,7 +957,13 @@ function sendCmd(action, payload = {}) {
       paused = !paused;
       const status = paused ? "Pausou" : "Despausou";
       logAdminAction(myName, status + " o player");
-      if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo();
+      const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+      const rawAudio = document.getElementById('rawAudio');
+      if (isMp3 && rawAudio) {
+          if (paused) rawAudio.pause(); else rawAudio.play().catch(function(){});
+      } else {
+          if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo();
+      }
     }
     if(action === 'clear') {
       logAdminAction(myName, "Limpou a fila");
@@ -877,68 +971,97 @@ function sendCmd(action, payload = {}) {
       showEmpty();
     }
     if(action === 'seek' && payload.time !== undefined) {
-      if(ytPlayer) ytPlayer.seekTo(payload.time, true);
+      const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+      const rawAudio = document.getElementById('rawAudio');
+      if (isMp3 && rawAudio) {
+          rawAudio.currentTime = payload.time;
+      } else {
+          if(ytPlayer) ytPlayer.seekTo(payload.time, true);
+      }
     }
   } 
   else if(hostConnection && hostConnection.open){
-    hostConnection.send({type:'cmd', action, ...payload});
+    hostConnection.send(Object.assign({type:'cmd', action:action}, payload));
     if(action !== 'seek') toast('Enviado ao Host','ok');
   }
 }
 
-document.getElementById('userAddBtn').addEventListener('click', () => { const raw = document.getElementById('userUrl').value.trim(); document.getElementById('userUrl').value = ''; if(!raw) return; sendCmd('add', {url: raw, user: myName||'Viewer'}); });
-document.getElementById('userUrl').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('userAddBtn').click();});
-document.getElementById('pauseBtn').addEventListener('click',()=>sendCmd('pause', {user: myName}));
-document.getElementById('skipBtn').addEventListener('click',()=>sendCmd('skip', {user: myName}));
-document.getElementById('clearBtn').addEventListener('click',()=>sendCmd('clear', {user: myName}));
+document.getElementById('userAddBtn').addEventListener('click', function() { const raw = document.getElementById('userUrl').value.trim(); document.getElementById('userUrl').value = ''; if(!raw) return; sendCmd('add', {url: raw, user: myName||'Viewer'}); });
+document.getElementById('userUrl').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('userAddBtn').click();});
+document.getElementById('pauseBtn').addEventListener('click',function(){sendCmd('pause', {user: myName});});
+document.getElementById('skipBtn').addEventListener('click',function(){sendCmd('skip', {user: myName});});
+document.getElementById('clearBtn').addEventListener('click',function(){sendCmd('clear', {user: myName});});
 
-document.getElementById('cfgGlow').addEventListener('change',e=>{config.glow=e.target.checked; if(config.glow&&curIdx!==-1)document.getElementById('playerGlow').classList.add('active'); else document.getElementById('playerGlow').classList.remove('active'); saveConfig();});
-document.getElementById('cfgBpm').addEventListener('change',e=>{config.bpm=e.target.checked; saveConfig();});
-document.getElementById('cfgGifWords').addEventListener('change',e=>{config.gifWords=parseInt(e.target.value); saveConfig(); if(isHost&&curIdx>=0)setQueueGif(queue[curIdx].title);});
-document.getElementById('cfgEmptySound').addEventListener('change',e=>{config.emptySound=e.target.checked; if(!config.emptySound)stopEmptySound(); saveConfig(); toast(config.emptySound?'Som ativado':'Som desativado','ok');});
-document.getElementById('cfgAutoSkip').addEventListener('change',e=>{ config.autoSkip = e.target.checked; saveConfig(); toast(config.autoSkip ? 'Pulo automático ativado' : 'Pulo automático desativado', 'ok'); });
-document.getElementById('cfgMaxDur').addEventListener('change',e=>{config.maxDuration=parseInt(e.target.value); saveConfig();});
+document.getElementById('cfgGlow').addEventListener('change',function(e){config.glow=e.target.checked; if(config.glow&&curIdx!==-1)document.getElementById('playerGlow').classList.add('active'); else document.getElementById('playerGlow').classList.remove('active'); saveConfig();});
+document.getElementById('cfgBpm').addEventListener('change',function(e){config.bpm=e.target.checked; saveConfig();});
+document.getElementById('cfgGifWords').addEventListener('change',function(e){config.gifWords=parseInt(e.target.value); saveConfig(); if(isHost&&curIdx>=0)setQueueGif(queue[curIdx].title);});
+document.getElementById('cfgEmptySound').addEventListener('change',function(e){config.emptySound=e.target.checked; if(!config.emptySound)stopEmptySound(); saveConfig(); toast(config.emptySound?'Som ativado':'Som desativado','ok');});
+document.getElementById('cfgAutoSkip').addEventListener('change',function(e){ config.autoSkip = e.target.checked; saveConfig(); toast(config.autoSkip ? 'Pulo automático ativado' : 'Pulo automático desativado', 'ok'); });
+document.getElementById('cfgMaxDur').addEventListener('change',function(e){config.maxDuration=parseInt(e.target.value); saveConfig();});
 
 const seekClient = document.getElementById('seekSliderClient'); const volClient = document.getElementById('volSliderClient'); const seekTimeClient = document.getElementById('seekTimeClient'); const volNumClient = document.getElementById('volNumClient');
-volClient.addEventListener('input',function(){ config.vol=parseInt(this.value); volNumClient.textContent=config.vol+'%'; if(ytPlayer)ytPlayer.setVolume(config.vol); saveConfig(); });
+volClient.addEventListener('input',function(){ 
+    config.vol=parseInt(this.value); 
+    volNumClient.textContent=config.vol+'%'; 
+    if(ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(config.vol); 
+    const rawAudio = document.getElementById('rawAudio');
+    if(rawAudio) rawAudio.volume = config.vol / 100;
+    saveConfig(); 
+});
 seekClient.addEventListener('input',function(){
   if(isHost){
-      if(ytPlayer) ytPlayer.seekTo(parseFloat(this.value),true);
-  } else if(isAdmin && hostConnection && hostConnection.open){ hostConnection.send({type:'cmd', action:'seek', time: parseFloat(this.value), user: myName}); }
+      const isMp3 = (curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i));
+      const rawAudio = document.getElementById('rawAudio');
+      if (isMp3 && rawAudio) {
+          rawAudio.currentTime = parseFloat(this.value);
+      } else if(ytPlayer && ytPlayer.seekTo) {
+          ytPlayer.seekTo(parseFloat(this.value),true);
+      }
+  } else if(isAdmin && hostConnection && hostConnection.open){ 
+      hostConnection.send({type:'cmd', action:'seek', time: parseFloat(this.value), user: myName}); 
+  }
 });
 
-setInterval(() => {
+setInterval(function() {
   let cur = 0; let dur = 0;
+  const rawAudio = document.getElementById('rawAudio');
+  const isMp3 = (curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i));
   if(curIdx >= 0 && queue[curIdx]) {
-      if(ytReady && ytPlayer) { cur = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0; dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0; }
+      if(isMp3 && rawAudio) {
+          cur = rawAudio.currentTime || 0;
+          dur = rawAudio.duration || 0;
+      } else if(ytReady && ytPlayer && ytPlayer.getCurrentTime) { 
+          cur = ytPlayer.getCurrentTime(); 
+          dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0; 
+      }
   }
   if(seekClient){ seekClient.max = dur || 100; seekClient.value = cur; }
-  const f = t => `${Math.floor(t/60)}:${Math.floor(t%60).toString().padStart(2,'0')}`;
-  if(seekTimeClient) seekTimeClient.textContent = `${f(cur)}/${dur>0 ? f(dur) : '--:--'}`;
+  const f = function(t){ return Math.floor(t/60) + ':' + Math.floor(t%60).toString().padStart(2,'0'); };
+  if(seekTimeClient) seekTimeClient.textContent = f(cur) + '/' + (dur>0 ? f(dur) : '--:--');
 }, 500);
 
 function connectTwitch() {
   const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443'); const rnd = Math.floor(Math.random()*99999);
-  ws.onopen = () => { ws.send(`PASS oauth:justinfan${rnd}`); ws.send(`NICK justinfan${rnd}`); ws.send(`JOIN #${CHANNEL}`); ws.send('CAP REQ :twitch.tv/tags'); };
-  ws.onmessage = async (e) => {
+  ws.onopen = function() { ws.send(`PASS oauth:justinfan${rnd}`); ws.send(`NICK justinfan${rnd}`); ws.send(`JOIN #${CHANNEL}`); ws.send('CAP REQ :twitch.tv/tags'); };
+  ws.onmessage = async function(e) {
     const raw = e.data.trim(); if(raw.startsWith('PING')){ ws.send('PONG :tmi.twitch.tv'); return; }
     let tags = {}; let messagePart = raw;
-    if(raw.startsWith('@')) { const tagEnd = raw.indexOf(' '); const tagStr = raw.substring(1, tagEnd); tagStr.split(';').forEach(t => { const [k,v] = t.split('='); tags[k] = v || ''; }); messagePart = raw.substring(tagEnd+1); }
+    if(raw.startsWith('@')) { const tagEnd = raw.indexOf(' '); const tagStr = raw.substring(1, tagEnd); tagStr.split(';').forEach(function(t){ const p = t.split('='); tags[p[0]] = p[1] || ''; }); messagePart = raw.substring(tagEnd+1); }
     const m = messagePart.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv PRIVMSG #\w+ :(.*)/); if(!m) return;
     const twitchUser = m[1].toLowerCase(); const msg = m[2].trim(); const rawColor = tags.color && tags.color.startsWith('#') ? tags.color : null; const color = rawColor || '#bf94ff'; const isMod = tags.mod === '1' || (tags.badges && tags.badges.includes('moderator'));
     if(isMod) twitchMods.add(twitchUser); if(!myTwitchName) myTwitchName = twitchUser;
     if(rawColor) { twitchColors[twitchUser] = rawColor; localStorage.setItem('simpTwitchColors', JSON.stringify(twitchColors)); }
-    if(!twitchUsers.has(twitchUser)) { twitchUsers.add(twitchUser); localStorage.setItem('simpTwitchUsers', JSON.stringify([...twitchUsers])); }
+    if(!twitchUsers.has(twitchUser)) { twitchUsers.add(twitchUser); localStorage.setItem('simpTwitchUsers', JSON.stringify(Array.from(twitchUsers))); }
     
     if(msg.toLowerCase().startsWith(CMD.toLowerCase()+' ')){
       const parts = msg.slice(CMD.length).trim().split(' '); const action = parts[0].toLowerCase(); const gifName = parts.slice(1).join(' ');
       if(action==='skip'){ if(isMod || getUserPoints(twitchUser)>=50){ if(!isMod) spendPoints(twitchUser,50); if(isHost) nextVideo(); else sendCmd('skip',{user: twitchUser}); } return; }
-      if(action==='trocar' && getUserPoints(twitchUser)>=50){ spendPoints(twitchUser,50); if(isHost){ queue=queue.sort(()=>Math.random()-0.5); renderQueue(); } else sendCmd('trocar',{user: twitchUser}); return; }
-      if(action==='gif' && gifName && getUserPoints(twitchUser)>=20){ spendPoints(twitchUser,20); if(isHost) setQueueGif(gifName); else sendCmd('gif',{user: twitchUser, gifName}); return; }
+      if(action==='trocar' && getUserPoints(twitchUser)>=50){ spendPoints(twitchUser,50); if(isHost){ queue=queue.sort(function(){return Math.random()-0.5;}); renderQueue(); } else sendCmd('trocar',{user: twitchUser}); return; }
+      if(action==='gif' && gifName && getUserPoints(twitchUser)>=20){ spendPoints(twitchUser,20); if(isHost) setQueueGif(gifName); else sendCmd('gif',{user: twitchUser, gifName: gifName}); return; }
       await addToQueue(msg.slice(CMD.length).trim(), twitchUser, color, true);
     } else { logChat(twitchUser, msg, false, color, isMod); }
   };
-  ws.onclose = () => setTimeout(connectTwitch, 5000);
+  ws.onclose = function() { setTimeout(connectTwitch, 5000); };
 }
 
 function playPing() {
@@ -950,10 +1073,11 @@ function logChat(user, text, isCmd = false, color = '#bf94ff', isMod = false) {
   const box = document.getElementById('chatbox');
   const points = getUserPoints(user);
   const modTag = isMod ? ' <span style="color:#ff3c6e">[MOD]</span>' : '';
+  const safeColor = sanitizeColor(color);
   
   const d = document.createElement('div');
   d.className = 'cm';
-  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">Round Simps (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+  d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#ff3c6e">Round Simps (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
   
   box.appendChild(d);
   if(box.childNodes.length > 60) box.firstChild.remove();
@@ -961,20 +1085,17 @@ function logChat(user, text, isCmd = false, color = '#bf94ff', isMod = false) {
 }
 
 function logAdminAction(user, action) {
-  const color = '#bf94ff';
   let emoji = '⚙️';
-  
   if(action.includes('Pulou')) emoji = '⏭️';
   if(action.includes('Pausou') || action.includes('Despausou')) emoji = '⏸️';
   if(action.includes('Limpar')) emoji = '🗑️';
   if(action.includes('trocou')) emoji = '🔀';
-  
   logChat('SISTEMA', `${emoji} ${user} ${action}`, true, '#ffdd57');
 }
 
 function toast(msg, type='') {
   const c = document.getElementById('toasts'); const t = document.createElement('div'); t.className='toast '+type; t.textContent=msg;
-  c.appendChild(t); setTimeout(()=>t.remove(),3000);
+  c.appendChild(t); setTimeout(function(){t.remove();},3000);
 }
 
 </script>
