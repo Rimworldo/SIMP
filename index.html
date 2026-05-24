@@ -741,21 +741,46 @@ async function setQueueGif(term) {
 }
 
 async function addToQueue(rawUrl, user, color, fromTwitch) {
-  if(!user) user = myName || 'Anônimo'; let id = await extractId(rawUrl);
+  if(!user) user = myName || 'Anônimo';
+  
+  // Deteta se há um link de áudio direto na mensagem (mesmo que venha com texto junto)
+  let audioMatch = rawUrl.match(/(https?:\/\/[^\s]+?\.(mp3|wav|ogg|flac))/i);
+  let id = null;
+  let customTitle = "";
+
+  if (audioMatch) {
+    id = audioMatch[1];
+    // Remove o link do texto para tentar usar o resto como o título do vídeo/áudio
+    customTitle = rawUrl.replace(id, '').trim();
+  } else {
+    id = await extractId(rawUrl);
+  }
+
   let fallbackTitle = rawUrl;
   if (!id) {
-     if (rawUrl.match(/\.(mp3|wav|ogg|flac)$/i)) { id = rawUrl; } 
-     else {
-         logChat('SISTEMA', `🔍 Buscando: "${rawUrl}"...`, true);
-         const result = await searchYouTube(rawUrl);
-         if (result) { id = result.videoId; fallbackTitle = result.title; } 
-         else { if(fromTwitch) logChat('SISTEMA', `❌ Nada encontrado para: ${rawUrl}`, true); else toast('❌ Nada encontrado / Link inválido', 'err'); return; }
-     }
+     logChat('SISTEMA', `🔍 Buscando: "${rawUrl}"...`, true);
+     const result = await searchYouTube(rawUrl);
+     if (result) { id = result.videoId; fallbackTitle = result.title; } 
+     else { if(fromTwitch) logChat('SISTEMA', `❌ Nada encontrado para: ${rawUrl}`, true); else toast('❌ Nada encontrado / Link inválido', 'err'); return; }
   }
 
   if (queue.find(q => q.videoId === id)) { if(!fromTwitch) toast('Já na fila!', 'err'); return; }
+  
   let title = await fetchTitle(id);
-  if (title.includes("Vídeo do YouTube")) { title = fallbackTitle; }
+  
+  // SE FOR ÁUDIO: Se o usuário escreveu um nome junto com o link, usa esse nome. 
+  // Caso contrário, limpa o link para exibir apenas o nome do arquivo final (tirando o .mp3 e o site)
+  if (id.match(/\.(mp3|wav|ogg|flac)$/i)) {
+    if (customTitle) {
+      title = customTitle;
+    } else {
+      title = id.split('/').pop().replace(/\.(mp3|wav|ogg|flac)$/i, decodeURIComponent);
+      title = decodeURIComponent(title).replace(/[_-]/g, ' '); // embeleza trocando hífens por espaços
+    }
+  } else if (title.includes("Vídeo do YouTube")) { 
+    title = fallbackTitle; 
+  }
+
   const duration = await getVideoDuration(id);
   if(duration > 0 && duration > config.maxDuration * 60) { if(fromTwitch) logChat('SISTEMA', `❌ Vídeo rejeitado por ser > ${config.maxDuration}min`, true); else toast(`❌ >${config.maxDuration}min`, 'err'); return; }
   
@@ -978,7 +1003,7 @@ function logChat(user, text, isCmd = false, color = '#bf94ff', isMod = false) {
   
   const d = document.createElement('div');
   d.className = 'cm';
-  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">Round Simps (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">(${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
   
   box.appendChild(d);
   if(box.childNodes.length > 60) box.firstChild.remove();
