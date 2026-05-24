@@ -771,7 +771,7 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   
   queue.push({videoId:id, title, user, color: userColor, thumb});
   if(isHost && twitchUsers.has(user)) addPoints(user, 10);
-  logChat(user, rawUrl, true, userColor || '#bf94ff');
+  logChat(user, title, true, userColor || '#bf94ff');
   if(isHost) playPing();
   if(!fromTwitch) toast(`✅ Adicionado`, 'ok');
   if (isHost && curIdx === -1) startPlayback(0); else renderQueue();
