@@ -762,19 +762,9 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   const userColor = twitchColors[user] || null;
   const isAudio = id.match(/\.(mp3|wav|ogg|flac)$/i);
   
-  let thumb = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-  if (isAudio) {
-    const musicKeywords = ['music-visualizer', 'synthwave', 'lofi-hip-hop', 'equalizer-audio', 'retro-wave'];
-    const randomKeyword = musicKeywords[Math.floor(Math.random() * musicKeywords.length)];
-    const randomOffset = Math.floor(Math.random() * 25);
-    try {
-      const giphyRes = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${randomKeyword}&limit=1&offset=${randomOffset}`);
-      const giphyData = await giphyRes.json();
-      thumb = giphyData.data && giphyData.data.length ? giphyData.data[0].images.fixed_height.url : 'https://files.catbox.moe/tq0gqz.png';
-    } catch(e) {
-      thumb = 'https://files.catbox.moe/tq0gqz.png';
-    }
-  }
+  let thumb = isAudio 
+    ? 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3MGxremFvNzZzN2NtZjFyMmJvdm9la3c3cXRza3BncjVxNm05ZTlieSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/JQA96NLUEqreOt0kPz/giphy.gif' 
+    : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   
   queue.push({videoId:id, title, user, color: userColor, thumb});
   if(isHost && twitchUsers.has(user)) addPoints(user, 10);
@@ -793,8 +783,9 @@ function startPlayback(idx) {
   loadVid(item.videoId);
   
   const isAudio = item.videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+  
   if (isAudio) {
-    setQueueGif(item.user);
+    currentGifUrl = 'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWt0eDZkdG56NDFrY3V4YnUxN3FxNGw1aWppZ3hyY2FnaGE0OGFvbSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KjmA8afYchGMwYlRjD/giphy.gif';
   } else {
     setQueueGif(item.title);
   }
