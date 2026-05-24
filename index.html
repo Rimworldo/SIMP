@@ -371,6 +371,7 @@ function assignRolesAndStart() {
         document.getElementById('roleBadge').className = 'role-badge role-host';
         toggleAdmin(true);
         startAsHost();
+        console.log("✅ daenil logado como Host principal");
         
     } else if (myName === SECONDARY_HOST) {
         isAdmin = true;
@@ -379,11 +380,18 @@ function assignRolesAndStart() {
         document.getElementById('roleBadge').className = 'role-badge role-host';
         toggleAdmin(true);
         startAsHost();
+        console.log("✅ daniloamorimking logado como Host secundário");
         
     } else {
+        
         if (ADMIN_USERS.includes(myName)) {
             isAdmin = true;
             toggleAdmin(true);
+            document.getElementById('roleBadge').textContent = '🔒 ADMIN';
+            document.getElementById('roleBadge').className = 'role-badge';
+        } else {
+            document.getElementById('roleBadge').textContent = '🎧 CLIENT';
+            document.getElementById('roleBadge').className = 'role-badge role-client';
         }
         startAsClient();
     }
@@ -494,16 +502,31 @@ function startAsHost() {
   p2pInitializing = true;
   isHost = true;
   destroyPeers();
+  
   hostPeer = new Peer(ROOM_ID, { debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+  
   hostPeer.on('open', () => {
     p2pInitializing = false;
-    document.getElementById('roleBadge').textContent = '👑 HOST (daenil)';
+    
+    if (myName === 'daenil') {
+      document.getElementById('roleBadge').textContent = '👑 HOST (daenil)';
+    } else if (myName === 'daniloamorimking') {
+      document.getElementById('roleBadge').textContent = '👑 HOST (daniloamorimking)';
+    } else {
+      document.getElementById('roleBadge').textContent = '👑 HOST';
+    }
+    
     document.getElementById('roleBadge').className = 'role-badge role-host';
     document.getElementById('eoverText').innerHTML = `Host iniciado.<br>Aguardando vídeos!`;
+    
     updateClientsBadge();
     setupHost();
   });
-  hostPeer.on('error', (err) => { p2pInitializing = false; toast('Erro ao iniciar Host. O ID está ocupado.', 'err'); });
+  
+  hostPeer.on('error', (err) => { 
+    p2pInitializing = false; 
+    toast('Erro ao iniciar Host. O ID está ocupado.', 'err'); 
+  });
 }
 
 function startAsClient() {
