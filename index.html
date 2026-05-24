@@ -978,7 +978,7 @@ function logChat(user, text, isCmd = false, color = '#bf94ff', isMod = false) {
   
   const d = document.createElement('div');
   d.className = 'cm';
-  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">(${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">Round Simps (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
   
   box.appendChild(d);
   if(box.childNodes.length > 60) box.firstChild.remove();
