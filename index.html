@@ -763,7 +763,7 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   const isAudio = id.match(/\.(mp3|wav|ogg|flac)$/i);
   
   let thumb = isAudio 
-    ? 'https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3MGxremFvNzZzN2NtZjFyMmJvdm9la3c3cXRza3BncjVxNm05ZTlieSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/JQA96NLUEqreOt0kPz/giphy.gif' 
+    ? 'https://i.giphy.com/bOnEN3WnP6GEvxQz6r.webp' 
     : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   
   queue.push({videoId:id, title, user, color: userColor, thumb});
@@ -785,7 +785,7 @@ function startPlayback(idx) {
   const isAudio = item.videoId.match(/\.(mp3|wav|ogg|flac)$/i);
   
   if (isAudio) {
-    currentGifUrl = 'https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExNWt0eDZkdG56NDFrY3V4YnUxN3FxNGw1aWppZ3hyY2FnaGE0OGFvbSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KjmA8afYchGMwYlRjD/giphy.gif';
+    currentGifUrl = 'https://i.giphy.com/r50i0lZV4ijvzLcJKz.webp';
   } else {
     setQueueGif(item.title);
   }
