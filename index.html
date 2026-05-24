@@ -228,7 +228,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
       </div>
     </div>
     <div class="chatbox" id="chatbox">
-      <div class="cblbl">Log P2P & Chat</div>
+      <div class="cblbl">Log Simp.</div>
     </div>
   </div>
 </main>
@@ -288,7 +288,6 @@ let twitchMods = new Set();
 let twitchUsers = new Set(JSON.parse(localStorage.getItem('simpTwitchUsers') || '[]'));
 let twitchColors = JSON.parse(localStorage.getItem('simpTwitchColors') || '{}');
 
-
 window.onload = () => {
     checkTwitchAuth();
 };
@@ -343,13 +342,7 @@ async function fetchTwitchUser(token) {
 }
 
 document.getElementById('twitchLoginBtn').addEventListener('click', () => {
-    console.log("✅ Botão clicado!");
-    console.log("Client ID:", TWITCH_CLIENT_ID);
-    console.log("Redirect URI:", REDIRECT_URI);
-    
     const url = `https://id.twitch.tv/oauth2/authorize?client_id=${TWITCH_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=user:read:email`;
-    console.log("URL gerada:", url);
-    
     window.location.href = url;
 });
 
@@ -364,26 +357,14 @@ function assignRolesAndStart() {
     const PRIMARY_HOST = 'daenil';
     const SECONDARY_HOST = 'daniloamorimking';
     
-    if (myName === PRIMARY_HOST) {
+    if (myName === PRIMARY_HOST || myName === SECONDARY_HOST) {
         isAdmin = true;
         isHost = true;
-        document.getElementById('roleBadge').textContent = '👑 HOST (daenil)';
+        document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
         document.getElementById('roleBadge').className = 'role-badge role-host';
         toggleAdmin(true);
         startAsHost();
-        console.log("✅ daenil logado como Host principal");
-        
-    } else if (myName === SECONDARY_HOST) {
-        isAdmin = true;
-        isHost = true;
-        document.getElementById('roleBadge').textContent = '👑 HOST (daniloamorimking)';
-        document.getElementById('roleBadge').className = 'role-badge role-host';
-        toggleAdmin(true);
-        startAsHost();
-        console.log("✅ daniloamorimking logado como Host secundário");
-        
     } else {
-        
         if (ADMIN_USERS.includes(myName)) {
             isAdmin = true;
             toggleAdmin(true);
@@ -401,7 +382,6 @@ function isUserAdminRole(username) {
     const lowerUser = username.toLowerCase();
     return lowerUser === 'daenil' || ADMIN_USERS.includes(lowerUser) || twitchMods.has(lowerUser);
 }
-
 
 function initConfigUI() {
   document.getElementById('cfgGlow').checked = config.glow;
@@ -476,7 +456,6 @@ function playEmptySound() {
 function stopEmptySound() { if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; } }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-
 function showSimps() {
   let html = '<b>Rank Simps</b><br>';
   const sorted = Object.entries(simpsPoints).sort((a,b)=>b[1]-a[1]);
@@ -496,7 +475,6 @@ function destroyPeers() {
   if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
 }
 
-
 function startAsHost() {
   if(p2pInitializing) return;
   p2pInitializing = true;
@@ -507,18 +485,9 @@ function startAsHost() {
   
   hostPeer.on('open', () => {
     p2pInitializing = false;
-    
-    if (myName === 'daenil') {
-      document.getElementById('roleBadge').textContent = '👑 HOST (daenil)';
-    } else if (myName === 'daniloamorimking') {
-      document.getElementById('roleBadge').textContent = '👑 HOST (daniloamorimking)';
-    } else {
-      document.getElementById('roleBadge').textContent = '👑 HOST';
-    }
-    
+    document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
     document.getElementById('roleBadge').className = 'role-badge role-host';
     document.getElementById('eoverText').innerHTML = `Host iniciado.<br>Aguardando vídeos!`;
-    
     updateClientsBadge();
     setupHost();
   });
@@ -565,7 +534,6 @@ function setupHost() {
     
     conn.on('data', async (data) => {
       if (data.type === 'cmd') {
-          
         const isRequestingAdmin = isUserAdminRole(data.user);
 
         if (data.action === 'add') await addToQueue(data.url, data.user, data.color, data.fromTwitch);
@@ -733,8 +701,47 @@ window.onYouTubeIframeAPIReady = function(){
 document.getElementById('rawAudio').onended = () => { if(isHost && config.autoSkip) nextVideo(); };
 document.getElementById('rawAudio').addEventListener('loadedmetadata', function() { if(isHost && this.duration > config.maxDuration * 60) { logChat('SISTEMA', `⏭️ Pulando áudio muito longo (> ${config.maxDuration} min).`, true); nextVideo(); } });
 
+async function extractId(url) {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
+
+async function fetchTitle(id) {
+  if (id.match(/\.(mp3|wav|ogg|flac)$/i)) { return id.split('/').pop(); }
+  try {
+    const response = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
+    const data = await response.json();
+    return data.title || "Vídeo do YouTube";
+  } catch (e) {
+    try {
+      const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/videos/${id}`);
+      const data2 = await response2.json();
+      return data2.title || "Vídeo do YouTube (Fallback)";
+    } catch(e2) { return "Vídeo do YouTube"; }
+  }
+}
+
+async function setQueueGif(term) {
+  if(!isHost || !term) return;
+  const cleanTerm = cleanTitleForGif(term);
+  try {
+    const res = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(cleanTerm)}&key=LIVDTRZTEF1L&limit=12&media_filter=minimal`);
+    const data = await res.json();
+    if(data.results && data.results.length > 0) {
+      const randomGif = data.results[Math.floor(Math.random() * data.results.length)];
+      currentGifUrl = randomGif.media[0].gif.url;
+    } else {
+      currentGifUrl = '';
+    }
+  } catch(e) {
+    currentGifUrl = '';
+  }
+}
+
 async function addToQueue(rawUrl, user, color, fromTwitch) {
-  if(!user) user = myName || 'Anônimo'; let id = extractId(rawUrl);
+  if(!user) user = myName || 'Anônimo'; let id = await extractId(rawUrl);
   if (!id) {
      if (rawUrl.match(/\.(mp3|wav|ogg|flac)$/i)) { id = rawUrl; } 
      else {
@@ -754,7 +761,20 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   
   const userColor = twitchColors[user] || null;
   const isAudio = id.match(/\.(mp3|wav|ogg|flac)$/i);
-  const thumb = isAudio ? 'https://files.catbox.moe/tq0gqz.png' : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  
+  let thumb = `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  if (isAudio) {
+    const musicKeywords = ['music-visualizer', 'synthwave', 'lofi-hip-hop', 'equalizer-audio', 'retro-wave'];
+    const randomKeyword = musicKeywords[Math.floor(Math.random() * musicKeywords.length)];
+    const randomOffset = Math.floor(Math.random() * 25);
+    try {
+      const giphyRes = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${randomKeyword}&limit=1&offset=${randomOffset}`);
+      const giphyData = await giphyRes.json();
+      thumb = giphyData.data && giphyData.data.length ? giphyData.data[0].images.fixed_height.url : 'https://files.catbox.moe/tq0gqz.png';
+    } catch(e) {
+      thumb = 'https://files.catbox.moe/tq0gqz.png';
+    }
+  }
   
   queue.push({videoId:id, title, user, color: userColor, thumb});
   if(isHost && twitchUsers.has(user)) addPoints(user, 10);
@@ -764,30 +784,22 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
   if (isHost && curIdx === -1) startPlayback(0); else renderQueue();
 }
 
-function extractId(url) {
-  url = String(url).trim(); if(url.match(/\.(mp3|wav|ogg|flac)$/i)) return url; 
-  let m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
-  if (m) return m[1]; if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url; return null;
-}
-
-async function fetchTitle(id) {
-  if(id.match(/\.(mp3|wav|ogg|flac)$/i)) { let parts = id.split('/'); return decodeURIComponent(parts[parts.length-1]) || 'Áudio Adicionado'; }
-  try { const r = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`); const d = await r.json(); return d.title || 'Vídeo do YouTube'; } catch { return 'Vídeo do YouTube'; }
-}
-
-async function setQueueGif(title) {
-  if (!isHost) return; const clean = cleanTitleForGif(title || 'anime');
-  try { const r = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(clean)}&key=LIVDSRZULELA&limit=1&media_filter=minimal`); const d = await r.json(); currentGifUrl = d.results && d.results.length ? d.results[0].media[0].gif.url : ''; } catch(e) { currentGifUrl = ''; }
-  document.getElementById('qlistBg').style.backgroundImage = currentGifUrl ? `url(${currentGifUrl})` : '';
-}
-
 function startPlayback(idx) {
   if (!isHost || idx < 0 || idx >= queue.length) return; stopEmptySound(); curIdx = idx; const item = queue[curIdx];
   document.getElementById('eover').classList.add('gone'); document.getElementById('npbar').style.display = 'flex';
   document.getElementById('npTitle').textContent = item.title; document.getElementById('npUser').textContent = item.user;
   document.getElementById('npUser').style.color = item.color || ''; document.getElementById('playerGlow').style.backgroundImage = `url(${item.thumb})`;
   if(config.glow) document.getElementById('playerGlow').classList.add('active');
-  loadVid(item.videoId); setQueueGif(item.title); renderQueue();
+  loadVid(item.videoId);
+  
+  const isAudio = item.videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+  if (isAudio) {
+    setQueueGif(item.user);
+  } else {
+    setQueueGif(item.title);
+  }
+  
+  renderQueue();
 }
 
 function nextVideo() {
@@ -859,20 +871,44 @@ function toggleAdmin(state) {
   renderQueue();
 }
 
-function sendCmd(action, payload={}) {
+function sendCmd(action, payload = {}) {
   if(isHost){
-    if(action==='add') addToQueue(payload.url, payload.user, payload.color, payload.fromTwitch);
-    if(action==='skip') nextVideo();
-    if(action==='pause') {
-      paused = !paused; const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i); const rawAudio = document.getElementById('rawAudio');
-      if(isAudio) { if(paused) rawAudio.pause(); else rawAudio.play(); } else { if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo(); }
+    if(action === 'add') {
+      addToQueue(payload.url, payload.user, payload.color, payload.fromTwitch);
     }
-    if(action==='clear') {queue=[];showEmpty();}
-    if(action==='seek' && payload.time !== undefined) {
+    if(action === 'skip') {
+      logAdminAction(myName, "Pulou o vídeo atual");
+      nextVideo();
+    }
+    if(action === 'pause') {
+      paused = !paused;
+      const status = paused ? "Pausou" : "Despausou";
+      logAdminAction(myName, status + " o player");
+      
       const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
-      if(isAudio) { const rawAudio = document.getElementById('rawAudio'); if(rawAudio) rawAudio.currentTime = payload.time; } else if(ytPlayer) ytPlayer.seekTo(payload.time, true);
+      const rawAudio = document.getElementById('rawAudio');
+      if(isAudio) { 
+        if(paused) rawAudio.pause(); 
+        else rawAudio.play(); 
+      } else { 
+        if (paused && ytPlayer) ytPlayer.pauseVideo(); 
+        else if (ytPlayer) ytPlayer.playVideo(); 
+      }
     }
-  } else if(hostConnection && hostConnection.open){
+    if(action === 'clear') {
+      logAdminAction(myName, "Limpou a fila");
+      queue = [];
+      showEmpty();
+    }
+    if(action === 'seek' && payload.time !== undefined) {
+      const isAudio = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|flac)$/i);
+      if(isAudio) { 
+        const rawAudio = document.getElementById('rawAudio'); 
+        if(rawAudio) rawAudio.currentTime = payload.time; 
+      } else if(ytPlayer) ytPlayer.seekTo(payload.time, true);
+    }
+  } 
+  else if(hostConnection && hostConnection.open){
     hostConnection.send({type:'cmd', action, ...payload});
     if(action !== 'seek') toast('Enviado ao Host','ok');
   }
@@ -941,10 +977,30 @@ function playPing() {
   try{ const audioCtx = new (window.AudioContext||window.webkitAudioContext)(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.setValueAtTime(800,audioCtx.currentTime); gain.gain.setValueAtTime(0.1,audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime+0.1); }catch(e){}
 }
 
-function logChat(user, text, isCmd, color='#bf94ff', isMod=false) {
-  const box = document.getElementById('chatbox'); const points = getUserPoints(user); const modTag = isMod ? ' <span style="color:#ff3c6e">[MOD]</span>' : '';
-  const d = document.createElement('div'); d.className = 'cm'; d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">(${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
-  box.appendChild(d); if(box.childNodes.length>50) box.firstChild.remove(); box.scrollTop = box.scrollHeight;
+function logChat(user, text, isCmd = false, color = '#bf94ff', isMod = false) {
+  const box = document.getElementById('chatbox');
+  const points = getUserPoints(user);
+  const modTag = isMod ? ' <span style="color:#ff3c6e">[MOD]</span>' : '';
+  
+  const d = document.createElement('div');
+  d.className = 'cm';
+  d.innerHTML = `<span class="cmu" style="color:${color}">${esc(user)}${modTag} <span style="color:#ff3c6e">(${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+  
+  box.appendChild(d);
+  if(box.childNodes.length > 60) box.firstChild.remove();
+  box.scrollTop = box.scrollHeight;
+}
+
+function logAdminAction(user, action) {
+  const color = '#bf94ff';
+  let emoji = '⚙️';
+  
+  if(action.includes('Pulou')) emoji = '⏭️';
+  if(action.includes('Pausou') || action.includes('Despausou')) emoji = '⏸️';
+  if(action.includes('Limpar')) emoji = '🗑️';
+  if(action.includes('trocou')) emoji = '🔀';
+  
+  logChat('SISTEMA', `${emoji} ${user} ${action}`, true, '#ffdd57');
 }
 
 function toast(msg, type='') {
