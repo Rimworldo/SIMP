@@ -415,6 +415,7 @@ function assignRolesAndStart() {
     const SECONDARY_HOST = 'daniloamorimking';
     
     if (myName === PRIMARY_HOST) {
+        // Caso 1: Sou o host principal
         isAdmin = true;
         isHost = true;
         document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
@@ -422,38 +423,73 @@ function assignRolesAndStart() {
         document.getElementById('usersBtn').style.display = 'block';
         toggleAdmin(true);
         startAsHost();
-    } else {
-        if (myName === SECONDARY_HOST || ADMIN_USERS.includes(myName)) {
-            isAdmin = true;
-            toggleAdmin(true);
-            document.getElementById('roleBadge').textContent = '🔒 ADMIN';
-            document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
-            document.getElementById('roleBadge').style.color = '#ffb347';
-            document.getElementById('roleBadge').style.borderColor = '#ffb347';
-            document.getElementById('usersBtn').style.display = 'block';
-        } else {
-            document.getElementById('roleBadge').textContent = '🎧 CLIENT';
-            document.getElementById('roleBadge').className = 'role-badge role-client';
-        }
+    } 
+    else if (myName === SECONDARY_HOST) {
+        // Caso 2: Sou o host secundário (daniloamorimking)
+        // Primeiro tento conectar como cliente
+        isAdmin = true;  // Já tenho permissões de admin
+        toggleAdmin(true);
+        document.getElementById('roleBadge').textContent = '🔒 ADMIN (tentando host)';
+        document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
+        document.getElementById('roleBadge').style.color = '#ffb347';
+        document.getElementById('roleBadge').style.borderColor = '#ffb347';
+        document.getElementById('usersBtn').style.display = 'block';
         
-        startAsClient();
-
-        if (myName === SECONDARY_HOST) {
-            setTimeout(function() {
-                if (!isHost && (!hostConnection || !hostConnection.open)) {
-                    toast('Host principal não encontrado. Assumindo a sala...', 'ok');
-                    isAdmin = true;
-                    isHost = true;
-                    
-                    document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
-                    document.getElementById('roleBadge').className = 'role-badge role-host';
-                    document.getElementById('roleBadge').style = '';
-                    toggleAdmin(true);
-                    
-                    startAsHost();
+        startAsClient();  // Tenta conectar ao host principal
+        
+        // Fallback: se não conseguir conectar em 8 segundos, vira HOST de verdade
+        setTimeout(function() {
+            if (!isHost && (!hostConnection || !hostConnection.open)) {
+                console.log("Host principal offline, assumindo como HOST");
+                
+                // Limpa qualquer conexão cliente existente
+                if (hostConnection) {
+                    try { hostConnection.close(); } catch(e) {}
+                    hostConnection = null;
                 }
-            }, 10000);
-        }
+                if (clientPeer) {
+                    try { clientPeer.destroy(); } catch(e) {}
+                    clientPeer = null;
+                }
+                
+                // Configura como HOST verdadeiro
+                isAdmin = true;
+                isHost = true;
+                
+                // Atualiza UI para HOST
+                document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
+                document.getElementById('roleBadge').className = 'role-badge role-host';
+                document.getElementById('roleBadge').style = '';
+                toggleAdmin(true);
+                
+                // Mostra controles específicos de HOST
+                document.getElementById('apanel').classList.add('show');
+                document.getElementById('cfgGeral').style.display = 'flex';  // Mostra configs completas
+                document.getElementById('publicSeekRow').style.display = 'flex';
+                
+                // Inicia como HOST de verdade
+                startAsHost();
+                
+                toast("Você é o HOST agora! Controle total ativado.", "ok");
+            }
+        }, 8000);  // 8 segundos é suficiente
+    }
+    else if (ADMIN_USERS.includes(myName)) {
+        // Admin normal (não host)
+        isAdmin = true;
+        toggleAdmin(true);
+        document.getElementById('roleBadge').textContent = '🔒 ADMIN';
+        document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
+        document.getElementById('roleBadge').style.color = '#ffb347';
+        document.getElementById('roleBadge').style.borderColor = '#ffb347';
+        document.getElementById('usersBtn').style.display = 'block';
+        startAsClient();
+    } 
+    else {
+        // Cliente comum
+        document.getElementById('roleBadge').textContent = '🎧 CLIENT';
+        document.getElementById('roleBadge').className = 'role-badge role-client';
+        startAsClient();
     }
 }
 
@@ -1109,15 +1145,23 @@ window.onclick = function(e) { if(!e.target.matches('#dropBtn') && !e.target.clo
 renderPlaylist();
 
 function toggleAdmin(state) {
-  if(state){ 
-    document.body.classList.add('is-admin'); document.getElementById('apanel').classList.add('show'); 
-    if(!isHost)document.getElementById('cfgGeral').style.display='none'; 
-  }
-  else{ 
-    document.body.classList.remove('is-admin'); document.getElementById('apanel').classList.remove('show'); 
-  }
-  const posRow = document.getElementById('publicSeekRow'); if(posRow) posRow.style.display = state ? 'flex' : 'none';
-  renderQueue();
+    if(state){ 
+        document.body.classList.add('is-admin'); 
+        document.getElementById('apanel').classList.add('show'); 
+        
+        // Se for HOST, mostra todas as opções, se for só admin, esconde algumas
+        if(!isHost) {
+            document.getElementById('cfgGeral').style.display = 'none';
+            document.getElementById('publicSeekRow').style.display = 'none';
+        } else {
+            document.getElementById('cfgGeral').style.display = 'flex';
+            document.getElementById('publicSeekRow').style.display = 'flex';
+        }
+    } else { 
+        document.body.classList.remove('is-admin'); 
+        document.getElementById('apanel').classList.remove('show'); 
+    }
+    renderQueue();
 }
 
 function sendCmd(action, payload = {}) {
