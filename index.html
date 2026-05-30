@@ -272,7 +272,6 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
 <div class="toasts" id="toasts"></div>
 
 <script>
-
 const TWITCH_CLIENT_ID = 'lawe3wmm3jifj7vok0xmixm33pzh72';
 const REDIRECT_URI = "https://rimworldo.github.io/SIMP/";
 const ADMIN_USERS = ['aceboladoo_', 'bbeazinhaa', 'daenilajudante', 'daniloamorimking', 'gmoninho', 'nightbot', 'omonfredini', 'popolea', 'roninlinguica', 'saimo504'];
@@ -415,7 +414,6 @@ function assignRolesAndStart() {
     const SECONDARY_HOST = 'daniloamorimking';
     
     if (myName === PRIMARY_HOST) {
-        // Caso 1: Sou o host principal
         isAdmin = true;
         isHost = true;
         document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
@@ -425,7 +423,6 @@ function assignRolesAndStart() {
         startAsHost();
     } 
     if (myName === SECONDARY_HOST) {
-    // Tenta conectar como cliente primeiro
     isAdmin = true;
     toggleAdmin(true);
     document.getElementById('roleBadge').textContent = '🔒 ADMIN (tentando host)';
@@ -434,14 +431,12 @@ function assignRolesAndStart() {
     document.getElementById('roleBadge').style.borderColor = '#ffb347';
     document.getElementById('usersBtn').style.display = 'block';
     
-    startAsClient();  // Tenta conectar
+    startAsClient();
     
-    // Fallback: se não conectar em 5 segundos, vira HOST
     setTimeout(function() {
         if (!isHost && (!hostConnection || !hostConnection.open)) {
             console.log("Host offline, assumindo HOST");
             
-            // 🔥 CRUCIAL: Destroi TUDO do cliente
             if (hostConnection) {
                 try { hostConnection.close(); } catch(e) {}
                 hostConnection = null;
@@ -451,16 +446,13 @@ function assignRolesAndStart() {
                 clientPeer = null;
             }
             
-            // Reseta variáveis de cliente
             clientCurrentVideoId = null;
             clientSynced = false;
             p2pInitializing = false;
             
-            // Agora sim vira HOST
             isHost = true;
             isAdmin = true;
             
-            // Força a UI de HOST
             document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
             document.getElementById('roleBadge').className = 'role-badge role-host';
             document.getElementById('roleBadge').style = '';
@@ -470,22 +462,19 @@ function assignRolesAndStart() {
             document.getElementById('cfgGeral').style.display = 'flex';
             document.getElementById('publicSeekRow').style.display = 'flex';
             
-            // Esconde o overlay de "Aguardando Host"
             const eover = document.getElementById('eover');
             if (eover) {
                 eover.classList.add('gone');
                 document.getElementById('eoverText').innerHTML = `Host iniciado!<br>Adicione vídeos à fila.`;
             }
             
-            // Inicia o Host de verdade
             startAsHost();
             
             toast("🎉 Você é o HOST agora!", "ok");
         }
-    }, 5000);  // 5 segundos é suficiente
+    }, 5000);
 }
     else if (ADMIN_USERS.includes(myName)) {
-        // Admin normal (não host)
         isAdmin = true;
         toggleAdmin(true);
         document.getElementById('roleBadge').textContent = '🔒 ADMIN';
@@ -496,7 +485,6 @@ function assignRolesAndStart() {
         startAsClient();
     } 
     else {
-        // Cliente comum
         document.getElementById('roleBadge').textContent = '🎧 CLIENT';
         document.getElementById('roleBadge').className = 'role-badge role-client';
         startAsClient();
@@ -715,7 +703,6 @@ function startAsClient() {
     p2pInitializing = true;
     isHost = false;
     
-    // Se já somos host (fallback), não faz nada
     if (isHost) {
         p2pInitializing = false;
         return;
@@ -731,13 +718,11 @@ function startAsClient() {
         document.getElementById('roleBadge').className = 'role-badge role-client';
     }
     
-    // Só mostra "Aguardando Host" se não for admin/host
     if (!isAdmin && !isHost) {
         document.getElementById('eoverText').innerHTML = `Conectando ao Host...`;
         document.getElementById('syncBtn').style.display = 'block';
         document.getElementById('eover').classList.remove('gone');
     } else {
-        // Admin que ainda não virou host
         document.getElementById('eoverText').innerHTML = `Tentando conectar ao host principal...`;
         document.getElementById('syncBtn').style.display = 'block';
         document.getElementById('eover').classList.remove('gone');
@@ -864,7 +849,6 @@ function setupHost() {
 }
 
 function setupClient() {
-    // Se já somos host, não tenta conectar como cliente
     if (isHost) return;
     
     if(hostConnection) { 
@@ -878,7 +862,7 @@ function setupClient() {
     });
     
     hostConnection.on('open', function() {
-        if (!isHost) {  // Só atualiza se ainda for cliente
+        if (!isHost) {
             document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
             document.getElementById('syncBtn').style.display = 'block';
         }
@@ -898,7 +882,6 @@ function setupClient() {
     hostConnection.on('close', function() {
         hostConnection = null;
         clientCurrentVideoId = null;
-        // Se não for host, tenta reconectar
         if (!isHost && clientPeer && !clientPeer.destroyed) {
             setTimeout(function() { 
                 if (!isHost) setupClient(); 
@@ -1053,11 +1036,9 @@ async function fetchTitle(id) {
   }
 }
 
-// Substitua a função setQueueGif por esta:
 async function setQueueGif(term) {
   if(!isHost || !term) return;
   
-  // Se term for vazio ou "Título Indisponível", usa termo padrão
   let cleanTerm = term;
   if (!cleanTerm || cleanTerm === "Título Indisponível") {
     cleanTerm = "music video";
@@ -1065,7 +1046,6 @@ async function setQueueGif(term) {
   
   cleanTerm = cleanTitleForGif(cleanTerm);
   
-  // Se mesmo assim ficar vazio, usa padrão
   if (!cleanTerm.trim()) cleanTerm = "party";
   
   try {
@@ -1075,7 +1055,7 @@ async function setQueueGif(term) {
       const randomGif = data.data[Math.floor(Math.random() * data.data.length)];
       currentGifUrl = randomGif.images.original.url;
     } else {
-      currentGifUrl = 'https://media.giphy.com/media/3o7abB06u9bNzA8LC8/giphy.gif'; // GIF padrão
+      currentGifUrl = 'https://media.giphy.com/media/3o7abB06u9bNzA8LC8/giphy.gif';
     }
     updateGifBackground();
   } catch(e) {
@@ -1130,7 +1110,6 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
      duration = 0;
   } else {
      title = await fetchTitle(id);
-    // Se falhou, extrai do fallbackTitle ou usa padrão
 if (title === "Título Indisponível" || !title) {
     if (fallbackTitle) title = fallbackTitle;
     else title = rawUrl.replace(/^.*(youtu.be\/|v\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/, 'Vídeo') || "Música";
@@ -1171,9 +1150,9 @@ function startPlayback(idx) {
   const isMp3 = item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
 if(isMp3) {
     currentGifUrl = 'https://media.giphy.com/media/r50i0lZV4ijvzLcJKz/giphy.gif';
-    updateGifBackground(); // <-- ADICIONE
+    updateGifBackground();
 } else {
-    setQueueGif(item.title); // já vai chamar updateGifBackground
+    setQueueGif(item.title);
 }
   
   renderQueue();
@@ -1256,7 +1235,6 @@ function toggleAdmin(state) {
         document.body.classList.add('is-admin'); 
         document.getElementById('apanel').classList.add('show'); 
         
-        // Se for HOST, mostra todas as opções, se for só admin, esconde algumas
         if(!isHost) {
             document.getElementById('cfgGeral').style.display = 'none';
             document.getElementById('publicSeekRow').style.display = 'none';
@@ -1438,7 +1416,6 @@ function toast(msg, type='') {
   const c = document.getElementById('toasts'); const t = document.createElement('div'); t.className='toast '+type; t.textContent=msg;
   c.appendChild(t); setTimeout(function(){t.remove();},3000);
 }
-
 </script>
 </body>
 </html>
