@@ -1053,23 +1053,34 @@ async function fetchTitle(id) {
   }
 }
 
+// Substitua a função setQueueGif por esta:
 async function setQueueGif(term) {
   if(!isHost || !term) return;
-  const cleanTerm = cleanTitleForGif(term);
+  
+  // Se term for vazio ou "Título Indisponível", usa termo padrão
+  let cleanTerm = term;
+  if (!cleanTerm || cleanTerm === "Título Indisponível") {
+    cleanTerm = "music video";
+  }
+  
+  cleanTerm = cleanTitleForGif(cleanTerm);
+  
+  // Se mesmo assim ficar vazio, usa padrão
+  if (!cleanTerm.trim()) cleanTerm = "party";
+  
   try {
-    const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=p0TzM4uL8Y54460y8G5n5H5g1u68z3z0&q=${encodeURIComponent(cleanTerm)}&limit=10&rating=g`);
+    const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=4PDpOTc45tY66qQAzqJoJhMfwBMTB054&q=${encodeURIComponent(cleanTerm)}&limit=10&rating=g`);
     const data = await res.json();
     if(data.data && data.data.length > 0) {
       const randomGif = data.data[Math.floor(Math.random() * data.data.length)];
       currentGifUrl = randomGif.images.original.url;
-      updateGifBackground(); // <-- ADICIONE
     } else {
-      currentGifUrl = '';
-      updateGifBackground(); // <-- ADICIONE
+      currentGifUrl = 'https://media.giphy.com/media/3o7abB06u9bNzA8LC8/giphy.gif'; // GIF padrão
     }
+    updateGifBackground();
   } catch(e) {
-    currentGifUrl = 'https://media.giphy.com/media/OwFsPO2tCcrSYxDErS/giphy.gif';
-    updateGifBackground(); // <-- ADICIONE
+    currentGifUrl = 'https://media.giphy.com/media/3o7abB06u9bNzA8LC8/giphy.gif';
+    updateGifBackground();
   }
 }
 
@@ -1119,6 +1130,11 @@ async function addToQueue(rawUrl, user, color, fromTwitch) {
      duration = 0;
   } else {
      title = await fetchTitle(id);
+    // Se falhou, extrai do fallbackTitle ou usa padrão
+if (title === "Título Indisponível" || !title) {
+    if (fallbackTitle) title = fallbackTitle;
+    else title = rawUrl.replace(/^.*(youtu.be\/|v\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/, 'Vídeo') || "Música";
+}
      if ((title === "Título Indisponível" || !title) && fallbackTitle) { 
          title = fallbackTitle; 
      }
