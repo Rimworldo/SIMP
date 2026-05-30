@@ -199,15 +199,13 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
         </div>
       </div>
     </div>
-    // Encontre esta parte (~linha 270):
-<div class="npi">
+  <div class="npbar" id="npbar" style="display:none">
+  <div class="npi">
     <div class="nplbl">▶ tocando agora</div>
     <div class="nptitle" id="npTitle">—</div>
     <div class="npuser">pedido por <b id="npUser">—</b></div>
-</div>
-
-// Adicione DEPOIS dela:
-<div class="waveform-container" id="waveformContainer" style="display:none;">
+  </div>
+  <div class="waveform-container" id="waveformContainer" style="display:none;">
     <div class="wave-bar"></div>
     <div class="wave-bar"></div>
     <div class="wave-bar"></div>
@@ -216,6 +214,7 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
     <div class="wave-bar"></div>
     <div class="wave-bar"></div>
     <div class="wave-bar"></div>
+  </div>
 </div>
     </div>
     <div id="publicControls" style="display:flex;gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin:1rem 0;position:relative;z-index:2">
@@ -727,20 +726,20 @@ function startAsHost() {
   hostPeer = new Peer(ROOM_ID, { debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
   
   hostPeer.on('open', function() {
-    initWaveform();
-
-// E quando clicar para reproduzir, resuma o áudio:
-document.body.addEventListener('click', function() {
-    if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
-});
     p2pInitializing = false;
     document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
     document.getElementById('roleBadge').className = 'role-badge role-host';
     document.getElementById('eoverText').innerHTML = `Host iniciado.<br>Aguardando vídeos!`;
     updateClientsBadge();
     setupHost();
+    initWaveform(); // Inicia waveform
+    
+    // Resume áudio quando clicar
+    document.body.addEventListener('click', function() {
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    });
   });
   
   hostPeer.on('error', function(err) { 
@@ -1240,6 +1239,8 @@ function loadVid(id) {
   const isMp3 = id.match(/\.(mp3|wav|ogg|m4a)$/i);
   
   if (isMp3) {
+      disconnectWaveform(); // Limpa conexão anterior
+      
       if(ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
       ytFrame.style.display = 'none';
       if(rawAudio) {
@@ -1248,14 +1249,16 @@ function loadVid(id) {
           rawAudio.volume = config.vol / 100;
           if(!paused) rawAudio.play().catch(function(){});
           
-          // Conecta o waveform para MP3
-          if (audioContext && audioContext.state === 'suspended') {
-              audioContext.resume();
-          }
-          setTimeout(() => connectAudioToWaveform(rawAudio), 100);
+          // Pequeno delay para garantir que o áudio carregou
+          setTimeout(() => {
+              if (audioContext && audioContext.state === 'suspended') {
+                  audioContext.resume();
+              }
+              connectAudioToWaveform(rawAudio);
+          }, 100);
       }
   } else {
-      disconnectWaveform(); // YouTube não suporta waveform fácil
+      disconnectWaveform(); // YouTube não suporta
       if(rawAudio) { rawAudio.pause(); rawAudio.style.display = 'none'; }
       ytFrame.style.display = 'block';
       if(ytReady && ytPlayer && ytPlayer.loadVideoById) { 
@@ -1534,10 +1537,14 @@ function connectAudioToWaveform(audioElement) {
     
     // Fecha conexão anterior
     if (sourceNode) {
-        try { sourceNode.disconnect(); } catch(e) {}
+        try { 
+            sourceNode.disconnect(); 
+        } catch(e) {}
+        sourceNode = null;
     }
     
     try {
+        // Cria nova conexão
         sourceNode = audioContext.createMediaElementSource(audioElement);
         analyserNode = audioContext.createAnalyser();
         analyserNode.fftSize = 256;
@@ -1547,9 +1554,11 @@ function connectAudioToWaveform(audioElement) {
         
         mediaElement = audioElement;
         
-        document.getElementById('waveformContainer').style.display = 'flex';
+        const container = document.getElementById('waveformContainer');
+        if (container) container.style.display = 'flex';
     } catch(e) {
-        console.log("Waveform não suportado:", e);
+        console.log("Waveform não suportado para este áudio:", e);
+        disconnectWaveform();
     }
 }
 
