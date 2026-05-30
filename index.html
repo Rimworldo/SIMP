@@ -210,9 +210,9 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
         <div class="maddt">configurações visuais</div>
         <div class="cfg-row">
           <label>Palavras GIF: <input type="number" id="cfgGifWords" min="1" max="5" value="3"></label>
-          <label><input type="checkbox" id="cfgGlow"> Glow Ativo</label>
+          <label><input type="checkbox" id="cfgGlow"> Glow</label>
           <label><input type="checkbox" id="cfgBpm"> Beep ao adicionar</label>
-          <label><input type="checkbox" id="cfgEmptySound"> 🔔 Som de fila vazia</label>
+          <label><input type="checkbox" id="cfgEmptySound"> Som de fila vazia</label>
           <label><input type="checkbox" id="cfgAutoSkip"> Pulo Automático</label>
           <label>Max dur.(min): <input type="number" id="cfgMaxDur" min="1" value="5"></label>
         </div>
@@ -1153,7 +1153,7 @@ if (title === "Título Indisponível" || !title) {
   let thumb = isRawAudio ? 'https://i.giphy.com/blSTtZehjAZ8I.webp' : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   
   queue.push({videoId:id, title:title, user:user, color:userColor, thumb:thumb});
-  if(isHost && twitchUsers.has(user)) addPoints(user, 10);
+  if(isHost && twitchUsers.has(user)) addPoints(user, 1);
   logChat(user, title, true, userColor || '#bf94ff');
   if(isHost) playPing();
   if(!fromTwitch) toast(`Adicionado`, 'ok');
@@ -1324,7 +1324,7 @@ document.getElementById('clearBtn').addEventListener('click',function(){sendCmd(
 
 document.getElementById('cfgGlow').addEventListener('change',function(e){config.glow=e.target.checked; if(config.glow&&curIdx!==-1)document.getElementById('playerGlow').classList.add('active'); else document.getElementById('playerGlow').classList.remove('active'); saveConfig();});
 document.getElementById('cfgBpm').addEventListener('change',function(e){config.bpm=e.target.checked; saveConfig();});
-document.getElementById('cfgGifWords').addEventListener('change',function(e){config.gifWords=parseInt(e.target.value); saveConfig(); });
+document.getElementById('cfgGifWords').addEventListener('change',function(e){config.gifWords=parseInt(e.target.value); saveConfig(); if(isHost && curIdx >= 0) setQueueGif(queue[curIdx].title); });
 document.getElementById('cfgEmptySound').addEventListener('change',function(e){config.emptySound=e.target.checked; if(!config.emptySound)stopEmptySound(); saveConfig(); toast(config.emptySound?'Som ativado':'Som desativado','ok');});
 document.getElementById('cfgAutoSkip').addEventListener('change',function(e){ config.autoSkip = e.target.checked; saveConfig(); toast(config.autoSkip ? 'Pulo automático ativado' : 'Pulo automático desativado', 'ok'); });
 document.getElementById('cfgMaxDur').addEventListener('change',function(e){config.maxDuration=parseInt(e.target.value); saveConfig();});
