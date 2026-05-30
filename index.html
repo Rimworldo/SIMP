@@ -315,6 +315,14 @@ let twitchUsers = new Set(JSON.parse(localStorage.getItem('simpTwitchUsers') || 
 let twitchColors = JSON.parse(localStorage.getItem('simpTwitchColors') || '{}');
 let syncedActiveUsers = [];
 
+function executeBanLoop() {
+    document.body.innerHTML = '<div style="display:flex;height:100vh;background:#000;color:#ff3c6e;align-items:center;justify-content:center;flex-direction:column;font-size:2rem;font-weight:bold;font-family:monospace;text-transform:uppercase;"><span>ACESSO NEGADO</span><span style="font-size:0.8rem;color:#666;margin-top:10px;">Você foi banido permanentemente.</span></div>';
+    setTimeout(function() { 
+        try { window.close(); } catch(e) {}
+        window.location.href = "about:blank"; 
+    }, 100);
+}
+
 window.onload = function() {
     checkTwitchAuth();
 };
@@ -389,14 +397,6 @@ async function fetchTwitchUser(token) {
     }
 }
 
-function executeBanLoop() {
-    document.body.innerHTML = '<div style="display:flex;height:100vh;background:#000;color:#ff3c6e;align-items:center;justify-content:center;flex-direction:column;font-size:2rem;font-weight:bold;font-family:monospace;text-transform:uppercase;"><span>ACESSO NEGADO</span><span style="font-size:0.8rem;color:#666;margin-top:10px;">Você foi banido permanentemente.</span></div>';
-    setInterval(function() { 
-        window.close(); 
-        window.location.href = "about:blank"; 
-    }, 100);
-}
-
 document.getElementById('twitchLoginBtn').addEventListener('click', function() {
     const url = `https://id.twitch.tv/oauth2/authorize?client_id=${TWITCH_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=user:read:email`;
     window.location.href = url;
@@ -422,58 +422,56 @@ function assignRolesAndStart() {
         toggleAdmin(true);
         startAsHost();
     } 
-    if (myName === SECONDARY_HOST) {
-    isAdmin = true;
-    toggleAdmin(true);
-    document.getElementById('roleBadge').textContent = '🔒 ADMIN (tentando host)';
-    document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
-    document.getElementById('roleBadge').style.color = '#ffb347';
-    document.getElementById('roleBadge').style.borderColor = '#ffb347';
-    document.getElementById('usersBtn').style.display = 'block';
-    
-    startAsClient();
-    
-    setTimeout(function() {
-        if (!isHost && (!hostConnection || !hostConnection.open)) {
-            console.log("Host offline, assumindo HOST");
-            
-            if (hostConnection) {
-                try { hostConnection.close(); } catch(e) {}
-                hostConnection = null;
+    else if (myName === SECONDARY_HOST) {
+        isAdmin = true;
+        toggleAdmin(true);
+        document.getElementById('roleBadge').textContent = '🔒 ADMIN (tentando host)';
+        document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
+        document.getElementById('roleBadge').style.color = '#ffb347';
+        document.getElementById('roleBadge').style.borderColor = '#ffb347';
+        document.getElementById('usersBtn').style.display = 'block';
+        
+        startAsClient();
+        
+        setTimeout(function() {
+            if (!isHost && (!hostConnection || !hostConnection.open)) {
+                if (hostConnection) {
+                    try { hostConnection.close(); } catch(e) {}
+                    hostConnection = null;
+                }
+                if (clientPeer) {
+                    try { clientPeer.destroy(); } catch(e) {}
+                    clientPeer = null;
+                }
+                
+                clientCurrentVideoId = null;
+                clientSynced = false;
+                p2pInitializing = false;
+                
+                isHost = true;
+                isAdmin = true;
+                
+                document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
+                document.getElementById('roleBadge').className = 'role-badge role-host';
+                document.getElementById('roleBadge').style = '';
+                document.getElementById('usersBtn').style.display = 'block';
+                document.body.classList.add('is-admin');
+                document.getElementById('apanel').classList.add('show');
+                document.getElementById('cfgGeral').style.display = 'flex';
+                document.getElementById('publicSeekRow').style.display = 'flex';
+                
+                const eover = document.getElementById('eover');
+                if (eover) {
+                    eover.classList.add('gone');
+                    document.getElementById('eoverText').innerHTML = `Host iniciado!<br>Adicione vídeos à fila.`;
+                }
+                
+                startAsHost();
+                
+                toast("🎉 Você é o HOST agora!", "ok");
             }
-            if (clientPeer) {
-                try { clientPeer.destroy(); } catch(e) {}
-                clientPeer = null;
-            }
-            
-            clientCurrentVideoId = null;
-            clientSynced = false;
-            p2pInitializing = false;
-            
-            isHost = true;
-            isAdmin = true;
-            
-            document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
-            document.getElementById('roleBadge').className = 'role-badge role-host';
-            document.getElementById('roleBadge').style = '';
-            document.getElementById('usersBtn').style.display = 'block';
-            document.body.classList.add('is-admin');
-            document.getElementById('apanel').classList.add('show');
-            document.getElementById('cfgGeral').style.display = 'flex';
-            document.getElementById('publicSeekRow').style.display = 'flex';
-            
-            const eover = document.getElementById('eover');
-            if (eover) {
-                eover.classList.add('gone');
-                document.getElementById('eoverText').innerHTML = `Host iniciado!<br>Adicione vídeos à fila.`;
-            }
-            
-            startAsHost();
-            
-            toast("🎉 Você é o HOST agora!", "ok");
-        }
-    }, 5000);
-}
+        }, 5000);
+    }
     else if (ADMIN_USERS.includes(myName)) {
         isAdmin = true;
         toggleAdmin(true);
