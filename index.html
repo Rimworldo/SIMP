@@ -1150,7 +1150,7 @@ if (title === "Título Indisponível" || !title) {
   if(fromTwitch && !twitchUsers.has(user)) { twitchUsers.add(user); localStorage.setItem('simpTwitchUsers', JSON.stringify(Array.from(twitchUsers))); }
   
   const userColor = twitchColors[user] || null;
-  let thumb = isRawAudio ? 'https://images.unsplash.com/photo-1614680376593-902f74fa0d41?q=80&w=120&auto=format&fit=crop' : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  let thumb = isRawAudio ? 'https://i.giphy.com/blSTtZehjAZ8I.webp' : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   
   queue.push({videoId:id, title:title, user:user, color:userColor, thumb:thumb});
   if(isHost && twitchUsers.has(user)) addPoints(user, 10);
@@ -1324,7 +1324,7 @@ document.getElementById('clearBtn').addEventListener('click',function(){sendCmd(
 
 document.getElementById('cfgGlow').addEventListener('change',function(e){config.glow=e.target.checked; if(config.glow&&curIdx!==-1)document.getElementById('playerGlow').classList.add('active'); else document.getElementById('playerGlow').classList.remove('active'); saveConfig();});
 document.getElementById('cfgBpm').addEventListener('change',function(e){config.bpm=e.target.checked; saveConfig();});
-document.getElementById('cfgGifWords').addEventListener('change',function(e){config.gifWords=parseInt(e.target.value); saveConfig(); if(isHost&&curIdx>=0)setQueueGif(queue[curIdx].title);});
+document.getElementById('cfgGifWords').addEventListener('change',function(e){config.gifWords=parseInt(e.target.value); saveConfig(); });
 document.getElementById('cfgEmptySound').addEventListener('change',function(e){config.emptySound=e.target.checked; if(!config.emptySound)stopEmptySound(); saveConfig(); toast(config.emptySound?'Som ativado':'Som desativado','ok');});
 document.getElementById('cfgAutoSkip').addEventListener('change',function(e){ config.autoSkip = e.target.checked; saveConfig(); toast(config.autoSkip ? 'Pulo automático ativado' : 'Pulo automático desativado', 'ok'); });
 document.getElementById('cfgMaxDur').addEventListener('change',function(e){config.maxDuration=parseInt(e.target.value); saveConfig();});
@@ -1410,7 +1410,7 @@ function logChat(user, text, isCmd = false, color = '#bf94ff', isMod = false) {
   
   const d = document.createElement('div');
   d.className = 'cm';
-  d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#ff3c6e">Round Simps (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+  d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#ff3c6e"> (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
   
   box.appendChild(d);
   if(box.childNodes.length > 60) box.firstChild.remove();
