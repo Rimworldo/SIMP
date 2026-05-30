@@ -139,6 +139,25 @@ body.is-admin #ytFrame{pointer-events:auto}
 
 @media(max-width:760px){main{grid-template-columns:1fr}.qside{height:auto;position:static;max-height:420px}}
 body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:9998}
+.waveform-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 30px;
+    margin-left: 10px;
+}
+.wave-bar {
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--accent), #bf94ff);
+    border-radius: 2px;
+    animation: wave 0.5s ease-in-out infinite alternate;
+    transform-origin: center;
+}
+@keyframes wave {
+    0% { transform: scaleY(0.3); opacity: 0.5; }
+    100% { transform: scaleY(1); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -180,12 +199,24 @@ body::after{content:'';position:fixed;inset:0;opacity:.02;background-image:url("
         </div>
       </div>
     </div>
-    <div class="npbar" id="npbar" style="display:none">
-      <div class="npi">
-        <div class="nplbl">▶ tocando agora</div>
-        <div class="nptitle" id="npTitle">—</div>
-        <div class="npuser">pedido por <b id="npUser">—</b></div>
-      </div>
+    // Encontre esta parte (~linha 270):
+<div class="npi">
+    <div class="nplbl">▶ tocando agora</div>
+    <div class="nptitle" id="npTitle">—</div>
+    <div class="npuser">pedido por <b id="npUser">—</b></div>
+</div>
+
+// Adicione DEPOIS dela:
+<div class="waveform-container" id="waveformContainer" style="display:none;">
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+    <div class="wave-bar"></div>
+</div>
     </div>
     <div id="publicControls" style="display:flex;gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin:1rem 0;position:relative;z-index:2">
       <div class="volrow" id="publicSeekRow" style="flex:1;display:none">
@@ -696,6 +727,14 @@ function startAsHost() {
   hostPeer = new Peer(ROOM_ID, { debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
   
   hostPeer.on('open', function() {
+    initWaveform();
+
+// E quando clicar para reproduzir, resuma o áudio:
+document.body.addEventListener('click', function() {
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+});
     p2pInitializing = false;
     document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
     document.getElementById('roleBadge').className = 'role-badge role-host';
@@ -1208,11 +1247,21 @@ function loadVid(id) {
           rawAudio.src = id;
           rawAudio.volume = config.vol / 100;
           if(!paused) rawAudio.play().catch(function(){});
+          
+          // Conecta o waveform para MP3
+          if (audioContext && audioContext.state === 'suspended') {
+              audioContext.resume();
+          }
+          setTimeout(() => connectAudioToWaveform(rawAudio), 100);
       }
   } else {
+      disconnectWaveform(); // YouTube não suporta waveform fácil
       if(rawAudio) { rawAudio.pause(); rawAudio.style.display = 'none'; }
       ytFrame.style.display = 'block';
-      if(ytReady && ytPlayer && ytPlayer.loadVideoById) { ytPlayer.loadVideoById({videoId:id, startSeconds:0}); if(!paused) ytPlayer.playVideo(); }
+      if(ytReady && ytPlayer && ytPlayer.loadVideoById) { 
+          ytPlayer.loadVideoById({videoId:id, startSeconds:0}); 
+          if(!paused) ytPlayer.playVideo(); 
+      }
   }
 }
 
@@ -1438,7 +1487,85 @@ function toast(msg, type='') {
   const c = document.getElementById('toasts'); const t = document.createElement('div'); t.className='toast '+type; t.textContent=msg;
   c.appendChild(t); setTimeout(function(){t.remove();},3000);
 }
+// Waveform em tempo real
+let audioContext = null;
+let sourceNode = null;
+let analyserNode = null;
+let animationId = null;
+let mediaElement = null;
 
+function initWaveform() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    const bars = document.querySelectorAll('.wave-bar');
+    
+    function updateWaveform() {
+        if (!analyserNode || !isHost || !mediaElement || mediaElement.paused) {
+            animationId = requestAnimationFrame(updateWaveform);
+            return;
+        }
+        
+        const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+        analyserNode.getByteFrequencyData(dataArray);
+        
+        // Pega as médias das frequências para cada barra
+        const step = Math.floor(dataArray.length / bars.length);
+        for (let i = 0; i < bars.length; i++) {
+            let sum = 0;
+            for (let j = 0; j < step; j++) {
+                sum += dataArray[i * step + j] || 0;
+            }
+            let avg = sum / step;
+            let height = Math.min(30, Math.max(4, (avg / 255) * 30));
+            bars[i].style.height = height + 'px';
+            bars[i].style.animationDuration = (0.2 + (avg / 255) * 0.5) + 's';
+        }
+        
+        animationId = requestAnimationFrame(updateWaveform);
+    }
+    
+    updateWaveform();
+}
+
+function connectAudioToWaveform(audioElement) {
+    if (!audioContext || !isHost) return;
+    
+    // Fecha conexão anterior
+    if (sourceNode) {
+        try { sourceNode.disconnect(); } catch(e) {}
+    }
+    
+    try {
+        sourceNode = audioContext.createMediaElementSource(audioElement);
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256;
+        
+        sourceNode.connect(analyserNode);
+        analyserNode.connect(audioContext.destination);
+        
+        mediaElement = audioElement;
+        
+        document.getElementById('waveformContainer').style.display = 'flex';
+    } catch(e) {
+        console.log("Waveform não suportado:", e);
+    }
+}
+
+function disconnectWaveform() {
+    if (sourceNode) {
+        try { sourceNode.disconnect(); } catch(e) {}
+        sourceNode = null;
+    }
+    analyserNode = null;
+    document.getElementById('waveformContainer').style.display = 'none';
+    
+    // Reseta as barras
+    document.querySelectorAll('.wave-bar').forEach(bar => {
+        bar.style.height = '15px';
+    });
+}
 </script>
 </body>
 </html>
