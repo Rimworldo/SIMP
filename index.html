@@ -923,10 +923,17 @@ function handleSync(data) {
   const queueChanged = JSON.stringify(queue) !== JSON.stringify(data.queue);
   const idxChanged = curIdx !== data.curIdx;
   if (queueChanged || idxChanged) { queue = data.queue || []; curIdx = data.curIdx; renderQueue(); }
-  const bgEl = document.getElementById('qlistBg');
-  bgEl.style.backgroundImage = data.gifUrl ? `url(${data.gifUrl})` : '';
+ if (data.gifUrl) {
+      currentGifUrl = data.gifUrl;
+      updateGifBackground();
+  } else if (!data.gifUrl && currentGifUrl) {
+      currentGifUrl = '';
+      updateGifBackground();
+  }
+  
   if (data.glow && curIdx !== -1) document.getElementById('playerGlow').classList.add('active');
   else document.getElementById('playerGlow').classList.remove('active');
+
   
   if (curIdx < 0 || curIdx >= queue.length) {
     document.getElementById('eover').classList.remove('gone');
@@ -1055,12 +1062,27 @@ async function setQueueGif(term) {
     if(data.data && data.data.length > 0) {
       const randomGif = data.data[Math.floor(Math.random() * data.data.length)];
       currentGifUrl = randomGif.images.original.url;
+      updateGifBackground(); // <-- ADICIONE
     } else {
       currentGifUrl = '';
+      updateGifBackground(); // <-- ADICIONE
     }
   } catch(e) {
     currentGifUrl = 'https://media.giphy.com/media/OwFsPO2tCcrSYxDErS/giphy.gif';
+    updateGifBackground(); // <-- ADICIONE
   }
+}
+
+function updateGifBackground() {
+    const bgEl = document.getElementById('qlistBg');
+    if (currentGifUrl) {
+        bgEl.style.backgroundImage = `url(${currentGifUrl})`;
+        bgEl.style.backgroundSize = 'cover';
+        bgEl.style.backgroundPosition = 'center';
+        bgEl.style.opacity = '0.15';
+    } else {
+        bgEl.style.backgroundImage = '';
+    }
 }
 
 async function addToQueue(rawUrl, user, color, fromTwitch) {
@@ -1131,11 +1153,12 @@ function startPlayback(idx) {
   loadVid(item.videoId);
   
   const isMp3 = item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
-  if(isMp3) {
-      currentGifUrl = 'https://media.giphy.com/media/r50i0lZV4ijvzLcJKz/giphy.gif';
-  } else {
-      setQueueGif(item.title);
-  }
+if(isMp3) {
+    currentGifUrl = 'https://media.giphy.com/media/r50i0lZV4ijvzLcJKz/giphy.gif';
+    updateGifBackground(); // <-- ADICIONE
+} else {
+    setQueueGif(item.title); // já vai chamar updateGifBackground
+}
   
   renderQueue();
 }
@@ -1146,7 +1169,7 @@ function nextVideo() {
 }
 
 function showEmpty() {
-  curIdx = -1; currentGifUrl = ''; document.getElementById('eover').classList.remove('gone');
+  curIdx = -1; currentGifUrl = ''; updateGifBackground(); document.getElementById('eover').classList.remove('gone');
   document.getElementById('eoverText').innerHTML = isHost ? "Nenhum vídeo.<br>Use o chat" : "Aguardando Host..."; document.getElementById('npbar').style.display = 'none';
   document.getElementById('playerGlow').classList.remove('active'); 
   if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo(); 
