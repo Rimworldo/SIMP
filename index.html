@@ -662,7 +662,7 @@ function playEmptySound() {
   if (!isHost || !config.emptySound) return;
   if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; }
   const url = EMPTY_SOUNDS[Math.floor(Math.random() * EMPTY_SOUNDS.length)];
-  emptySoundAudio = new Audio(url); emptySoundAudio.volume = 0.85;
+  emptySoundAudio = new Audio(url); emptySoundAudio.volume = 0.5;
   emptySoundAudio.play().catch(function(){});
 }
 function stopEmptySound() { if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; } }
@@ -1090,7 +1090,7 @@ function updateGifBackground() {
         bgEl.style.backgroundImage = `url(${currentGifUrl})`;
         bgEl.style.backgroundSize = 'cover';
         bgEl.style.backgroundPosition = 'center';
-        bgEl.style.opacity = '0.15';
+        bgEl.style.opacity = '0.3';
     } else {
         bgEl.style.backgroundImage = '';
     }
