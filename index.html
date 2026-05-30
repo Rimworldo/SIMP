@@ -424,56 +424,66 @@ function assignRolesAndStart() {
         toggleAdmin(true);
         startAsHost();
     } 
-    else if (myName === SECONDARY_HOST) {
-        // Caso 2: Sou o host secundário (daniloamorimking)
-        // Primeiro tento conectar como cliente
-        isAdmin = true;  // Já tenho permissões de admin
-        toggleAdmin(true);
-        document.getElementById('roleBadge').textContent = '🔒 ADMIN (tentando host)';
-        document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
-        document.getElementById('roleBadge').style.color = '#ffb347';
-        document.getElementById('roleBadge').style.borderColor = '#ffb347';
-        document.getElementById('usersBtn').style.display = 'block';
-        
-        startAsClient();  // Tenta conectar ao host principal
-        
-        // Fallback: se não conseguir conectar em 8 segundos, vira HOST de verdade
-        setTimeout(function() {
-            if (!isHost && (!hostConnection || !hostConnection.open)) {
-                console.log("Host principal offline, assumindo como HOST");
-                
-                // Limpa qualquer conexão cliente existente
-                if (hostConnection) {
-                    try { hostConnection.close(); } catch(e) {}
-                    hostConnection = null;
-                }
-                if (clientPeer) {
-                    try { clientPeer.destroy(); } catch(e) {}
-                    clientPeer = null;
-                }
-                
-                // Configura como HOST verdadeiro
-                isAdmin = true;
-                isHost = true;
-                
-                // Atualiza UI para HOST
-                document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
-                document.getElementById('roleBadge').className = 'role-badge role-host';
-                document.getElementById('roleBadge').style = '';
-                toggleAdmin(true);
-                
-                // Mostra controles específicos de HOST
-                document.getElementById('apanel').classList.add('show');
-                document.getElementById('cfgGeral').style.display = 'flex';  // Mostra configs completas
-                document.getElementById('publicSeekRow').style.display = 'flex';
-                
-                // Inicia como HOST de verdade
-                startAsHost();
-                
-                toast("Você é o HOST agora! Controle total ativado.", "ok");
+    if (myName === SECONDARY_HOST) {
+    // Tenta conectar como cliente primeiro
+    isAdmin = true;
+    toggleAdmin(true);
+    document.getElementById('roleBadge').textContent = '🔒 ADMIN (tentando host)';
+    document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
+    document.getElementById('roleBadge').style.color = '#ffb347';
+    document.getElementById('roleBadge').style.borderColor = '#ffb347';
+    document.getElementById('usersBtn').style.display = 'block';
+    
+    startAsClient();  // Tenta conectar
+    
+    // Fallback: se não conectar em 5 segundos, vira HOST
+    setTimeout(function() {
+        if (!isHost && (!hostConnection || !hostConnection.open)) {
+            console.log("Host offline, assumindo HOST");
+            
+            // 🔥 CRUCIAL: Destroi TUDO do cliente
+            if (hostConnection) {
+                try { hostConnection.close(); } catch(e) {}
+                hostConnection = null;
             }
-        }, 8000);  // 8 segundos é suficiente
-    }
+            if (clientPeer) {
+                try { clientPeer.destroy(); } catch(e) {}
+                clientPeer = null;
+            }
+            
+            // Reseta variáveis de cliente
+            clientCurrentVideoId = null;
+            clientSynced = false;
+            p2pInitializing = false;
+            
+            // Agora sim vira HOST
+            isHost = true;
+            isAdmin = true;
+            
+            // Força a UI de HOST
+            document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
+            document.getElementById('roleBadge').className = 'role-badge role-host';
+            document.getElementById('roleBadge').style = '';
+            document.getElementById('usersBtn').style.display = 'block';
+            document.body.classList.add('is-admin');
+            document.getElementById('apanel').classList.add('show');
+            document.getElementById('cfgGeral').style.display = 'flex';
+            document.getElementById('publicSeekRow').style.display = 'flex';
+            
+            // Esconde o overlay de "Aguardando Host"
+            const eover = document.getElementById('eover');
+            if (eover) {
+                eover.classList.add('gone');
+                document.getElementById('eoverText').innerHTML = `Host iniciado!<br>Adicione vídeos à fila.`;
+            }
+            
+            // Inicia o Host de verdade
+            startAsHost();
+            
+            toast("🎉 Você é o HOST agora!", "ok");
+        }
+    }, 5000);  // 5 segundos é suficiente
+}
     else if (ADMIN_USERS.includes(myName)) {
         // Admin normal (não host)
         isAdmin = true;
@@ -701,28 +711,54 @@ function startAsHost() {
 }
 
 function startAsClient() {
-  if(p2pInitializing) return; 
-  p2pInitializing = true;
-  isHost = false;
-  
-  if(isAdmin) {
-      document.getElementById('roleBadge').textContent = '🔒 ADMIN';
-      document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
-      document.getElementById('roleBadge').style.color = '#ffb347';
-      document.getElementById('roleBadge').style.borderColor = '#ffb347';
-  } else {
-      document.getElementById('roleBadge').textContent = '🎧 CLIENT';
-      document.getElementById('roleBadge').className = 'role-badge role-client';
-  }
-  
-  document.getElementById('eoverText').innerHTML = `Conectando ao Host...`;
-  document.getElementById('syncBtn').style.display = 'block';
-  
-  if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
-  clientPeer = new Peer({ debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
-  
-  clientPeer.on('open', function() { p2pInitializing = false; setupClient(); });
-  clientPeer.on('error', function() { p2pInitializing = false; setTimeout(startAsClient, 4000); });
+    if(p2pInitializing) return; 
+    p2pInitializing = true;
+    isHost = false;
+    
+    // Se já somos host (fallback), não faz nada
+    if (isHost) {
+        p2pInitializing = false;
+        return;
+    }
+    
+    if(isAdmin) {
+        document.getElementById('roleBadge').textContent = '🔒 ADMIN';
+        document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
+        document.getElementById('roleBadge').style.color = '#ffb347';
+        document.getElementById('roleBadge').style.borderColor = '#ffb347';
+    } else {
+        document.getElementById('roleBadge').textContent = '🎧 CLIENT';
+        document.getElementById('roleBadge').className = 'role-badge role-client';
+    }
+    
+    // Só mostra "Aguardando Host" se não for admin/host
+    if (!isAdmin && !isHost) {
+        document.getElementById('eoverText').innerHTML = `Conectando ao Host...`;
+        document.getElementById('syncBtn').style.display = 'block';
+        document.getElementById('eover').classList.remove('gone');
+    } else {
+        // Admin que ainda não virou host
+        document.getElementById('eoverText').innerHTML = `Tentando conectar ao host principal...`;
+        document.getElementById('syncBtn').style.display = 'block';
+        document.getElementById('eover').classList.remove('gone');
+    }
+    
+    if(clientPeer) { 
+        try { clientPeer.destroy(); } catch(e) {} 
+        clientPeer = null; 
+    }
+    
+    clientPeer = new Peer({ debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+    
+    clientPeer.on('open', function() { 
+        p2pInitializing = false; 
+        setupClient(); 
+    });
+    
+    clientPeer.on('error', function() { 
+        p2pInitializing = false; 
+        if (!isHost) setTimeout(startAsClient, 4000); 
+    });
 }
 
 function setupHost() {
@@ -828,26 +864,58 @@ function setupHost() {
 }
 
 function setupClient() {
-  if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
-  hostConnection = clientPeer.connect(ROOM_ID, { reliable: true, metadata: { user: myName } });
-  hostConnection.on('open', function() {
-    document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
-  });
-  hostConnection.on('data', function(data) {
-    if (data.type === 'banned') { executeBanLoop(); return; }
-    if (data.type === 'sync') handleSync(data);
-    if (data.type === 'syslog' && isAdmin) { logChat(data.user, data.text, true, data.color); }
-  });
-  hostConnection.on('close', function() {
-    hostConnection = null; clientCurrentVideoId = null;
-    setTimeout(function() { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
-  });
-  hostConnection.on('error', function() {
-    hostConnection = null; clientCurrentVideoId = null;
-    setTimeout(function() { if (!isHost && clientPeer && !clientPeer.destroyed) setupClient(); }, 3000);
-  });
+    // Se já somos host, não tenta conectar como cliente
+    if (isHost) return;
+    
+    if(hostConnection) { 
+        try { hostConnection.close(); } catch(e) {} 
+        hostConnection = null; 
+    }
+    
+    hostConnection = clientPeer.connect(ROOM_ID, { 
+        reliable: true, 
+        metadata: { user: myName } 
+    });
+    
+    hostConnection.on('open', function() {
+        if (!isHost) {  // Só atualiza se ainda for cliente
+            document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
+            document.getElementById('syncBtn').style.display = 'block';
+        }
+    });
+    
+    hostConnection.on('data', function(data) {
+        if (data.type === 'banned') { 
+            executeBanLoop(); 
+            return; 
+        }
+        if (data.type === 'sync') handleSync(data);
+        if (data.type === 'syslog' && isAdmin) { 
+            logChat(data.user, data.text, true, data.color); 
+        }
+    });
+    
+    hostConnection.on('close', function() {
+        hostConnection = null;
+        clientCurrentVideoId = null;
+        // Se não for host, tenta reconectar
+        if (!isHost && clientPeer && !clientPeer.destroyed) {
+            setTimeout(function() { 
+                if (!isHost) setupClient(); 
+            }, 3000);
+        }
+    });
+    
+    hostConnection.on('error', function() {
+        hostConnection = null;
+        clientCurrentVideoId = null;
+        if (!isHost && clientPeer && !clientPeer.destroyed) {
+            setTimeout(function() { 
+                if (!isHost) setupClient(); 
+            }, 3000);
+        }
+    });
 }
-
 function handleSync(data) {
   if(data.simpsPoints) simpsPoints = data.simpsPoints;
   if(data.activeUsers) syncedActiveUsers = data.activeUsers;
