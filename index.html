@@ -380,8 +380,10 @@ document.getElementById('logoutBtn').addEventListener('click', function() {
 });
 function assignRolesAndStart() {
     document.getElementById('userProfileTag').innerHTML = `<div class="tdot"></div>${myName}`;
+    
     const PRIMARY_HOST = 'daenil';
     const SECONDARY_HOST = 'daniloamorimking';
+    
     if (myName === PRIMARY_HOST) {
         isAdmin = true;
         isHost = true;
@@ -394,12 +396,14 @@ function assignRolesAndStart() {
     else if (myName === SECONDARY_HOST) {
         isAdmin = true;
         toggleAdmin(true);
-        document.getElementById('roleBadge').textContent = '🔒 ADMIN (tentando host)';
+        document.getElementById('roleBadge').textContent = '⏳ BUSCANDO HOST...';
         document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
         document.getElementById('roleBadge').style.color = '#ffb347';
         document.getElementById('roleBadge').style.borderColor = '#ffb347';
         document.getElementById('usersBtn').style.display = 'block';
+        
         startAsClient();
+        
         setTimeout(function() {
             if (!isHost && (!hostConnection || !hostConnection.open)) {
                 if (hostConnection) {
@@ -410,11 +414,14 @@ function assignRolesAndStart() {
                     try { clientPeer.destroy(); } catch(e) {}
                     clientPeer = null;
                 }
+                
                 clientCurrentVideoId = null;
                 clientSynced = false;
                 p2pInitializing = false;
+                
                 isHost = true;
                 isAdmin = true;
+                
                 document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
                 document.getElementById('roleBadge').className = 'role-badge role-host';
                 document.getElementById('roleBadge').style = '';
@@ -423,12 +430,15 @@ function assignRolesAndStart() {
                 document.getElementById('apanel').classList.add('show');
                 document.getElementById('cfgGeral').style.display = 'flex';
                 document.getElementById('publicSeekRow').style.display = 'flex';
+                
                 const eover = document.getElementById('eover');
                 if (eover) {
                     eover.classList.add('gone');
                     document.getElementById('eoverText').innerHTML = `Host iniciado!<br>Adicione vídeos à fila.`;
                 }
+                
                 startAsHost();
+                
                 toast("🎉 Você é o HOST agora!", "ok");
             }
         }, 12000);
@@ -449,204 +459,23 @@ function assignRolesAndStart() {
         startAsClient();
     }
 }
-function isUserAdminRole(username) {
-    const lowerUser = username.toLowerCase();
-    return lowerUser === 'daenil' || ADMIN_USERS.includes(lowerUser) || twitchMods.has(lowerUser);
-}
-function banUser(targetUser) {
-    if(!isHost) return;
-    targetUser = targetUser.toLowerCase().replace('@', '');
-    if (targetUser === myName || ADMIN_USERS.includes(targetUser) || targetUser === 'daenil') {
-        toast('Você não pode banir este usuário!', 'err');
-        return;
-    }
-    if (!bannedUsers.includes(targetUser)) {
-        bannedUsers.push(targetUser);
-        localStorage.setItem('simpBannedUsers', JSON.stringify(bannedUsers));
-    }
-    clientConnections.forEach(function(c) {
-        if (c.metadata && c.metadata.user === targetUser) {
-            c.send({type: 'banned'});
-            setTimeout(function() { c.close(); }, 500);
-        }
-    });
-    logAdminAction(myName, `BANIU o usuário ${targetUser}`);
-    renderUsersModal();
-}
-function unbanUser(targetUser) {
-    if(!isHost) return;
-    targetUser = targetUser.toLowerCase().replace('@', '');
-    bannedUsers = bannedUsers.filter(function(u) { return u !== targetUser; });
-    localStorage.setItem('simpBannedUsers', JSON.stringify(bannedUsers));
-    logAdminAction(myName, `DESBANIU o usuário ${targetUser}`);
-    renderUsersModal();
-}
-document.getElementById('usersBtn').addEventListener('click', function() {
-    renderUsersModal();
-    document.getElementById('usersOvl').classList.add('open');
-});
-document.getElementById('usersClose').addEventListener('click', function() {
-    document.getElementById('usersOvl').classList.remove('open');
-});
-function renderUsersModal() {
-    const activeDiv = document.getElementById('activeUsersContent');
-    const bannedDiv = document.getElementById('bannedUsersContent');
-    const bannedSec = document.getElementById('bannedSection');
-    activeDiv.innerHTML = '';
-    let currentActive = isHost ? clientConnections.filter(function(c){ return c.open && c.metadata; }).map(function(c){ return c.metadata.user; }) : syncedActiveUsers;
-    if(currentActive.length === 0) {
-        activeDiv.innerHTML = '<div style="color:var(--muted); font-size:0.7rem; text-align:center;">Nenhum cliente conectado.</div>';
-    } else {
-        currentActive.forEach(function(u) {
-            const row = document.createElement('div'); row.className = 'u-item';
-            row.innerHTML = `<span class="u-name">${esc(u)}</span> <button class="u-btn" data-user="${esc(u)}">BANIR</button>`;
-            activeDiv.appendChild(row);
-        });
-    }
-    if(isHost) {
-        bannedSec.style.display = 'block';
-        bannedDiv.innerHTML = '';
-        if(bannedUsers.length === 0) {
-            bannedDiv.innerHTML = '<div style="color:var(--muted); font-size:0.7rem; text-align:center;">Ninguém banido.</div>';
-        } else {
-            bannedUsers.forEach(function(u) {
-                const row = document.createElement('div'); row.className = 'u-item';
-                row.innerHTML = `<span class="u-name" style="color:#ff3c6e;">${esc(u)}</span> <button class="u-btn unban" data-user="${esc(u)}">UNBAN</button>`;
-                bannedDiv.appendChild(row);
-            });
-        }
-    } else {
-        bannedSec.style.display = 'none';
-    }
-    document.querySelectorAll('#activeUsersContent .u-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            if(isHost) banUser(this.dataset.user);
-            else sendCmd('ban', {target: this.dataset.user});
-        });
-    });
-    if(isHost) {
-        document.querySelectorAll('#bannedUsersContent .u-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() { unbanUser(this.dataset.user); });
-        });
-    }
-}
-function initConfigUI() {
-  document.getElementById('cfgGlow').checked = config.glow;
-  document.getElementById('cfgBpm').checked = config.bpm;
-  document.getElementById('cfgEmptySound').checked = config.emptySound;
-  document.getElementById('cfgAutoSkip').checked = config.autoSkip;
-  document.getElementById('cfgGifWords').value = config.gifWords;
-  document.getElementById('cfgMaxDur').value = config.maxDuration || 5;
-  document.getElementById('volSliderClient').value = config.vol;
-  document.getElementById('volNumClient').textContent = config.vol + '%';
-}
-function saveConfig() { localStorage.setItem('simpConfig', JSON.stringify(config)); }
-function cleanTitleForGif(title) { return title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, config.gifWords).join(' '); }
-function getUserPoints(user) { return simpsPoints[user] || 0; }
-function addPoints(user, amount) {
-  if(!user || !isHost) return;
-  simpsPoints[user] = (simpsPoints[user] || 0) + amount;
-  localStorage.setItem('simpPoints', JSON.stringify(simpsPoints));
-}
-function spendPoints(user, amount) {
-  if(!user || getUserPoints(user) < amount) return false;
-  simpsPoints[user] -= amount;
-  localStorage.setItem('simpPoints', JSON.stringify(simpsPoints));
-  return true;
-}
-function updateClientsBadge() {
-  const badge = document.getElementById('clientsBadge');
-  const count = document.getElementById('clientsCount');
-  if (!isHost) { badge.style.display = 'none'; return; }
-  badge.style.display = 'flex';
-  count.textContent = clientConnections.filter(function(c){ return c.open; }).length;
-}
-async function searchYouTube(query) {
-  try {
-    const response = await fetch(`https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-    if (!response.ok) throw new Error('Falha1');
-    const data = await response.json();
-    if (data && data[0] && data[0].title) return { videoId: data[0].videoId, title: data[0].title };
-  } catch(e) {
-    try {
-      const response2 = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-      if (!response2.ok) throw new Error('Falha2');
-      const data2 = await response2.json();
-      if (data2 && data2[0] && data2[0].title) return { videoId: data2[0].videoId, title: data2[0].title };
-    } catch(e2) { return null; }
-  }
-  return null;
-}
-async function getVideoDuration(id) {
-  try{
-    const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
-    if(!r.ok) throw new Error('Falha');
-    const d = await r.json();
-    return d.lengthSeconds || 0;
-  }catch(e){ return 0; }
-}
-function playEmptySound() {
-  if (!isHost || !config.emptySound) return;
-  if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; }
-  const url = EMPTY_SOUNDS[Math.floor(Math.random() * EMPTY_SOUNDS.length)];
-  emptySoundAudio = new Audio(url); emptySoundAudio.volume = 0.5;
-  emptySoundAudio.play().catch(function(){});
-}
-function stopEmptySound() { if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; } }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function showSimps() {
-  let html = '<b>Rank Simps</b><br>';
-  const sorted = Object.entries(simpsPoints).sort(function(a,b){ return b[1]-a[1]; });
-  sorted.forEach(function(item) { html += `${item[0]} — ${item[1]} Simps<br>`; });
-  html += '<br><b>Comandos:</b><br>%simp skip → -25 Simps<br>%simp trocar → -30 Simps<br>%simp gif (nome) → -10 Simps<br>%simp (url/busca) → Adiciona à fila';
-  document.getElementById('simpsContent').innerHTML = html;
-  document.getElementById('simpsOvl').classList.add('open');
-}
-document.getElementById('simpsBtn').addEventListener('click', showSimps);
-document.getElementById('simpsClose').addEventListener('click', function() { document.getElementById('simpsOvl').classList.remove('open'); });
-function destroyPeers() {
-  clientConnections.forEach(function(c) { try { c.close(); } catch(e) {} });
-  clientConnections = [];
-  if(hostConnection) { try { hostConnection.close(); } catch(e) {} hostConnection = null; }
-  if(hostPeer) { try { hostPeer.destroy(); } catch(e) {} hostPeer = null; }
-  if(clientPeer) { try { clientPeer.destroy(); } catch(e) {} clientPeer = null; }
-}
-function startAsHost() {
-  if(p2pInitializing) return;
-  p2pInitializing = true;
-  isHost = true;
-  destroyPeers();
-  hostPeer = new Peer(ROOM_ID, { debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
-  hostPeer.on('open', function() {
-    p2pInitializing = false;
-    document.getElementById('roleBadge').textContent = `👑 HOST (${myName})`;
-    document.getElementById('roleBadge').className = 'role-badge role-host';
-    document.getElementById('eoverText').innerHTML = `Host iniciado.<br>Aguardando vídeos!`;
-    updateClientsBadge();
-    setupHost();
-  });
-  hostPeer.on('error', function(err) { 
-    p2pInitializing = false; 
-    toast('Erro ao iniciar Host. O ID está ocupado.', 'err'); 
-  });
-}
+
 function startAsClient() {
-    if(p2pInitializing) return; 
+    if (isHost) return; // <-- CORREÇÃO CRÍTICA: Bloqueia a função de rodar se você já virou Host, impedindo o rebaixamento.
+    if (p2pInitializing) return; 
     p2pInitializing = true;
-    isHost = false;
-    if (isHost) {
-        p2pInitializing = false;
-        return;
-    }
-    if(isAdmin) {
+    
+    // Deixa a tag do daniloamorimking intacta até ele de fato se conectar
+    if(isAdmin && myName !== 'daniloamorimking') {
         document.getElementById('roleBadge').textContent = '🔒 ADMIN';
         document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
         document.getElementById('roleBadge').style.color = '#ffb347';
         document.getElementById('roleBadge').style.borderColor = '#ffb347';
-    } else {
+    } else if (!isAdmin && myName !== 'daniloamorimking') {
         document.getElementById('roleBadge').textContent = '🎧 CLIENT';
         document.getElementById('roleBadge').className = 'role-badge role-client';
     }
+    
     if (!isAdmin && !isHost) {
         document.getElementById('eoverText').innerHTML = `Conectando ao Host...`;
         document.getElementById('syncBtn').style.display = 'block';
@@ -656,131 +485,53 @@ function startAsClient() {
         document.getElementById('syncBtn').style.display = 'block';
         document.getElementById('eover').classList.remove('gone');
     }
+    
     if(clientPeer) { 
         try { clientPeer.destroy(); } catch(e) {} 
         clientPeer = null; 
     }
+    
     clientPeer = new Peer({ debug: 0, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+    
     clientPeer.on('open', function() { 
         p2pInitializing = false; 
         setupClient(); 
     });
+    
     clientPeer.on('error', function() { 
         p2pInitializing = false; 
         if (!isHost) setTimeout(startAsClient, 4000); 
     });
 }
-function setupHost() {
-  connectTwitch();
-  hostPeer.on('connection', function(conn) {
-    if (conn.metadata && bannedUsers.includes(conn.metadata.user)) {
-        conn.on('open', function() {
-            conn.send({type: 'banned'});
-            setTimeout(function() { conn.close(); }, 500);
-        });
-        return;
-    }
-    conn.on('open', function() {
-      clientConnections.push(conn);
-      updateClientsBadge();
-    });
-    conn.on('data', async function(data) {
-      if (data.type === 'cmd') {
-        const isRequestingAdmin = isUserAdminRole(data.user);
-        if (data.action === 'add') await addToQueue(data.url, data.user, data.color, data.fromTwitch);
-        if (data.action === 'ban' && isRequestingAdmin && data.target) {
-            banUser(data.target);
-        }
-        if (data.action === 'skip') {
-          if(isRequestingAdmin || getUserPoints(data.user) >= 25) {
-            if(!isRequestingAdmin) spendPoints(data.user, 25);
-            nextVideo();
-          }
-        }
-        if (data.action === 'remove' && data.index !== undefined && isRequestingAdmin) {
-            queue.splice(data.index, 1);
-            if(data.index < curIdx) curIdx--;
-            else if(data.index === curIdx) { curIdx=-1; if(queue.length>0) startPlayback(0); else showEmpty(); }
-            renderQueue();
-        }
-        if (data.action === 'pause') {
-          if(isRequestingAdmin) {
-            paused = !paused;
-            const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
-            const rawAudio = document.getElementById('rawAudio');
-            if (isMp3 && rawAudio) {
-                if (paused) rawAudio.pause(); else rawAudio.play().catch(function(){});
-            } else {
-                if (paused && ytPlayer) ytPlayer.pauseVideo(); else if (ytPlayer) ytPlayer.playVideo();
-            }
-          }
-        }
-        if (data.action === 'clear') { 
-            if(isRequestingAdmin) { queue = []; showEmpty(); }
-        }
-        if (data.action === 'seek' && data.time !== undefined) {
-          if(isRequestingAdmin) {
-              const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
-              const rawAudio = document.getElementById('rawAudio');
-              if (isMp3 && rawAudio) {
-                  rawAudio.currentTime = data.time;
-              } else {
-                  if (ytPlayer) ytPlayer.seekTo(data.time, true);
-              }
-          }
-        }
-        if (data.action === 'trocar') {
-          if(isRequestingAdmin || getUserPoints(data.user) >= 30) {
-            if(!isRequestingAdmin) spendPoints(data.user, 30);
-            queue = queue.sort(function() { return Math.random() - 0.5; });
-            renderQueue();
-          }
-        }
-        if (data.action === 'gif' && data.gifName) {
-          if(getUserPoints(data.user) >= 10) { spendPoints(data.user, 10); setQueueGif(data.gifName); }
-        }
-      }
-    });
-    conn.on('close', function() { clientConnections = clientConnections.filter(function(c){return c!==conn;}); updateClientsBadge(); });
-    conn.on('error', function() { clientConnections = clientConnections.filter(function(c){return c!==conn;}); updateClientsBadge(); });
-  });
-  setInterval(function() {
-    if (clientConnections.length === 0) return;
-    let time = 0;
-    if(curIdx >= 0 && queue[curIdx]) {
-       const isMp3 = queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
-       const rawAudio = document.getElementById('rawAudio');
-       if(isMp3 && rawAudio) {
-           time = rawAudio.currentTime || 0;
-       } else if(ytReady && ytPlayer) {
-           time = (ytPlayer.getCurrentTime && typeof ytPlayer.getCurrentTime === 'function') ? ytPlayer.getCurrentTime() : 0;
-       }
-    }
-    const currentActiveUsers = clientConnections.filter(function(c){return c.open && c.metadata;}).map(function(c){return c.metadata.user;});
-    const syncData = { 
-        type: 'sync', queue: queue, curIdx: curIdx, time: time, paused: paused, 
-        glow: config.glow, gifUrl: currentGifUrl, simpsPoints: Object.assign({}, simpsPoints),
-        activeUsers: currentActiveUsers
-    };
-    clientConnections.forEach(function(c) { if(c.open) c.send(syncData); });
-  }, 2000);
-}
+
 function setupClient() {
     if (isHost) return;
+    
     if(hostConnection) { 
         try { hostConnection.close(); } catch(e) {} 
         hostConnection = null; 
     }
+    
     hostConnection = clientPeer.connect(ROOM_ID, { 
         reliable: true, 
         metadata: { user: myName } 
     });
+    
     hostConnection.on('open', function() {
         if (!isHost) {
             document.getElementById('eoverText').innerHTML = `Conectado!<br>Aguardando vídeos...`;
             document.getElementById('syncBtn').style.display = 'block';
+            
+            // Só recebe a tag de Admin definitivamente quando consegue achar o host primário
+            if (myName === 'daniloamorimking') {
+                document.getElementById('roleBadge').textContent = '🔒 ADMIN';
+                document.getElementById('roleBadge').style.background = 'rgba(255, 165, 0, 0.2)';
+                document.getElementById('roleBadge').style.color = '#ffb347';
+                document.getElementById('roleBadge').style.borderColor = '#ffb347';
+            }
         }
     });
+    
     hostConnection.on('data', function(data) {
         if (data.type === 'banned') { 
             executeBanLoop(); 
@@ -791,6 +542,7 @@ function setupClient() {
             logChat(data.user, data.text, true, data.color); 
         }
     });
+    
     hostConnection.on('close', function() {
         hostConnection = null;
         clientCurrentVideoId = null;
@@ -800,6 +552,7 @@ function setupClient() {
             }, 3000);
         }
     });
+    
     hostConnection.on('error', function() {
         hostConnection = null;
         clientCurrentVideoId = null;
