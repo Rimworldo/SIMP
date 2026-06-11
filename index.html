@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Simp. P2P</title>
+<title>Simp.</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
@@ -360,9 +360,11 @@ function checkTwitchAuth() {
 }
 
 async function fetchTwitchUser(token) {
-    document.getElementById('twitchLoginOvl').classList.add('open');
-    document.querySelector('#twitchLoginOvl h2').textContent = "Conectando...";
-    document.querySelector('#twitchLoginOvl p').textContent = "Validando sessão na Twitch...";
+    const loginOvl = document.getElementById('twitchLoginOvl');
+    loginOvl.classList.add('open');
+    const modal = loginOvl.querySelector('.modal');
+    modal.querySelector('h2').textContent = "Conectando...";
+    modal.querySelector('p').textContent = "Validando sessão na Twitch...";
     document.getElementById('twitchLoginBtn').style.display = 'none';
 
     try {
@@ -383,7 +385,7 @@ async function fetchTwitchUser(token) {
                 return;
             }
 
-            document.getElementById('twitchLoginOvl').classList.remove('open');
+            loginOvl.classList.remove('open');
             assignRolesAndStart();
         } else {
             throw new Error('Usuário não encontrado');
@@ -391,8 +393,8 @@ async function fetchTwitchUser(token) {
     } catch(e) {
         localStorage.removeItem('simpTwitchToken');
         toast('Sessão expirada. Faça login novamente.', 'err');
-        document.querySelector('#twitchLoginOvl h2').textContent = "Simp. P2P";
-        document.querySelector('#twitchLoginOvl p').textContent = "Você precisa logar com a Twitch para acessar a sala.";
+        modal.querySelector('h2').textContent = "Simp. P2P";
+        modal.querySelector('p').textContent = "Você precisa logar com a Twitch para acessar a sala.";
         document.getElementById('twitchLoginBtn').style.display = 'block';
     }
 }
@@ -433,7 +435,7 @@ function assignRolesAndStart() {
         
         startAsClient();
         
-        setTimeout(function() {
+        const fallbackTimer = setTimeout(function() {
             if (!isHost && (!hostConnection || !hostConnection.open)) {
                 if (hostConnection) {
                     try { hostConnection.close(); } catch(e) {}
@@ -470,7 +472,7 @@ function assignRolesAndStart() {
                 
                 toast("🎉 Você é o HOST agora!", "ok");
             }
-        }, 5000);
+        }, 8000);
     }
     else if (ADMIN_USERS.includes(myName)) {
         isAdmin = true;
@@ -596,21 +598,26 @@ function initConfigUI() {
   document.getElementById('volSliderClient').value = config.vol;
   document.getElementById('volNumClient').textContent = config.vol + '%';
 }
+
 function saveConfig() { localStorage.setItem('simpConfig', JSON.stringify(config)); }
 
 function cleanTitleForGif(title) { return title.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim().split(' ').slice(0, config.gifWords).join(' '); }
+
 function getUserPoints(user) { return simpsPoints[user] || 0; }
+
 function addPoints(user, amount) {
   if(!user || !isHost) return;
   simpsPoints[user] = (simpsPoints[user] || 0) + amount;
   localStorage.setItem('simpPoints', JSON.stringify(simpsPoints));
 }
+
 function spendPoints(user, amount) {
   if(!user || getUserPoints(user) < amount) return false;
   simpsPoints[user] -= amount;
   localStorage.setItem('simpPoints', JSON.stringify(simpsPoints));
   return true;
 }
+
 function updateClientsBadge() {
   const badge = document.getElementById('clientsBadge');
   const count = document.getElementById('clientsCount');
@@ -635,6 +642,7 @@ async function searchYouTube(query) {
   }
   return null;
 }
+
 async function getVideoDuration(id) {
   try{
     const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
@@ -651,17 +659,20 @@ function playEmptySound() {
   emptySoundAudio = new Audio(url); emptySoundAudio.volume = 0.5;
   emptySoundAudio.play().catch(function(){});
 }
+
 function stopEmptySound() { if (emptySoundAudio) { emptySoundAudio.pause(); emptySoundAudio = null; } }
+
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showSimps() {
   let html = '<b>Rank Simps</b><br>';
   const sorted = Object.entries(simpsPoints).sort(function(a,b){ return b[1]-a[1]; });
   sorted.forEach(function(item) { html += `${item[0]} — ${item[1]} Simps<br>`; });
-  html += '<br><b>Comandos:</b><br>%simp skip → -50 Simps<br>%simp trocar → -50 Simps<br>%simp gif (nome) → -20 Simps<br>%simp (url/busca) → Adiciona à fila';
+  html += '<br><b>Comandos:</b><br>%simp skip → -25 Simps<br>%simp trocar → -30 Simps<br>%simp gif (nome) → -10 Simps<br>%simp (url/busca) → Adiciona à fila';
   document.getElementById('simpsContent').innerHTML = html;
   document.getElementById('simpsOvl').classList.add('open');
 }
+
 document.getElementById('simpsBtn').addEventListener('click', showSimps);
 document.getElementById('simpsClose').addEventListener('click', function() { document.getElementById('simpsOvl').classList.remove('open'); });
 
@@ -740,7 +751,9 @@ function startAsClient() {
     
     clientPeer.on('error', function() { 
         p2pInitializing = false; 
-        if (!isHost) setTimeout(startAsClient, 4000); 
+        if (!isHost && clientPeer && !clientPeer.destroyed) {
+            setTimeout(startAsClient, 4000); 
+        }
     });
 }
 
@@ -772,8 +785,8 @@ function setupHost() {
         }
 
         if (data.action === 'skip') {
-          if(isRequestingAdmin || getUserPoints(data.user) >= 50) {
-            if(!isRequestingAdmin) spendPoints(data.user, 50);
+          if(isRequestingAdmin || getUserPoints(data.user) >= 25) {
+            if(!isRequestingAdmin) spendPoints(data.user, 25);
             nextVideo();
           }
         }
@@ -808,15 +821,15 @@ function setupHost() {
         }
         
         if (data.action === 'trocar') {
-          if(isRequestingAdmin || getUserPoints(data.user) >= 50) {
-            if(!isRequestingAdmin) spendPoints(data.user, 50);
+          if(isRequestingAdmin || getUserPoints(data.user) >= 30) {
+            if(!isRequestingAdmin) spendPoints(data.user, 30);
             queue = queue.sort(function() { return Math.random() - 0.5; });
             renderQueue();
           }
         }
         
         if (data.action === 'gif' && data.gifName) {
-          if(getUserPoints(data.user) >= 20) { spendPoints(data.user, 20); setQueueGif(data.gifName); }
+          if(getUserPoints(data.user) >= 10) { spendPoints(data.user, 10); setQueueGif(data.gifName); }
         }
       }
     });
@@ -897,6 +910,7 @@ function setupClient() {
         }
     });
 }
+
 function handleSync(data) {
   if(data.simpsPoints) simpsPoints = data.simpsPoints;
   if(data.activeUsers) syncedActiveUsers = data.activeUsers;
@@ -904,7 +918,7 @@ function handleSync(data) {
   const queueChanged = JSON.stringify(queue) !== JSON.stringify(data.queue);
   const idxChanged = curIdx !== data.curIdx;
   if (queueChanged || idxChanged) { queue = data.queue || []; curIdx = data.curIdx; renderQueue(); }
- if (data.gifUrl) {
+  if (data.gifUrl) {
       currentGifUrl = data.gifUrl;
       updateGifBackground();
   } else if (!data.gifUrl && currentGifUrl) {
@@ -982,6 +996,7 @@ document.getElementById('syncBtn').addEventListener('click', function() {
 });
 
 (function(){ const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s); })();
+
 window.onYouTubeIframeAPIReady = function(){
   ytPlayer = new YT.Player('ytFrame', {
     playerVars: { 'controls': 0, 'disablekb': 1 },
@@ -1195,8 +1210,13 @@ function loadVid(id) {
 
 function renderQueue() {
   const list = document.getElementById('qlist'); const empty = document.getElementById('qempty');
-  document.getElementById('qcount').textContent = queue.length; list.querySelectorAll('.qi').forEach(function(i){i.remove();});
-  if(queue.length===0){ empty.style.display='flex'; return; } empty.style.display='none';
+  document.getElementById('qcount').textContent = queue.length; 
+  
+  list.querySelectorAll('.qi').forEach(function(i){i.remove();});
+  
+  if(queue.length===0){ empty.style.display='flex'; return; } 
+  empty.style.display='none';
+  
   queue.forEach(function(item,i){
     const isCur = i===curIdx; let pos = isCur ? '▶' : (curIdx>=0 ? '#'+(i-curIdx) : '#'+(i+1));
     const d = document.createElement('div'); d.className = 'qi' + (isCur?' cur':'');
@@ -1209,8 +1229,41 @@ function renderQueue() {
     `;
     list.appendChild(d);
   });
-  list.querySelectorAll('.qisave').forEach(function(btn){ btn.addEventListener('click',function(e){e.stopPropagation(); const item=queue[parseInt(btn.dataset.i)]; if(!myPlaylist.find(function(v){return v.videoId===item.videoId;})){myPlaylist.push(item);localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist));renderPlaylist();toast('Salvo!', 'ok');}}); });
-  if(isAdmin){ list.querySelectorAll('.qidel').forEach(function(btn){ btn.addEventListener('click',function(e){e.stopPropagation(); const i=parseInt(btn.dataset.i); queue.splice(i,1); if(i<curIdx)curIdx--; else if(i===curIdx){curIdx=-1;if(queue.length>0)startPlayback(0);else showEmpty();} renderQueue();}); }); }
+  
+  list.querySelectorAll('.qisave').forEach(function(btn){ 
+    btn.addEventListener('click',function(e){
+      e.stopPropagation(); 
+      const idx = parseInt(btn.dataset.i);
+      if(idx >= 0 && idx < queue.length) {
+        const item = queue[idx];
+        if(!myPlaylist.find(function(v){return v.videoId===item.videoId;})){
+          myPlaylist.push(item);
+          localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist));
+          renderPlaylist();
+          toast('Salvo!', 'ok');
+        }
+      }
+    }); 
+  });
+  
+  if(isAdmin){ 
+    list.querySelectorAll('.qidel').forEach(function(btn){ 
+      btn.addEventListener('click',function(e){
+        e.stopPropagation(); 
+        const i=parseInt(btn.dataset.i); 
+        if(i >= 0 && i < queue.length) {
+          queue.splice(i,1); 
+          if(i<curIdx) curIdx--; 
+          else if(i===curIdx){
+            curIdx=-1;
+            if(queue.length>0) startPlayback(0);
+            else showEmpty();
+          } 
+          renderQueue();
+        }
+      }); 
+    }); 
+  }
 }
 
 function renderPlaylist() {
@@ -1224,8 +1277,11 @@ function renderPlaylist() {
   });
   c.querySelectorAll('.plist-del').forEach(function(btn){ btn.addEventListener('click',function(e){e.stopPropagation(); myPlaylist.splice(parseInt(btn.dataset.i),1); localStorage.setItem('simpPlaylist',JSON.stringify(myPlaylist)); renderPlaylist();}); });
 }
+
 document.getElementById('dropBtn').addEventListener('click',function(){document.getElementById('dropContent').classList.toggle('show');});
+
 window.onclick = function(e) { if(!e.target.matches('#dropBtn') && !e.target.closest('.dropdown-content')) document.getElementById('dropContent').classList.remove('show'); };
+
 renderPlaylist();
 
 function toggleAdmin(state) {
@@ -1314,6 +1370,7 @@ volClient.addEventListener('input',function(){
     if(rawAudio) rawAudio.volume = config.vol / 100;
     saveConfig(); 
 });
+
 seekClient.addEventListener('input',function(){
   if(isHost){
       const isMp3 = (curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i));
@@ -1364,9 +1421,9 @@ function connectTwitch() {
       
       if(action==='ban' && (isMod || isHost) && arg) { if(isHost) banUser(arg); else sendCmd('ban', {target: arg}); return; }
       if(action==='unban' && (isMod || isHost) && arg) { if(isHost) unbanUser(arg); return; }
-      if(action==='skip'){ if(isMod || getUserPoints(twitchUser)>=50){ if(!isMod) spendPoints(twitchUser,50); if(isHost) nextVideo(); else sendCmd('skip',{user: twitchUser}); } return; }
-      if(action==='trocar' && getUserPoints(twitchUser)>=50){ spendPoints(twitchUser,50); if(isHost){ queue=queue.sort(function(){return Math.random()-0.5;}); renderQueue(); } else sendCmd('trocar',{user: twitchUser}); return; }
-      if(action==='gif' && arg && getUserPoints(twitchUser)>=20){ spendPoints(twitchUser,20); if(isHost) setQueueGif(arg); else sendCmd('gif',{user: twitchUser, gifName: arg}); return; }
+      if(action==='skip'){ if(isMod || getUserPoints(twitchUser)>=25){ if(!isMod) spendPoints(twitchUser,25); if(isHost) nextVideo(); else sendCmd('skip',{user: twitchUser}); } return; }
+      if(action==='trocar' && getUserPoints(twitchUser)>=30){ spendPoints(twitchUser,30); if(isHost){ queue=queue.sort(function(){return Math.random()-0.5;}); renderQueue(); } else sendCmd('trocar',{user: twitchUser}); return; }
+      if(action==='gif' && arg && getUserPoints(twitchUser)>=10){ spendPoints(twitchUser,10); if(isHost) setQueueGif(arg); else sendCmd('gif',{user: twitchUser, gifName: arg}); return; }
       await addToQueue(msg.slice(CMD.length).trim(), twitchUser, color, true);
     } else { logChat(twitchUser, msg, false, color, isMod); }
   };
