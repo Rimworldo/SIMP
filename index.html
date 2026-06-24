@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Cimp.</title>
+        <title>Simp.</title>
         <link
             href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap"
             rel="stylesheet"
@@ -922,7 +922,7 @@
     <body>
         <div class="ovl open" id="twitchLoginOvl" style="background: #0a0a0f; z-index: 99999">
             <div class="modal">
-                <h2 style="color: #00aaff; font-size: 1.8rem; margin-bottom: 10px">Cimp. P2P</h2>
+                <h2 style="color: #00aaff; font-size: 1.8rem; margin-bottom: 10px">Simp. P2P</h2>
                 <p>Você precisa logar com a Twitch para acessar a sala.</p>
                 <button class="bok" id="twitchLoginBtn" style="background: #00aaff; font-size: 1rem; padding: 1rem">
                     Entrar com a Twitch
@@ -931,14 +931,14 @@
         </div>
 
         <header>
-            <div class="logo">Cimp<span>.</span> <span id="roleBadge" class="role-badge">Carregando...</span></div>
+            <div class="logo">Simp<span>.</span> <span id="roleBadge" class="role-badge">Carregando...</span></div>
             <div class="hright">
                 <button class="abtn" id="usersBtn" style="display: none">👥 Usuários</button>
                 <div class="dropdown">
                     <button class="abtn" id="dropBtn">📑 Playlist</button>
                     <div class="dropdown-content" id="dropContent"></div>
                 </div>
-                <button class="abtn" id="cimpsBtn">💰 Cimps</button>
+                <button class="abtn" id="simpsBtn">💰 Simps</button>
                 <div class="tp" id="userProfileTag">
                     <div class="tdot"></div>
                     Carregando...
@@ -1046,16 +1046,16 @@
                     </div>
                 </div>
                 <div class="chatbox" id="chatbox">
-                    <div class="cblbl">Log Cimp.</div>
+                    <div class="cblbl">Log Simp.</div>
                 </div>
             </div>
         </main>
 
-        <div class="ovl" id="cimpsOvl">
+        <div class="ovl" id="simpsOvl">
             <div class="modal" style="width: 380px">
-                <h2>💰 Cimps</h2>
+                <h2>💰 Simps</h2>
                 <div
-                    id="cimpsContent"
+                    id="simpsContent"
                     style="
                         font-family: Space Mono;
                         font-size: 0.75rem;
@@ -1066,7 +1066,7 @@
                     "
                 ></div>
                 <div class="mbtns" style="margin-top: 1rem">
-                    <button class="bok" id="cimpsClose">Fechar</button>
+                    <button class="bok" id="simpsClose">Fechar</button>
                 </div>
             </div>
         </div>
@@ -1112,19 +1112,21 @@
 
         <script>
             const TWITCH_CLIENT_ID = "7o46ook2j72oegbie1sd1wevif167x";
-            const REDIRECT_URI = "https://rimworldo.github.io/Cimp/";
+            const REDIRECT_URI = "https://rimworldo.github.io/Simp/";
             const ADMIN_USERS = [
-                "biilena",
-                "umqualqueaii",
+                "aceboladoo_",
+                "aceboladoo_",
                 "daniloamorimking",
                 "omonfredini",
-                "atelis2",
+                "gmoninho",
                 "roninlinguica",
+                "bbeazinhaa",
+                "saimo504",
                 "saimo504",
             ];
 
-            const CHANNEL = "aceboladoo_";
-            const ROOM_ID = `cimp-room-${CHANNEL}`;
+            const CHANNEL = "daenil";
+            const ROOM_ID = `simp-room-${CHANNEL}`;
 
             const EMPTY_SOUNDS = ["https://files.catbox.moe/d5u8m3.mp3", "https://files.catbox.moe/xjed0e.mp3"];
 
@@ -1138,10 +1140,10 @@
             let ytPlayer = null;
             let currentGifUrl = "";
             let clientSynced = false;
-            let cimpPlaylist = JSON.parse(localStorage.getItem("cimpPlaylist") || "[]");
+            let simpPlaylist = JSON.parse(localStorage.getItem("simpPlaylist") || "[]");
             let myName = "";
             let myTwitchName = "";
-            let config = JSON.parse(localStorage.getItem("cimpConfig") || "{}");
+            let config = JSON.parse(localStorage.getItem("simpConfig") || "{}");
             if (!config.gifWords)
                 config = {
                     gifWords: 3,
@@ -1152,8 +1154,8 @@
                     autoSkip: true,
                     maxDuration: 5,
                 };
-            let cimpsPoints = JSON.parse(localStorage.getItem("cimpPoints") || "{}");
-            let bannedUsers = JSON.parse(localStorage.getItem("cimpBannedUsers") || "[]");
+            let simpsPoints = JSON.parse(localStorage.getItem("simpPoints") || "{}");
+            let bannedUsers = JSON.parse(localStorage.getItem("simpBannedUsers") || "[]");
             let hostPeer = null;
             let clientPeer = null;
             let hostConnection = null;
@@ -1163,8 +1165,8 @@
             let clientLastSyncTime = 0;
             const SYNC_TOLERANCE_SEC = 5;
             let twitchMods = new Set();
-            let twitchUsers = new Set(JSON.parse(localStorage.getItem("cimpTwitchUsers") || "[]"));
-            let twitchColors = JSON.parse(localStorage.getItem("cimpTwitchColors") || "{}");
+            let twitchUsers = new Set(JSON.parse(localStorage.getItem("simpTwitchUsers") || "[]"));
+            let twitchColors = JSON.parse(localStorage.getItem("simpTwitchColors") || "{}");
             let syncedActiveUsers = [];
             let twitchWs = null;
             let lastTwitchMessageTime = 0;
@@ -1202,13 +1204,13 @@
 
             function checkTwitchAuth() {
                 const hash = window.location.hash;
-                const storedToken = localStorage.getItem("cimpTwitchToken");
+                const storedToken = localStorage.getItem("simpTwitchToken");
 
                 if (hash && hash.includes("access_token")) {
                     const params = new URLSearchParams(hash.substring(1));
                     const token = params.get("access_token");
                     window.location.hash = "";
-                    localStorage.setItem("cimpTwitchToken", token);
+                    localStorage.setItem("simpTwitchToken", token);
                     fetchTwitchUser(token);
                 } else if (storedToken) {
                     fetchTwitchUser(storedToken);
@@ -1247,9 +1249,9 @@
                         throw new Error("Usuário não encontrado");
                     }
                 } catch (e) {
-                    localStorage.removeItem("cimpTwitchToken");
+                    localStorage.removeItem("simpTwitchToken");
                     toast("Sessão expirada. Faça login novamente.", "err");
-                    document.querySelector("#twitchLoginOvl h2").textContent = "Cimp. P2P";
+                    document.querySelector("#twitchLoginOvl h2").textContent = "Simp. P2P";
                     document.querySelector("#twitchLoginOvl p").textContent =
                         "Você precisa logar com a Twitch para acessar a sala.";
                     document.getElementById("twitchLoginBtn").style.display = "block";
@@ -1262,15 +1264,15 @@
             });
 
             document.getElementById("logoutBtn").addEventListener("click", function () {
-                localStorage.removeItem("cimpTwitchToken");
+                localStorage.removeItem("simpTwitchToken");
                 window.location.reload();
             });
 
             function assignRolesAndStart() {
                 document.getElementById("userProfileTag").innerHTML = `<div class="tdot"></div>${myName}`;
 
-                const PRIMARY_HOST = "jonhcreator2";
-                const SECONDARY_HOST = "aceboladoo_";
+                const PRIMARY_HOST = "daenil";
+                const SECONDARY_HOST = "jonhcreator2";
 
                 if (myName === PRIMARY_HOST) {
                     isAdmin = true;
@@ -1352,20 +1354,20 @@
 
             function isUserAdminRole(username) {
                 const lowerUser = username.toLowerCase();
-                return lowerUser === "aceboladoo_" || ADMIN_USERS.includes(lowerUser) || twitchMods.has(lowerUser);
+                return lowerUser === "daenil" || ADMIN_USERS.includes(lowerUser) || twitchMods.has(lowerUser);
             }
 
             function banUser(targetUser) {
                 if (!isHost) return;
                 targetUser = targetUser.toLowerCase().replace("@", "");
-                if (targetUser === myName || ADMIN_USERS.includes(targetUser) || targetUser === "aceboladoo_") {
+                if (targetUser === myName || ADMIN_USERS.includes(targetUser) || targetUser === "daenil") {
                     toast("Você não pode banir este usuário!", "err");
                     return;
                 }
 
                 if (!bannedUsers.includes(targetUser)) {
                     bannedUsers.push(targetUser);
-                    localStorage.setItem("cimpBannedUsers", JSON.stringify(bannedUsers));
+                    localStorage.setItem("simpBannedUsers", JSON.stringify(bannedUsers));
                 }
 
                 clientConnections.forEach(function (c) {
@@ -1387,7 +1389,7 @@
                 bannedUsers = bannedUsers.filter(function (u) {
                     return u !== targetUser;
                 });
-                localStorage.setItem("cimpBannedUsers", JSON.stringify(bannedUsers));
+                localStorage.setItem("simpBannedUsers", JSON.stringify(bannedUsers));
 
                 logAdminAction(myName, `DESBANIU o usuário ${targetUser}`);
                 renderUsersModal();
@@ -1476,7 +1478,7 @@
                 document.getElementById("volNumClient").textContent = config.vol + "%";
             }
             function saveConfig() {
-                localStorage.setItem("cimpConfig", JSON.stringify(config));
+                localStorage.setItem("simpConfig", JSON.stringify(config));
             }
 
             function cleanTitleForGif(title) {
@@ -1490,17 +1492,17 @@
                     .join(" ");
             }
             function getUserPoints(user) {
-                return cimpsPoints[user] || 0;
+                return simpsPoints[user] || 0;
             }
             function addPoints(user, amount) {
                 if (!user || !isHost) return;
-                cimpsPoints[user] = (cimpsPoints[user] || 0) + amount;
-                localStorage.setItem("cimpPoints", JSON.stringify(cimpsPoints));
+                simpsPoints[user] = (simpsPoints[user] || 0) + amount;
+                localStorage.setItem("simpPoints", JSON.stringify(simpsPoints));
             }
             function spendPoints(user, amount) {
                 if (!user || getUserPoints(user) < amount) return false;
-                cimpsPoints[user] -= amount;
-                localStorage.setItem("cimpPoints", JSON.stringify(cimpsPoints));
+                simpsPoints[user] -= amount;
+                localStorage.setItem("simpPoints", JSON.stringify(simpsPoints));
                 return true;
             }
             function updateClientsBadge() {
@@ -1575,34 +1577,34 @@
                     .replace(/"/g, "&quot;");
             }
 
-            function showCimps() {
-                let html = "<b>Rank Cimps</b><br>";
-                const sorted = Object.entries(cimpsPoints).sort(function (a, b) {
+            function showSimps() {
+                let html = "<b>Rank Simps</b><br>";
+                const sorted = Object.entries(simpsPoints).sort(function (a, b) {
                     return b[1] - a[1];
                 });
                 sorted.forEach(function (item) {
-                    html += `${item[0]} — ${item[1]} Cimps<br>`;
+                    html += `${item[0]} — ${item[1]} Simps<br>`;
                 });
 
                 html += "<br><b>Comandos:</b><br>";
-                html += "%cimp ajuda → Lista de comandos<br><br>";
-                html += "%cimp give (quantidade) @usuario → Dá pontos<br><br>";
-                html += "%cimp baby ban ban @usuario → Banir usuário (streamer/mods)<br><br>";
-                html += "%cimp pontos / %cimp pontos @usuario → Ver pontos<br><br>";
-                html += "%cimp skip → Pular música (-50 Cimps)<br><br>";
-                html += "%cimp trocar → Embaralhar fila (-50 Cimps)<br><br>";
-                html += "%cimp tocando → Mostra a música tocando agora e quem pediu<br><br>";
-                html += "%cimp lista → Mostra quantas músicas estão na fila e a próxima<br><br>";
-                html += "%cimp gif (nome) → Mudar GIF (-20 Cimps)<br><br>";
-                html += "%cimp (url/busca) → Adiciona à fila";
+                html += "%simp ajuda → Lista de comandos<br><br>";
+                html += "%simp give (quantidade) @usuario → Dá pontos<br><br>";
+                html += "%simp baby ban ban @usuario → Banir usuário (streamer/mods)<br><br>";
+                html += "%simp pontos / %simp pontos @usuario → Ver pontos<br><br>";
+                html += "%simp skip → Pular música (-50 Simps)<br><br>";
+                html += "%simp trocar → Embaralhar fila (-50 Simps)<br><br>";
+                html += "%simp tocando → Mostra a música tocando agora e quem pediu<br><br>";
+                html += "%simp lista → Mostra quantas músicas estão na fila e a próxima<br><br>";
+                html += "%simp gif (nome) → Mudar GIF (-20 Simps)<br><br>";
+                html += "%simp (url/busca) → Adiciona à fila";
 
-                document.getElementById("cimpsContent").innerHTML = html;
-                document.getElementById("cimpsOvl").classList.add("open");
+                document.getElementById("simpsContent").innerHTML = html;
+                document.getElementById("simpsOvl").classList.add("open");
             }
 
-            document.getElementById("cimpsBtn").addEventListener("click", showCimps);
-            document.getElementById("cimpsClose").addEventListener("click", function () {
-                document.getElementById("cimpsOvl").classList.remove("open");
+            document.getElementById("simpsBtn").addEventListener("click", showSimps);
+            document.getElementById("simpsClose").addEventListener("click", function () {
+                document.getElementById("simpsOvl").classList.remove("open");
             });
 
             function destroyPeers() {
@@ -1766,7 +1768,7 @@
             }
 
             function handleSync(data) {
-                if (data.cimpsPoints) cimpsPoints = data.cimpsPoints;
+                if (data.simpsPoints) simpsPoints = data.simpsPoints;
                 if (data.activeUsers) syncedActiveUsers = data.activeUsers;
 
                 const queueChanged = JSON.stringify(queue) !== JSON.stringify(data.queue);
@@ -2050,11 +2052,11 @@
 
                 if (color && color.startsWith("#") && color !== "#00aaff") {
                     twitchColors[user] = color;
-                    localStorage.setItem("cimpTwitchColors", JSON.stringify(twitchColors));
+                    localStorage.setItem("simpTwitchColors", JSON.stringify(twitchColors));
                 }
                 if (fromTwitch && !twitchUsers.has(user)) {
                     twitchUsers.add(user);
-                    localStorage.setItem("cimpTwitchUsers", JSON.stringify(Array.from(twitchUsers)));
+                    localStorage.setItem("simpTwitchUsers", JSON.stringify(Array.from(twitchUsers)));
                 }
 
                 const userColor = twitchColors[user] || null;
@@ -2110,7 +2112,7 @@
                     showEmpty();
                     playEmptySound();
                     // Notify chat that the queue ended (only when host finishes videos)
-                    sendTwitchMessage("Nenhum vídeo na fila! Adicione uma musica usando %cimp (link do youtube)");
+                    sendTwitchMessage("Nenhum vídeo na fila! Adicione uma musica usando %simp (link do youtube)");
                 }
             }
 
@@ -2193,12 +2195,12 @@
                         e.stopPropagation();
                         const item = queue[parseInt(btn.dataset.i)];
                         if (
-                            !cimpPlaylist.find(function (v) {
+                            !simpPlaylist.find(function (v) {
                                 return v.videoId === item.videoId;
                             })
                         ) {
-                            cimpPlaylist.push(item);
-                            localStorage.setItem("cimpPlaylist", JSON.stringify(cimpPlaylist));
+                            simpPlaylist.push(item);
+                            localStorage.setItem("simpPlaylist", JSON.stringify(simpPlaylist));
                             renderPlaylist();
                             toast("Salvo!", "ok");
                         }
@@ -2225,12 +2227,12 @@
             function renderPlaylist() {
                 const c = document.getElementById("dropContent");
                 c.innerHTML = "";
-                if (cimpPlaylist.length === 0) {
+                if (simpPlaylist.length === 0) {
                     c.innerHTML =
                         '<div style="padding:15px;font-size:0.75rem;color:var(--muted);text-align:center;">Playlist vazia</div>';
                     return;
                 }
-                cimpPlaylist.forEach(function (item, i) {
+                simpPlaylist.forEach(function (item, i) {
                     const d = document.createElement("div");
                     d.className = "plist-item";
                     d.innerHTML = `<img class="plist-thumb" src="${esc(item.thumb)}" loading="lazy"><div class="plist-title">${esc(item.title)}</div><button class="plist-del" data-i="${i}">✕</button>`;
@@ -2249,8 +2251,8 @@
                 c.querySelectorAll(".plist-del").forEach(function (btn) {
                     btn.addEventListener("click", function (e) {
                         e.stopPropagation();
-                        cimpPlaylist.splice(parseInt(btn.dataset.i), 1);
-                        localStorage.setItem("cimpPlaylist", JSON.stringify(cimpPlaylist));
+                        simpPlaylist.splice(parseInt(btn.dataset.i), 1);
+                        localStorage.setItem("simpPlaylist", JSON.stringify(simpPlaylist));
                         renderPlaylist();
                     });
                 });
@@ -2497,7 +2499,7 @@
 
                         const m = messagePart.match(/:([\w]+)![\w]+@[\w]+\.tmi\.twitch\.tv PRIVMSG #[\w]+ :(.*)/);
                         if (!m) {
-                            if (raw.includes("aceboladoo_") && raw.includes("NOTICE")) {
+                            if (raw.includes("daenil") && raw.includes("NOTICE")) {
                                 logChat("SISTEMA", "⚠️ Aviso do servidor Twitch recebido", true, "#ffb347");
                             }
                             continue;
@@ -2513,21 +2515,21 @@
                         if (!myTwitchName) myTwitchName = twitchUser;
                         if (rawColor) {
                             twitchColors[twitchUser] = rawColor;
-                            localStorage.setItem("cimpTwitchColors", JSON.stringify(twitchColors));
+                            localStorage.setItem("simpTwitchColors", JSON.stringify(twitchColors));
                         }
                         if (!twitchUsers.has(twitchUser)) {
                             twitchUsers.add(twitchUser);
-                            localStorage.setItem("cimpTwitchUsers", JSON.stringify(Array.from(twitchUsers)));
+                            localStorage.setItem("simpTwitchUsers", JSON.stringify(Array.from(twitchUsers)));
                         }
 
-                        if (msg.toLowerCase().startsWith("%cimp")) {
+                        if (msg.toLowerCase().startsWith("%simp")) {
                             const payload = msg.slice(5).trim();
                             const parts = payload.split(" ");
                             const action = parts[0] ? parts[0].toLowerCase() : "";
                             const arg = parts.slice(1).join(" ");
 
                             if (action === "ajuda" || action === "help") {
-                                sendTwitchMessage(`@${twitchUser} %cimp ajuda | %cimp give (quantidade) @usuario | %cimp pontos @usuario | %cimp skip | %cimp trocar | %cimp gif (nome) | %cimp tocando | %cimp lista | %cimp (link/busca)
+                                sendTwitchMessage(`@${twitchUser} %simp ajuda | %simp give (quantidade) @usuario | %simp pontos @usuario | %simp skip | %simp trocar | %simp gif (nome) | %simp tocando | %simp lista | %simp (link/busca)
 
 `);
                                 continue;
@@ -2537,7 +2539,7 @@
                                 const amount = parseInt(parts[1], 10);
                                 const target = parts[parts.length - 1].replace("@", "").toLowerCase();
                                 if (!target || isNaN(amount) || amount <= 0) {
-                                    sendTwitchMessage(`@${twitchUser} Uso: %cimp give (quantidade) @usuario`);
+                                    sendTwitchMessage(`@${twitchUser} Uso: %simp give (quantidade) @usuario`);
                                     continue;
                                 }
                                 if (target === twitchUser) {
@@ -2550,7 +2552,7 @@
                                 }
                                 spendPoints(twitchUser, amount);
                                 addPoints(target, amount);
-                                sendTwitchMessage(`@${twitchUser} deu ${amount} Cimps para @${target}`);
+                                sendTwitchMessage(`@${twitchUser} deu ${amount} Simps para @${target}`);
                                 continue;
                             }
 
@@ -2568,7 +2570,7 @@
                             if (action === "pontos") {
                                 const target = arg ? arg.replace("@", "").toLowerCase() : twitchUser;
                                 const amount = getUserPoints(target);
-                                sendTwitchMessage(`@${twitchUser} ${target} tem ${amount} Cimps`);
+                                sendTwitchMessage(`@${twitchUser} ${target} tem ${amount} Simps`);
                                 continue;
                             }
 
@@ -2702,7 +2704,7 @@
 
                 const d = document.createElement("div");
                 d.className = "cm";
-                d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#f88529"> (${points} Cimps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+                d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#f88529"> (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
 
                 box.appendChild(d);
                 box.scrollTop = box.scrollHeight;
