@@ -1735,6 +1735,9 @@
 
                 html += "<br><b>Comandos:</b><br>";
                 html += "%simp ajuda → Lista de comandos<br><br>";
+                html += "%simp add (link) → Salva música na playlist<br><br>";
+                html += "%simp play (numero) → Toca música salva<br><br>";
+                html += "%simp playlist → Mostra os vídeos salvos<br><br>";
                 html += "%simp give (quantidade) @usuario → Dá pontos<br><br>";
                 html += "%simp baby ban ban @usuario → Banir usuário (streamer/mods)<br><br>";
                 html += "%simp pontos / %simp pontos @usuario → Ver pontos<br><br>";
@@ -2277,6 +2280,58 @@
                 } else {
                     bgEl.style.backgroundImage = "";
                 }
+            }
+
+            async function addToPlaylist(rawUrl, user, color) {
+                if (!rawUrl) return;
+                rawUrl = String(rawUrl).trim();
+
+                const spotifyInfo = extractSpotifyInfo(rawUrl);
+                let videoId, title, thumb;
+
+                if (spotifyInfo) {
+                    videoId = `spotify:${spotifyInfo.kind}:${spotifyInfo.id}`;
+                    const meta = await resolveSpotifyMeta(rawUrl);
+                    title = meta ? (meta.author ? `${meta.title} - ${meta.author}` : meta.title) : "Faixa do Spotify";
+                    thumb = meta ? meta.thumb : "https://i.giphy.com/blSTtZehjAZ8I.webp";
+                } else {
+                    let id = extractId(rawUrl);
+                    let isRawAudio = rawUrl.match(/\.(mp3|wav|ogg|m4a)$/i);
+
+                    if (!id && !isRawAudio) {
+                        const result = await searchYouTube(rawUrl);
+                        if (result && result.videoId) {
+                            id = result.videoId;
+                            title = result.title;
+                        } else {
+                            sendTwitchMessage(`@${user} Nada encontrado para sua busca e não pôde ser adicionado à playlist.`);
+                            return;
+                        }
+                    }
+
+                    if (isRawAudio) {
+                        videoId = rawUrl;
+                        title = rawUrl.split("/").pop();
+                        thumb = "https://i.giphy.com/blSTtZehjAZ8I.webp";
+                    } else {
+                        videoId = id;
+                        if (!title) {
+                            title = await fetchTitle(id);
+                            if (title === "Título Indisponível" || !title) title = "Vídeo Salvo";
+                        }
+                        thumb = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                    }
+                }
+
+                if (simpPlaylist.find(function(v) { return v.videoId === videoId; })) {
+                    sendTwitchMessage(`@${user} Esse vídeo já está na playlist salva!`);
+                    return;
+                }
+
+                simpPlaylist.push({ videoId: videoId, title: title, user: user, color: color, thumb: thumb });
+                localStorage.setItem("simpPlaylist", JSON.stringify(simpPlaylist));
+                renderPlaylist();
+                sendTwitchMessage(`@${user} adicionou "${title}" à playlist salva na posição ${simpPlaylist.length}!`);
             }
 
             async function addToQueue(rawUrl, user, color, fromTwitch) {
@@ -2953,9 +3008,48 @@
                             const arg = parts.slice(1).join(" ");
 
                             if (action === "ajuda" || action === "help") {
-                                sendTwitchMessage(`@${twitchUser} %simp ajuda | %simp give (quantidade) @usuario | %simp pontos @usuario | %simp skip | %simp trocar | %simp gif (nome) | %simp tocando | %simp lista | %simp (link/busca)
+                                sendTwitchMessage(`@${twitchUser} %simp ajuda | %simp add (link) | %simp play (numero) | %simp playlist | %simp give (quantidade) @usuario | %simp pontos @usuario | %simp skip | %simp trocar | %simp gif (nome) | %simp tocando | %simp lista | %simp (link/busca)`);
+                                continue;
+                            }
 
-`);
+                            if (action === "add" && arg) {
+                                addToPlaylist(arg, twitchUser, color);
+                                continue;
+                            }
+
+                            if (action === "play" && arg) {
+                                const num = parseInt(arg, 10);
+                                if (isNaN(num) || num < 1 || num > simpPlaylist.length) {
+                                    sendTwitchMessage(`@${twitchUser} Número inválido. Use %simp playlist para ver os números disponíveis.`);
+                                } else {
+                                    const item = simpPlaylist[num - 1];
+                                    let url;
+                                    if (isSpotifyId(item.videoId)) {
+                                        const parts = item.videoId.split(":");
+                                        url = `https://open.spotify.com/${parts[1]}/${parts[2]}`;
+                                    } else if (item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                                        url = item.videoId;
+                                    } else {
+                                        url = `https://youtu.be/${item.videoId}`;
+                                    }
+                                    addToQueue(url, twitchUser, color, true);
+                                }
+                                continue;
+                            }
+
+                            if (action === "playlist") {
+                                if (simpPlaylist.length === 0) {
+                                    sendTwitchMessage(`@${twitchUser} A playlist salva está vazia.`);
+                                } else {
+                                    let msgTxt = `Playlist salva: `;
+                                    const listParts = [];
+                                    simpPlaylist.forEach(function(item, idx) {
+                                        listParts.push(`[${idx + 1}] ${item.title}`);
+                                    });
+                                    msgTxt += listParts.join(" | ");
+                                    if (msgTxt.length > 450) msgTxt = msgTxt.substring(0, 445) + "...";
+                                    sendTwitchMessage(`@${twitchUser} ${msgTxt}`);
+                                }
                                 continue;
                             }
 
@@ -3067,7 +3161,7 @@
 
                             if (
                                 payload &&
-                                !["ajuda", "help", "give", "ban", "pontos", "skip", "trocar", "gif"].includes(action)
+                                !["ajuda", "help", "give", "ban", "pontos", "skip", "trocar", "gif", "add", "play", "playlist"].includes(action)
                             ) {
                                 await addToQueue(payload, twitchUser, color, true);
                                 continue;
@@ -3124,37 +3218,7 @@
             }
 
             function logAdminAction(user, action) {
-                let emoji = "⚙️";
-                if (action.includes("Pulou")) emoji = "⏭️";
-                if (action.includes("Pausou") || action.includes("Despausou")) emoji = "⏸️";
-                if (action.includes("Limpar")) emoji = "🗑️";
-                if (action.includes("trocou")) emoji = "🔀";
-                if (action.includes("BAN")) emoji = "🔨";
-
-                logChat("SISTEMA", `${emoji} ${user} ${action}`, true, "#ffdd57");
-
-                if (isHost) {
-                    clientConnections.forEach(function (c) {
-                        if (c.open)
-                            c.send({
-                                type: "syslog",
-                                user: "SISTEMA",
-                                text: `${emoji} ${user} ${action}`,
-                                color: "#ffdd57",
-                            });
-                    });
-                }
-            }
-
-            function toast(msg, type = "") {
-                const c = document.getElementById("toasts");
-                const t = document.createElement("div");
-                t.className = "toast " + type;
-                t.textContent = msg;
-                c.appendChild(t);
-                setTimeout(function () {
-                    t.remove();
-                }, 3000);
+                logChat(user, action, true, "#f88529", true);
             }
         </script>
     </body>
