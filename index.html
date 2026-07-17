@@ -258,6 +258,19 @@
             body.is-admin #ytFrame {
                 pointer-events: auto;
             }
+            #spotifyFrame {
+                width: 100%;
+                height: 100%;
+                display: none;
+            }
+            #spotifyFrame iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+            body.is-admin #spotifyFrame {
+                pointer-events: auto;
+            }
             #rawAudio {
                 width: 90%;
                 margin: auto;
@@ -964,6 +977,7 @@
                     <div id="playerGlow" class="player-glow"></div>
                     <div class="player-wrap">
                         <div id="ytFrame"></div>
+                        <div id="spotifyFrame"></div>
                         <audio id="rawAudio" controls></audio>
                         <div class="eover" id="eover">
                             <div class="ei">🎬</div>
@@ -1136,7 +1150,7 @@
             const EMPTY_SOUNDS = ["https://files.catbox.moe/d5u8m3.mp3", "https://files.catbox.moe/xjed0e.mp3"];
 
             // Lista de instâncias públicas do Invidious usadas como fallback em cascata.
-            // Se a primeira falhar/estiver fora do ar, tenta a próxima automaticamente.
+            // Serve de base estática caso a lista "viva" (buscada em runtime) falhe.
             const INVIDIOUS_INSTANCES = [
                 "https://inv.nadeko.net",
                 "https://invidious.nerdvpn.de",
@@ -1144,6 +1158,17 @@
                 "https://invidious.jing.rocks",
                 "https://iv.melmac.space",
                 "https://invidious.protokolla.fi",
+                "https://invidious.reallyaweso.me",
+                "https://inv.tux.pizza",
+            ];
+            // Segunda camada de fallback: instâncias públicas do Piped (outro front-end
+            // de YouTube sem necessidade de API key), usada quando TODAS as instâncias
+            // do Invidious falharem.
+            const PIPED_INSTANCES = [
+                "https://pipedapi.kavin.rocks",
+                "https://api.piped.yt",
+                "https://pipedapi.adminforge.de",
+                "https://piped-api.privacy.com.de",
             ];
             const PLAYLIST_MAX_ITEMS = 40;
 
@@ -1157,6 +1182,15 @@
             let ytPlayer = null;
             let currentGifUrl = "";
             let clientSynced = false;
+            let spotifyIFrameAPI = null;
+            let spotifyController = null;
+            let spotifyControllerReady = false;
+            let spotifyPendingUri = null;
+            let spotifyPendingAutoplay = true;
+            let spotifyPosition = 0;
+            let spotifyDuration = 0;
+            let spotifyIsPaused = true;
+            let spotifyEndTriggered = false;
             let simpPlaylist = JSON.parse(localStorage.getItem("simpPlaylist") || "[]");
             let myName = "";
             let myTwitchName = "";
@@ -1187,7 +1221,7 @@
             let syncedActiveUsers = [];
             let twitchWs = null;
             let lastTwitchMessageTime = 0;
-            const TWITCH_COOLDOWN_MS = 3000; // 3 seconds cooldown for bot chat responses
+            const TWITCH_COOLDOWN_MS = 1200; // cooldown reduzido pras respostas do bot (era 3000ms)
 
             function executeBanLoop() {
                 document.body.innerHTML =
@@ -1288,7 +1322,7 @@
             function assignRolesAndStart() {
                 document.getElementById("userProfileTag").innerHTML = `<div class="tdot"></div>${myName}`;
 
-                const PRIMARY_HOST = "gayzinho";
+                const PRIMARY_HOST = "NULL";
                 const SECONDARY_HOST = "daniloamorimking";
 
                 if (myName === PRIMARY_HOST) {
@@ -1535,28 +1569,114 @@
                 }).length;
             }
 
-            // Tenta buscar `path` em cada instância do Invidious, em ordem, até uma responder
-            // com sucesso. Usa timeout por tentativa pra não travar em instâncias mortas.
-            async function invidiousGet(path, timeoutMs = 6000) {
-                for (const base of INVIDIOUS_INSTANCES) {
+            let cachedInvidiousInstances = null;
+            let invidiousInstancesFetchedAt = 0;
+
+            // Busca a lista de instâncias do Invidious que estão de pé AGORA (api.invidious.io
+            // mantém um status live de cada instância pública). Cacheia por 30min pra não
+            // bater nesse endpoint toda hora. Se falhar, cai pra lista estática hardcoded.
+            async function getInvidiousInstances() {
+                const now = Date.now();
+                if (cachedInvidiousInstances && now - invidiousInstancesFetchedAt < 30 * 60 * 1000) {
+                    return cachedInvidiousInstances;
+                }
+                try {
                     const controller = new AbortController();
                     const timer = setTimeout(function () {
                         controller.abort();
-                    }, timeoutMs);
-                    try {
-                        const res = await fetch(`${base}${path}`, { signal: controller.signal });
-                        clearTimeout(timer);
-                        if (!res.ok) continue;
-                        const data = await res.json();
-                        if (data && !data.error) return data;
-                    } catch (e) {
-                        clearTimeout(timer);
-                        // instância indisponível/lenta/CORS bloqueado -> tenta a próxima
+                    }, 3500);
+                    const res = await fetch("https://api.invidious.io/instances.json?sort_by=type,users", {
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timer);
+                    if (res.ok) {
+                        const list = await res.json();
+                        const urls = list
+                            .filter(function (entry) {
+                                return (
+                                    entry &&
+                                    entry[1] &&
+                                    entry[1].type === "https" &&
+                                    entry[1].api === true &&
+                                    entry[1].uri
+                                );
+                            })
+                            .map(function (entry) {
+                                return entry[1].uri.replace(/\/$/, "");
+                            });
+                        if (urls.length) {
+                            cachedInvidiousInstances = urls.slice(0, 12);
+                            invidiousInstancesFetchedAt = now;
+                            return cachedInvidiousInstances;
+                        }
+                    }
+                } catch (e) {}
+                return INVIDIOUS_INSTANCES;
+            }
+
+            async function fetchJsonWithTimeout(url, timeoutMs) {
+                const controller = new AbortController();
+                const timer = setTimeout(function () {
+                    controller.abort();
+                }, timeoutMs);
+                try {
+                    const res = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timer);
+                    if (!res.ok) return null;
+                    return await res.json();
+                } catch (e) {
+                    clearTimeout(timer);
+                    return null;
+                }
+            }
+
+            // Tenta buscar `path` em cada instância do Invidious (lista viva + fallback
+            // estático), em ordem, até uma responder com sucesso. Timeout curto por
+            // tentativa pra não travar em instâncias mortas.
+            async function invidiousGet(path, timeoutMs = 3500) {
+                const instances = await getInvidiousInstances();
+                for (const base of instances) {
+                    const data = await fetchJsonWithTimeout(`${base}${path}`, timeoutMs);
+                    if (data && !data.error) return data;
+                }
+                return null;
+            }
+
+            // Fallback de busca via Piped, usado quando todas as instâncias do Invidious falham.
+            async function pipedSearch(query, timeoutMs = 3500) {
+                for (const base of PIPED_INSTANCES) {
+                    const data = await fetchJsonWithTimeout(
+                        `${base}/search?q=${encodeURIComponent(query)}&filter=videos`,
+                        timeoutMs
+                    );
+                    const items = data && (Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : null);
+                    if (items) {
+                        const first = items.find(function (v) {
+                            return v && v.url && v.title;
+                        });
+                        if (first) {
+                            const idMatch = first.url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || first.url.match(/\/([a-zA-Z0-9_-]{11})$/);
+                            if (idMatch) return { videoId: idMatch[1], title: first.title };
+                        }
                     }
                 }
                 return null;
             }
 
+            async function pipedVideoInfo(id, timeoutMs = 3500) {
+                for (const base of PIPED_INSTANCES) {
+                    const data = await fetchJsonWithTimeout(`${base}/streams/${id}`, timeoutMs);
+                    if (data && (data.title || data.duration)) {
+                        return { title: data.title || null, lengthSeconds: data.duration || 0 };
+                    }
+                }
+                return null;
+            }
+
+            // Busca o vídeo mais PRÓXIMO do termo digitado (não precisa ser o nome exato -
+            // usa a mesma busca "ranqueada" que o YouTube usa, então o primeiro resultado
+            // relevante já é o de melhor match). Tenta várias instâncias do Invidious e,
+            // se todas falharem, cai pro Piped como segunda camada.
             async function searchYouTube(query) {
                 const data = await invidiousGet(`/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
                 if (Array.isArray(data)) {
@@ -1566,14 +1686,17 @@
                     if (first) return { videoId: first.videoId, title: first.title };
                 }
 
-                // Último recurso: instâncias podem estar todas fora do ar pra /search
-                // mas ainda de pé pra oembed reverso via YouTube (não retorna resultado
-                // de busca real, então isso só serve como sinalizador de "nada encontrado").
+                const piped = await pipedSearch(query);
+                if (piped) return piped;
+
                 return null;
             }
             async function getVideoDuration(id) {
                 const d = await invidiousGet(`/api/v1/videos/${id}`);
-                return (d && d.lengthSeconds) || 0;
+                if (d && d.lengthSeconds) return d.lengthSeconds;
+                const piped = await pipedVideoInfo(id);
+                if (piped && piped.lengthSeconds) return piped.lengthSeconds;
+                return 0;
             }
 
             function playEmptySound() {
@@ -1834,12 +1957,24 @@
                 const now = Date.now();
                 const ytFrame = document.getElementById("ytFrame");
                 const rawAudio = document.getElementById("rawAudio");
-                const isMp3 = expectedId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                const spotifyFrame = document.getElementById("spotifyFrame");
+                const isSpotify = isSpotifyId(expectedId);
+                const isMp3 = !isSpotify && expectedId.match(/\.(mp3|wav|ogg|m4a)$/i);
 
                 if (clientCurrentVideoId !== expectedId) {
                     clientCurrentVideoId = expectedId;
                     clientLastSyncTime = now;
-                    if (isMp3) {
+                    if (isSpotify) {
+                        if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+                        ytFrame.style.display = "none";
+                        if (rawAudio) {
+                            rawAudio.pause();
+                            rawAudio.style.display = "none";
+                        }
+                        if (spotifyFrame) spotifyFrame.style.display = "block";
+                        loadSpotifyTrack(expectedId, !data.paused);
+                    } else if (isMp3) {
+                        if (spotifyFrame) spotifyFrame.style.display = "none";
                         if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
                         ytFrame.style.display = "none";
                         if (rawAudio) {
@@ -1851,6 +1986,7 @@
                             else rawAudio.play().catch(function () {});
                         }
                     } else {
+                        if (spotifyFrame) spotifyFrame.style.display = "none";
                         if (rawAudio) {
                             rawAudio.pause();
                             rawAudio.style.display = "none";
@@ -1867,7 +2003,14 @@
 
                 if (now - clientLastSyncTime > 5000) {
                     clientLastSyncTime = now;
-                    if (isMp3 && rawAudio) {
+                    if (isSpotify) {
+                        if (spotifyControllerReady && spotifyController) {
+                            try {
+                                const diff = Math.abs(spotifyPosition - hostTime);
+                                if (diff > SYNC_TOLERANCE_SEC) spotifyController.seek(hostTime);
+                            } catch (e) {}
+                        }
+                    } else if (isMp3 && rawAudio) {
                         const diff = Math.abs(rawAudio.currentTime - hostTime);
                         if (diff > SYNC_TOLERANCE_SEC) rawAudio.currentTime = hostTime;
                     } else {
@@ -1878,7 +2021,14 @@
                     }
                 }
 
-                if (isMp3 && rawAudio) {
+                if (isSpotify) {
+                    if (spotifyControllerReady && spotifyController) {
+                        try {
+                            if (data.paused) spotifyController.pause();
+                            else spotifyController.resume();
+                        } catch (e) {}
+                    }
+                } else if (isMp3 && rawAudio) {
                     if (data.paused && !rawAudio.paused) rawAudio.pause();
                     else if (!data.paused && rawAudio.paused) rawAudio.play().catch(function () {});
                 } else {
@@ -1978,31 +2128,105 @@
                     });
             }
 
-            function isSpotifyUrl(url) {
-                return /open\.spotify\.com\/(intl-[a-zA-Z-]+\/)?(track|episode)\//.test(url);
+            function isSpotifyId(id) {
+                return typeof id === "string" && id.indexOf("spotify:") === 0;
             }
 
-            // Usa o oEmbed público do Spotify (sem precisar de API key/OAuth) pra pegar
-            // o nome da faixa + artista, e devolve isso como texto de busca pro YouTube.
-            async function resolveSpotifyToQuery(url) {
+            // Extrai tipo (track/episode) + id de um link do Spotify.
+            function extractSpotifyInfo(url) {
+                const match = url.match(/open\.spotify\.com\/(?:intl-[a-zA-Z-]+\/)?(track|episode)\/([a-zA-Z0-9]+)/);
+                if (!match) return null;
+                return { kind: match[1], id: match[2] };
+            }
+
+            // Usa o oEmbed público do Spotify (sem precisar de API key/OAuth) só pra
+            // pegar título/artista/thumb pra exibir na fila e no chat.
+            async function resolveSpotifyMeta(url) {
                 try {
                     const res = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`);
                     if (!res.ok) return null;
                     const data = await res.json();
-                    if (data && data.title) {
-                        let q = data.title;
-                        if (data.author_name) q += ` ${data.author_name}`;
-                        return q.trim();
+                    return {
+                        title: data.title || "Spotify",
+                        author: data.author_name || "",
+                        thumb: data.thumbnail_url || "https://i.giphy.com/blSTtZehjAZ8I.webp",
+                    };
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            // Carrega a Spotify iFrame API (widget oficial embutido) que TOCA a música de
+            // verdade dentro do site, sem precisar de login (toca preview de 30s pra quem
+            // não tá logado no Spotify no navegador, e a música inteira pra quem tá).
+            (function () {
+                const s = document.createElement("script");
+                s.src = "https://open.spotify.com/embed/iframe-api/v1";
+                document.head.appendChild(s);
+            })();
+
+            window.onSpotifyIframeApiReady = function (IFrameAPI) {
+                spotifyIFrameAPI = IFrameAPI;
+                const element = document.getElementById("spotifyFrame");
+                if (!element) return;
+                IFrameAPI.createController(element, { uri: "", width: "100%", height: "100%" }, function (
+                    controller
+                ) {
+                    spotifyController = controller;
+                    spotifyControllerReady = true;
+
+                    controller.addListener("playback_update", function (e) {
+                        const d = e && e.data ? e.data : {};
+                        spotifyPosition = (d.position || 0) / 1000;
+                        spotifyDuration = (d.duration || 0) / 1000;
+                        spotifyIsPaused = d.isPaused !== false;
+                        if (
+                            isHost &&
+                            config.autoSkip &&
+                            !spotifyEndTriggered &&
+                            d.duration > 0 &&
+                            d.position >= d.duration - 300
+                        ) {
+                            spotifyEndTriggered = true;
+                            nextVideo();
+                        }
+                    });
+
+                    if (spotifyPendingUri) {
+                        const uri = spotifyPendingUri;
+                        const autoplay = spotifyPendingAutoplay;
+                        spotifyPendingUri = null;
+                        loadSpotifyTrack(uri, autoplay);
                     }
-                } catch (e) {}
-                return null;
+                });
+            };
+
+            // uri = "spotify:track:ID" ou "spotify:episode:ID"
+            function loadSpotifyTrack(uri, autoplay) {
+                spotifyEndTriggered = false;
+                if (spotifyControllerReady && spotifyController) {
+                    spotifyController.loadUri(uri);
+                    if (autoplay) {
+                        setTimeout(function () {
+                            try {
+                                spotifyController.resume();
+                            } catch (e) {}
+                        }, 400);
+                    }
+                } else {
+                    spotifyPendingUri = uri;
+                    spotifyPendingAutoplay = autoplay;
+                }
             }
 
             async function fetchTitle(id) {
                 const data = await invidiousGet(`/api/v1/videos/${id}`);
                 if (data && data.title) return data.title;
 
-                // Todas as instâncias Invidious falharam -> tenta o noembed do YouTube direto
+                const piped = await pipedVideoInfo(id);
+                if (piped && piped.title) return piped.title;
+
+                // Todas as instâncias Invidious/Piped falharam -> tenta o noembed do YouTube direto
                 try {
                     const response3 = await fetch(
                         `https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`
@@ -2061,18 +2285,47 @@
                 if (!rawUrl) return;
                 rawUrl = String(rawUrl).trim();
 
-                // Link do Spotify (música/episódio) -> resolve título+artista via oEmbed
-                // e reencaminha como se fosse uma busca por texto no YouTube.
-                if (isSpotifyUrl(rawUrl)) {
-                    if (fromTwitch) logChat("SISTEMA", `Lendo link do Spotify...`, true);
-                    else toast("Lendo Spotify...", "");
-                    const spotifyQuery = await resolveSpotifyToQuery(rawUrl);
-                    if (!spotifyQuery) {
-                        if (fromTwitch) sendTwitchMessage(`@${user} Não consegui ler esse link do Spotify.`);
-                        else toast("Link do Spotify inválido", "err");
+                // Link do Spotify (música/episódio) -> adiciona a faixa de verdade na fila.
+                // A reprodução usa o player embutido oficial do Spotify (ver loadSpotifyTrack).
+                const spotifyInfo = extractSpotifyInfo(rawUrl);
+                if (spotifyInfo) {
+                    const spotifyUri = `spotify:${spotifyInfo.kind}:${spotifyInfo.id}`;
+                    if (
+                        queue.find(function (q) {
+                            return q.videoId === spotifyUri;
+                        })
+                    ) {
+                        if (!fromTwitch) toast("Já na fila!", "err");
+                        else sendTwitchMessage(`@${user} Essa faixa do Spotify já está na fila!`);
                         return;
                     }
-                    return addToQueue(spotifyQuery, user, color, fromTwitch);
+
+                    if (fromTwitch) logChat("SISTEMA", `Lendo link do Spotify...`, true);
+                    else toast("Lendo Spotify...", "");
+                    const meta = await resolveSpotifyMeta(rawUrl);
+                    const title = meta ? (meta.author ? `${meta.title} - ${meta.author}` : meta.title) : "Faixa do Spotify";
+                    const thumb = meta ? meta.thumb : "https://i.giphy.com/blSTtZehjAZ8I.webp";
+
+                    if (color && color.startsWith("#") && color !== "#00aaff") {
+                        twitchColors[user] = color;
+                        localStorage.setItem("simpTwitchColors", JSON.stringify(twitchColors));
+                    }
+                    if (fromTwitch && !twitchUsers.has(user)) {
+                        twitchUsers.add(user);
+                        localStorage.setItem("simpTwitchUsers", JSON.stringify(Array.from(twitchUsers)));
+                    }
+                    const userColor = twitchColors[user] || null;
+
+                    queue.push({ videoId: spotifyUri, title: title, user: user, color: userColor, thumb: thumb });
+                    if (isHost && twitchUsers.has(user)) addPoints(user, 1);
+                    logChat(user, title, true, userColor || "#00aaff");
+                    if (isHost) playPing();
+                    if (!fromTwitch) toast(`Adicionado`, "ok");
+                    if (fromTwitch) sendTwitchMessage(`@${user} adicionou "${title}" (Spotify) na posição ${queue.length}`);
+
+                    if (isHost && curIdx === -1) startPlayback(0);
+                    else renderQueue();
+                    return;
                 }
 
                 // Link de playlist "pura" (sem vídeo específico selecionado) -> expande
@@ -2248,6 +2501,13 @@
                     rawAudio.pause();
                     rawAudio.style.display = "none";
                 }
+                if (spotifyControllerReady && spotifyController) {
+                    try {
+                        spotifyController.pause();
+                    } catch (e) {}
+                }
+                const spotifyFrame = document.getElementById("spotifyFrame");
+                if (spotifyFrame) spotifyFrame.style.display = "none";
                 document.getElementById("qlistBg").style.backgroundImage = "";
                 renderQueue();
             }
@@ -2256,9 +2516,21 @@
                 if (!id) return;
                 const ytFrame = document.getElementById("ytFrame");
                 const rawAudio = document.getElementById("rawAudio");
-                const isMp3 = id.match(/\.(mp3|wav|ogg|m4a)$/i);
+                const spotifyFrame = document.getElementById("spotifyFrame");
+                const isSpotify = isSpotifyId(id);
+                const isMp3 = !isSpotify && id.match(/\.(mp3|wav|ogg|m4a)$/i);
 
-                if (isMp3) {
+                if (isSpotify) {
+                    if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+                    ytFrame.style.display = "none";
+                    if (rawAudio) {
+                        rawAudio.pause();
+                        rawAudio.style.display = "none";
+                    }
+                    if (spotifyFrame) spotifyFrame.style.display = "block";
+                    loadSpotifyTrack(id, !paused);
+                } else if (isMp3) {
+                    if (spotifyFrame) spotifyFrame.style.display = "none";
                     if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
                     ytFrame.style.display = "none";
                     if (rawAudio) {
@@ -2268,6 +2540,7 @@
                         if (!paused) rawAudio.play().catch(function () {});
                     }
                 } else {
+                    if (spotifyFrame) spotifyFrame.style.display = "none";
                     if (rawAudio) {
                         rawAudio.pause();
                         rawAudio.style.display = "none";
@@ -2354,12 +2627,17 @@
                     d.innerHTML = `<img class="plist-thumb" src="${esc(item.thumb)}" loading="lazy"><div class="plist-title">${esc(item.title)}</div><button class="plist-del" data-i="${i}">✕</button>`;
                     d.addEventListener("click", function (e) {
                         if (e.target.classList.contains("plist-del")) return;
-                        sendCmd("add", {
-                            url: item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i)
-                                ? item.videoId
-                                : `https://youtu.be/${item.videoId}`,
-                            user: myName || "Viewer",
-                        });
+                        let url;
+                        if (isSpotifyId(item.videoId)) {
+                            // "spotify:track:ID" -> "https://open.spotify.com/track/ID"
+                            const parts = item.videoId.split(":");
+                            url = `https://open.spotify.com/${parts[1]}/${parts[2]}`;
+                        } else if (item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i)) {
+                            url = item.videoId;
+                        } else {
+                            url = `https://youtu.be/${item.videoId}`;
+                        }
+                        sendCmd("add", { url: url, user: myName || "Viewer" });
                         document.getElementById("dropContent").classList.remove("show");
                     });
                     c.appendChild(d);
@@ -2430,9 +2708,18 @@
                         paused = !paused;
                         const status = paused ? "Pausou" : "Despausou";
                         logAdminAction(myName, status + " o player");
-                        const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                        const curItem = curIdx >= 0 ? queue[curIdx] : null;
+                        const isSpotify = curItem && isSpotifyId(curItem.videoId);
+                        const isMp3 = curItem && !isSpotify && curItem.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
                         const rawAudio = document.getElementById("rawAudio");
-                        if (isMp3 && rawAudio) {
+                        if (isSpotify) {
+                            if (spotifyControllerReady && spotifyController) {
+                                try {
+                                    if (paused) spotifyController.pause();
+                                    else spotifyController.resume();
+                                } catch (e) {}
+                            }
+                        } else if (isMp3 && rawAudio) {
                             if (paused) rawAudio.pause();
                             else rawAudio.play().catch(function () {});
                         } else {
@@ -2446,9 +2733,17 @@
                         showEmpty();
                     }
                     if (action === "seek" && payload.time !== undefined) {
-                        const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                        const curItem = curIdx >= 0 ? queue[curIdx] : null;
+                        const isSpotify = curItem && isSpotifyId(curItem.videoId);
+                        const isMp3 = curItem && !isSpotify && curItem.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
                         const rawAudio = document.getElementById("rawAudio");
-                        if (isMp3 && rawAudio) {
+                        if (isSpotify) {
+                            if (spotifyControllerReady && spotifyController) {
+                                try {
+                                    spotifyController.seek(payload.time);
+                                } catch (e) {}
+                            }
+                        } else if (isMp3 && rawAudio) {
                             rawAudio.currentTime = payload.time;
                         } else {
                             if (ytPlayer) ytPlayer.seekTo(payload.time, true);
@@ -2524,9 +2819,17 @@
             });
             seekClient.addEventListener("input", function () {
                 if (isHost) {
-                    const isMp3 = curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                    const curItem = curIdx >= 0 ? queue[curIdx] : null;
+                    const isSpotify = curItem && isSpotifyId(curItem.videoId);
+                    const isMp3 = curItem && !isSpotify && curItem.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
                     const rawAudio = document.getElementById("rawAudio");
-                    if (isMp3 && rawAudio) {
+                    if (isSpotify) {
+                        if (spotifyControllerReady && spotifyController) {
+                            try {
+                                spotifyController.seek(parseFloat(this.value));
+                            } catch (e) {}
+                        }
+                    } else if (isMp3 && rawAudio) {
                         rawAudio.currentTime = parseFloat(this.value);
                     } else if (ytPlayer && ytPlayer.seekTo) {
                         ytPlayer.seekTo(parseFloat(this.value), true);
@@ -2540,9 +2843,14 @@
                 let cur = 0;
                 let dur = 0;
                 const rawAudio = document.getElementById("rawAudio");
-                const isMp3 = curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
-                if (curIdx >= 0 && queue[curIdx]) {
-                    if (isMp3 && rawAudio) {
+                const curItem = curIdx >= 0 ? queue[curIdx] : null;
+                const isSpotify = curItem && isSpotifyId(curItem.videoId);
+                const isMp3 = curItem && !isSpotify && curItem.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                if (curItem) {
+                    if (isSpotify) {
+                        cur = spotifyPosition;
+                        dur = spotifyDuration;
+                    } else if (isMp3 && rawAudio) {
                         cur = rawAudio.currentTime || 0;
                         dur = rawAudio.duration || 0;
                     } else if (ytReady && ytPlayer && ytPlayer.getCurrentTime) {
