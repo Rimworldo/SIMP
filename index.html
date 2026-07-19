@@ -917,6 +917,99 @@
                 pointer-events: none;
                 z-index: 9998;
             }
+
+            /* === ZA WARUDO effect (segredo da logo) === */
+            body.zw-active {
+                animation:
+                    zwBodyShake 0.15s linear infinite,
+                    zwBodyHue 2.4s linear infinite;
+            }
+            @keyframes zwBodyShake {
+                0%,
+                100% {
+                    transform: translate(0, 0);
+                }
+                25% {
+                    transform: translate(1px, -1px);
+                }
+                50% {
+                    transform: translate(-1px, 1px);
+                }
+                75% {
+                    transform: translate(1px, 1px);
+                }
+            }
+            @keyframes zwBodyHue {
+                0% {
+                    filter: hue-rotate(0deg) saturate(1) contrast(1);
+                }
+                50% {
+                    filter: hue-rotate(180deg) saturate(1.9) contrast(1.3);
+                }
+                100% {
+                    filter: hue-rotate(360deg) saturate(1) contrast(1);
+                }
+            }
+            .zw-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 999999;
+                pointer-events: none;
+                opacity: 0;
+                background: radial-gradient(
+                    circle at 50% 50%,
+                    rgba(94, 108, 255, 0.35),
+                    rgba(255, 221, 87, 0.28) 35%,
+                    rgba(167, 139, 250, 0.3) 60%,
+                    rgba(10, 10, 15, 0.92) 100%
+                );
+                mix-blend-mode: screen;
+            }
+            .zw-overlay.active {
+                opacity: 1;
+                animation: zwFlash 1s ease-in-out infinite;
+            }
+            @keyframes zwFlash {
+                0%,
+                100% {
+                    opacity: 0.5;
+                    transform: scale(1);
+                }
+                50% {
+                    opacity: 0.95;
+                    transform: scale(1.03);
+                }
+            }
+            .zw-float {
+                animation: zwFloat 2.2s ease-in-out infinite;
+            }
+            @keyframes zwFloat {
+                0%,
+                100% {
+                    transform: translateY(0) rotate(0deg);
+                }
+                50% {
+                    transform: translateY(-14px) rotate(0.6deg);
+                }
+            }
+            .zw-particle {
+                position: fixed;
+                bottom: -10px;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 999998;
+                will-change: transform, opacity;
+            }
+            @keyframes zwRise {
+                0% {
+                    transform: translateY(0) scale(1);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(-110vh) scale(0.3);
+                    opacity: 0;
+                }
+            }
         </style>
     </head>
     <body>
@@ -1596,6 +1689,8 @@
                 html += "%simp tocando → Mostra a música tocando agora e quem pediu<br><br>";
                 html += "%simp lista → Mostra quantas músicas estão na fila e a próxima<br><br>";
                 html += "%simp gif (nome) → Mudar GIF (-20 Simps)<br><br>";
+                html += "%simp add (link) → Salva o link na playlist do site<br><br>";
+                html += "%simp playlist (numero) → Adiciona à fila o link salvo nessa posição<br><br>";
                 html += "%simp (url/busca) → Adiciona à fila";
 
                 document.getElementById("simpsContent").innerHTML = html;
@@ -2041,10 +2136,8 @@
                     duration = await getVideoDuration(id);
                     if (duration > 0 && duration > config.maxDuration * 60) {
                         if (fromTwitch) {
-                            logChat("SISTEMA", `Vídeo rejeitado por ser > ${config.maxDuration}min`, true);
-                            sendTwitchMessage(
-                                `@${user} Vídeo rejeitado por ultrapassar o limite de ${config.maxDuration} minutos.`
-                            );
+                            logChat("SISTEMA", `Vídeo de duração acima de ${config.maxDuration} pulado`, true);
+                            sendTwitchMessage(`@${user} Vídeo de duração acima de ${config.maxDuration} pulado`);
                         } else toast(`>${config.maxDuration}min`, "err");
                         return;
                     }
@@ -2528,7 +2621,7 @@
                             const arg = parts.slice(1).join(" ");
 
                             if (action === "ajuda" || action === "help") {
-                                sendTwitchMessage(`@${twitchUser} %simp ajuda | %simp give (quantidade) @usuario | %simp pontos @usuario | %simp skip | %simp trocar | %simp gif (nome) | %simp tocando | %simp lista | %simp (link/busca)
+                                sendTwitchMessage(`@${twitchUser} %simp ajuda | %simp give (quantidade) @usuario | %simp pontos @usuario | %simp skip | %simp trocar | %simp gif (nome) | %simp tocando | %simp lista | %simp add (link) | %simp playlist (numero) | %simp (link/busca)
 
 `);
                                 continue;
@@ -2640,9 +2733,72 @@
                                 continue;
                             }
 
+                            if (action === "add") {
+                                if (!arg) {
+                                    sendTwitchMessage(`@${twitchUser} Uso: %simp add (link)`);
+                                    continue;
+                                }
+                                let addId = await extractId(arg);
+                                const isRawAudioAdd = arg.match(/\.(mp3|wav|ogg|m4a)$/i);
+                                if (!addId && !isRawAudioAdd) {
+                                    sendTwitchMessage(`@${twitchUser} Link inválido. Uso: %simp add (link)`);
+                                    continue;
+                                }
+                                let addTitle = "";
+                                let addThumb = "";
+                                if (isRawAudioAdd) {
+                                    addId = arg;
+                                    addTitle = arg.split("/").pop();
+                                    addThumb = "https://i.giphy.com/blSTtZehjAZ8I.webp";
+                                } else {
+                                    addTitle = await fetchTitle(addId);
+                                    if (!addTitle || addTitle === "Título Indisponível") addTitle = "Música";
+                                    addThumb = `https://img.youtube.com/vi/${addId}/hqdefault.jpg`;
+                                }
+                                if (
+                                    simpPlaylist.find(function (v) {
+                                        return v.videoId === addId;
+                                    })
+                                ) {
+                                    sendTwitchMessage(`@${twitchUser} Esse link já está salvo na playlist.`);
+                                    continue;
+                                }
+                                simpPlaylist.push({
+                                    videoId: addId,
+                                    title: addTitle,
+                                    user: twitchUser,
+                                    color: color,
+                                    thumb: addThumb,
+                                });
+                                localStorage.setItem("simpPlaylist", JSON.stringify(simpPlaylist));
+                                renderPlaylist();
+                                sendTwitchMessage(
+                                    `@${twitchUser} Adicionado "${addTitle}" à playlist salva (posição ${simpPlaylist.length}).`
+                                );
+                                continue;
+                            }
+
+                            if (action === "playlist") {
+                                const idx = parseInt(arg, 10) - 1;
+                                if (isNaN(idx) || idx < 0 || idx >= simpPlaylist.length) {
+                                    sendTwitchMessage(
+                                        `@${twitchUser} Posição inválida. A playlist salva tem ${simpPlaylist.length} item(ns). Uso: %simp playlist (numero)`
+                                    );
+                                    continue;
+                                }
+                                const saved = simpPlaylist[idx];
+                                const savedUrl = saved.videoId.match(/\.(mp3|wav|ogg|m4a)$/i)
+                                    ? saved.videoId
+                                    : `https://youtu.be/${saved.videoId}`;
+                                await addToQueue(savedUrl, twitchUser, color, true);
+                                continue;
+                            }
+
                             if (
                                 payload &&
-                                !["ajuda", "help", "give", "ban", "pontos", "skip", "trocar", "gif"].includes(action)
+                                !["ajuda", "help", "give", "ban", "pontos", "skip", "trocar", "gif", "add", "playlist"].includes(
+                                    action
+                                )
                             ) {
                                 await addToQueue(payload, twitchUser, color, true);
                                 continue;
@@ -2746,7 +2902,101 @@
                     t.remove();
                 }, 3000);
             }
+
+            // === Segredo: logo "Simp." é um botão que dispara o efeito ZA WARUDO ===
+            (function () {
+                const ZW_AUDIO_URL = "https://files.catbox.moe/2n1tae.mp3";
+                const ZW_DELAY_MS = 2300;
+                const logoEl = document.querySelector(".logo");
+                let zwAudio = null;
+                let zwTimer = null;
+                let zwParticleInterval = null;
+                let zwActive = false;
+
+                function zwSpawnParticle() {
+                    const p = document.createElement("div");
+                    p.className = "zw-particle";
+                    const size = 4 + Math.random() * 9;
+                    p.style.width = size + "px";
+                    p.style.height = size + "px";
+                    p.style.left = Math.random() * 100 + "vw";
+                    const colors = ["#5e6cff", "#ffdd57", "#a78bfa", "#5de89a", "#ff7070", "#ffffff"];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    p.style.background = color;
+                    p.style.boxShadow = `0 0 8px ${color}`;
+                    const dur = 0.5 + Math.random() * 0.7;
+                    p.style.animation = `zwRise ${dur}s linear forwards`;
+                    document.body.appendChild(p);
+                    setTimeout(function () {
+                        if (p.parentNode) p.remove();
+                    }, dur * 1000 + 60);
+                }
+
+                function zwStart() {
+                    if (zwActive) return;
+                    zwActive = true;
+                    document.body.classList.add("zw-active");
+
+                    const overlay = document.createElement("div");
+                    overlay.className = "zw-overlay active";
+                    overlay.id = "zwOverlay";
+                    document.body.appendChild(overlay);
+
+                    document
+                        .querySelectorAll("header, .theater, .qside, .abtn, .tp, .logo, .npbar, #npbar")
+                        .forEach(function (el) {
+                            el.classList.add("zw-float");
+                        });
+
+                    zwParticleInterval = setInterval(function () {
+                        zwSpawnParticle();
+                        zwSpawnParticle();
+                        zwSpawnParticle();
+                    }, 55);
+                }
+
+                function zwStop() {
+                    zwActive = false;
+                    document.body.classList.remove("zw-active");
+                    const overlay = document.getElementById("zwOverlay");
+                    if (overlay) overlay.remove();
+                    document.querySelectorAll(".zw-float").forEach(function (el) {
+                        el.classList.remove("zw-float");
+                    });
+                    if (zwParticleInterval) {
+                        clearInterval(zwParticleInterval);
+                        zwParticleInterval = null;
+                    }
+                }
+
+                if (logoEl) {
+                    logoEl.addEventListener("click", function () {
+                        if (zwAudio && !zwAudio.paused) return;
+                        try {
+                            zwAudio = new Audio(ZW_AUDIO_URL);
+                        } catch (e) {
+                            return;
+                        }
+                        zwAudio
+                            .play()
+                            .then(function () {
+                                zwTimer = setTimeout(zwStart, ZW_DELAY_MS);
+                            })
+                            .catch(function () {});
+
+                        zwAudio.addEventListener("ended", function () {
+                            if (zwTimer) clearTimeout(zwTimer);
+                            zwStop();
+                        });
+                        zwAudio.addEventListener("pause", function () {
+                            if (zwAudio && zwAudio.currentTime === 0) {
+                                if (zwTimer) clearTimeout(zwTimer);
+                                zwStop();
+                            }
+                        });
+                    });
+                }
+            })();
         </script>
     </body>
 </html>
-
