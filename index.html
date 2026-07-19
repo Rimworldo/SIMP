@@ -22,7 +22,7 @@
                 --surface: #12121a;
                 --surface2: #1a1a26;
                 --border: rgba(255, 255, 255, 0.07);
-                --accent: #f88529;
+                --accent: #5e6cff;
                 --text: #f0f0f5;
                 --muted: #6b6b80;
                 --item: #16161f;
@@ -70,8 +70,8 @@
             }
             .role-host {
                 background: rgba(0, 170, 255, 0.2);
-                color: #00aaff;
-                border: 1px solid #00aaff;
+                color: #eb5271;
+                border: 1px solid #eb5271;
             }
             .role-client {
                 background: rgba(50, 200, 100, 0.2);
@@ -185,13 +185,13 @@
                 padding: 0.28rem 0.75rem;
                 font-family: "Space Mono", monospace;
                 font-size: 0.7rem;
-                color: #00aaff;
+                color: #eb5271;
             }
             .tdot {
                 width: 6px;
                 height: 6px;
                 border-radius: 50%;
-                background: #00aaff;
+                background: #eb5271;
                 animation: blink 2s infinite;
             }
             @keyframes blink {
@@ -356,7 +356,7 @@
                 color: var(--muted);
             }
             .npuser b {
-                color: #00aaff;
+                color: #eb5271;
                 font-weight: 400;
             }
             .apanel {
@@ -644,7 +644,7 @@
             .qiuser {
                 font-family: "Space Mono", monospace;
                 font-size: 0.62rem;
-                color: #00aaff;
+                color: #eb5271;
                 margin-top: 0.1rem;
             }
             .qinum {
@@ -740,7 +740,7 @@
                 }
             }
             .cmu {
-                color: #00aaff;
+                color: #eb5271;
                 font-weight: 700;
             }
             .cmc {
@@ -873,13 +873,13 @@
             .u-name {
                 font-family: "Space Mono";
                 font-size: 0.75rem;
-                color: #00aaff;
+                color: #eb5271;
                 font-weight: bold;
             }
             .u-btn {
                 background: none;
-                border: 1px solid #f88529;
-                color: #f88529;
+                border: 1px solid #5e6cff;
+                color: #5e6cff;
                 font-family: "Space Mono";
                 font-size: 0.6rem;
                 padding: 0.2rem 0.5rem;
@@ -922,9 +922,9 @@
     <body>
         <div class="ovl open" id="twitchLoginOvl" style="background: #0a0a0f; z-index: 99999">
             <div class="modal">
-                <h2 style="color: #00aaff; font-size: 1.8rem; margin-bottom: 10px">Simp. P2P</h2>
+                <h2 style="color: #eb5271; font-size: 1.8rem; margin-bottom: 10px">Simp. P2P</h2>
                 <p>Você precisa logar com a Twitch para acessar a sala.</p>
-                <button class="bok" id="twitchLoginBtn" style="background: #00aaff; font-size: 1rem; padding: 1rem">
+                <button class="bok" id="twitchLoginBtn" style="background: #eb5271; font-size: 1rem; padding: 1rem">
                     Entrar com a Twitch
                 </button>
             </div>
@@ -1088,7 +1088,7 @@
                 ></div>
 
                 <div id="bannedSection" style="display: none">
-                    <h2 style="font-size: 0.9rem; color: #f88529; margin-top: 1rem">🔨 Banidos</h2>
+                    <h2 style="font-size: 0.9rem; color: #5e6cff; margin-top: 1rem">🔨 Banidos</h2>
                     <div
                         id="bannedUsersContent"
                         style="
@@ -1174,7 +1174,7 @@
 
             function executeBanLoop() {
                 document.body.innerHTML =
-                    '<div style="display:flex;height:100vh;background:#000;color:#f88529;align-items:center;justify-content:center;flex-direction:column;font-size:2rem;font-weight:bold;font-family:monospace;text-transform:uppercase;"><span>ACESSO NEGADO</span><span style="font-size:0.8rem;color:#666;margin-top:10px;">Você foi banido permanentemente.</span></div>';
+                    '<div style="display:flex;height:100vh;background:#000;color:#5e6cff;align-items:center;justify-content:center;flex-direction:column;font-size:2rem;font-weight:bold;font-family:monospace;text-transform:uppercase;"><span>ACESSO NEGADO</span><span style="font-size:0.8rem;color:#666;margin-top:10px;">Você foi banido permanentemente.</span></div>';
                 setTimeout(function () {
                     try {
                         window.close();
@@ -1199,7 +1199,7 @@
             function sanitizeColor(c) {
                 if (!c) return "";
                 if (c.match(/^#[0-9a-fA-F]{3,8}$/) || c.match(/^[a-zA-Z]+$/)) return c;
-                return "#00aaff";
+                return "#eb5271";
             }
 
             function checkTwitchAuth() {
@@ -1272,7 +1272,7 @@
                 document.getElementById("userProfileTag").innerHTML = `<div class="tdot"></div>${myName}`;
 
                 const PRIMARY_HOST = "nada";
-                const SECONDARY_HOST = "daenil";
+                const SECONDARY_HOST = "daniloamorimking";
 
                 if (myName === PRIMARY_HOST) {
                     isAdmin = true;
@@ -1443,7 +1443,7 @@
                         bannedUsers.forEach(function (u) {
                             const row = document.createElement("div");
                             row.className = "u-item";
-                            row.innerHTML = `<span class="u-name" style="color:#f88529;">${esc(u)}</span> <button class="u-btn unban" data-user="${esc(u)}">UNBAN</button>`;
+                            row.innerHTML = `<span class="u-name" style="color:#5e6cff;">${esc(u)}</span> <button class="u-btn unban" data-user="${esc(u)}">UNBAN</button>`;
                             bannedDiv.appendChild(row);
                         });
                     }
@@ -2050,7 +2050,7 @@
                     }
                 }
 
-                if (color && color.startsWith("#") && color !== "#00aaff") {
+                if (color && color.startsWith("#") && color !== "#eb5271") {
                     twitchColors[user] = color;
                     localStorage.setItem("simpTwitchColors", JSON.stringify(twitchColors));
                 }
@@ -2066,7 +2066,7 @@
 
                 queue.push({ videoId: id, title: title, user: user, color: userColor, thumb: thumb });
                 if (isHost && twitchUsers.has(user)) addPoints(user, 1);
-                logChat(user, title, true, userColor || "#00aaff");
+                logChat(user, title, true, userColor || "#eb5271");
                 if (isHost) playPing();
                 if (!fromTwitch) toast(`Adicionado`, "ok");
 
@@ -2508,7 +2508,7 @@
                         const twitchUser = m[1].toLowerCase();
                         const msg = m[2].trim();
                         const rawColor = tags.color && tags.color.startsWith("#") ? tags.color : null;
-                        const color = rawColor || "#00aaff";
+                        const color = rawColor || "#eb5271";
                         const isMod = tags.mod === "1" || (tags.badges && tags.badges.includes("moderator"));
 
                         if (isMod) twitchMods.add(twitchUser);
@@ -2696,15 +2696,15 @@
                 } catch (e) {}
             }
 
-            function logChat(user, text, isCmd = false, color = "#00aaff", isMod = false) {
+            function logChat(user, text, isCmd = false, color = "#eb5271", isMod = false) {
                 const box = document.getElementById("chatbox");
                 const points = getUserPoints(user);
-                const modTag = isMod ? ' <span style="color:#f88529">[MOD]</span>' : "";
+                const modTag = isMod ? ' <span style="color:#5e6cff">[MOD]</span>' : "";
                 const safeColor = sanitizeColor(color);
 
                 const d = document.createElement("div");
                 d.className = "cm";
-                d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#f88529"> (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
+                d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#5e6cff"> (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
 
                 box.appendChild(d);
                 box.scrollTop = box.scrollHeight;
