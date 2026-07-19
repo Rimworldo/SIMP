@@ -2644,7 +2644,7 @@
                                 }
                                 spendPoints(twitchUser, amount);
                                 addPoints(target, amount);
-                                sendTwitchMessage(`@${twitchUser} deu ${amount} Simps para @${target}`);
+                                sendTwitchMessage(`@${twitchUser} deu ${amount} Simps para @${target} finO`);
                                 continue;
                             }
 
@@ -2654,7 +2654,7 @@
                                     banUser(target);
                                     sendTwitchMessage(`@${twitchUser} baniu @${target} anga `);
                                 } else {
-                                    sendTwitchMessage(`@${twitchUser} seja mod primeiro`);
+                                    sendTwitchMessage(`@${twitchUser} seja mod primeiro besta.`);
                                 }
                                 continue;
                             }
@@ -2673,7 +2673,7 @@
                                         `@${twitchUser} Tocando agora: "${it.title}" pedido por ${it.user}`
                                     );
                                 } else {
-                                    sendTwitchMessage(`@${twitchUser} Nenhum vídeo tocando no momento.`);
+                                    sendTwitchMessage(`@${twitchUser} Nenhum vídeo tocando no momento. EXPLAINING`);
                                 }
                                 continue;
                             }
@@ -2698,9 +2698,9 @@
                                     if (!isMod) spendPoints(twitchUser, 50);
                                     if (isHost) nextVideo();
                                     else sendCmd("skip", { user: twitchUser });
-                                    sendTwitchMessage(`@${twitchUser} pulou o video JAJA `);
+                                    sendTwitchMessage(`@${twitchUser} pulou o video OL`);
                                 } else {
-                                    sendTwitchMessage(`@${twitchUser} Seja mais rico`);
+                                    sendTwitchMessage(`@${twitchUser} Seja mais rico SonicSafado`);
                                 }
                                 continue;
                             }
@@ -2741,7 +2741,7 @@
                                 let addId = await extractId(arg);
                                 const isRawAudioAdd = arg.match(/\.(mp3|wav|ogg|m4a)$/i);
                                 if (!addId && !isRawAudioAdd) {
-                                    sendTwitchMessage(`@${twitchUser} Link inválido. Uso: %simp add (link)`);
+                                    sendTwitchMessage(`@${twitchUser} Link inválido. Use: %simp add (link)`);
                                     continue;
                                 }
                                 let addTitle = "";
@@ -2903,7 +2903,6 @@
                 }, 3000);
             }
 
-            // === Segredo: logo "Simp." é um botão que dispara o efeito ZA WARUDO ===
             (function () {
                 const ZW_AUDIO_URL = "https://files.catbox.moe/2n1tae.mp3";
                 const ZW_DELAY_MS = 2300;
