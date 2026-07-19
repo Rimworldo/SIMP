@@ -922,10 +922,10 @@
     <body>
         <div class="ovl open" id="twitchLoginOvl" style="background: #0a0a0f; z-index: 99999">
             <div class="modal">
-                <h2 style="color: #a78bfa; font-size: 1.8rem; margin-bottom: 10px">Simp. P2P</h2>
-                <p>Você precisa logar com a Twitch para acessar a sala.</p>
+                <h2 style="color: #a78bfa; font-size: 1.8rem; margin-bottom: 10px">Simp.</h2>
+                <p>Você precisa logar com a Twitch para acessar os simpstemas.</p>
                 <button class="bok" id="twitchLoginBtn" style="background: #a78bfa; font-size: 1rem; padding: 1rem">
-                    Entrar com a Twitch
+                    Login com a Twitch
                 </button>
             </div>
         </div>
@@ -935,10 +935,10 @@
             <div class="hright">
                 <button class="abtn" id="usersBtn" style="display: none">👥 Usuários</button>
                 <div class="dropdown">
-                    <button class="abtn" id="dropBtn">📑 Playlist</button>
+                    <button class="abtn" id="dropBtn">Playlist</button>
                     <div class="dropdown-content" id="dropContent"></div>
                 </div>
-                <button class="abtn" id="simpsBtn">💰 Simps</button>
+                <button class="abtn" id="simpsBtn">Simps</button>
                 <div class="tp" id="userProfileTag">
                     <div class="tdot"></div>
                     Carregando...
@@ -967,7 +967,7 @@
                         <audio id="rawAudio" controls></audio>
                         <div class="eover" id="eover">
                             <div class="ei">🎬</div>
-                            <p id="eoverText">Conectando ao system P2P...</p>
+                            <p id="eoverText">Conectando ao system...</p>
                             <span class="ec">Links MP3 / YouTube</span>
                             <button class="sync-btn" id="syncBtn">Sincronizar Player</button>
                         </div>
@@ -1013,7 +1013,7 @@
                         <button class="cbtn red" id="clearBtn">🗑 Limpar fila</button>
                     </div>
                     <div class="madd" id="cfgGeral">
-                        <div class="maddt">configurações visuais</div>
+                        <div class="maddt">configurações</div>
                         <div class="cfg-row">
                             <label
                                 >Palavras GIF: <input type="number" id="cfgGifWords" min="1" max="5" value="3"
@@ -1041,7 +1041,7 @@
                     <div class="qlist" id="qlist">
                         <div class="qempty" id="qempty">
                             <div class="qei">📺</div>
-                            <p>Fila vazia!</p>
+                            <p>Fila vazia</p>
                         </div>
                     </div>
                 </div>
@@ -1053,7 +1053,7 @@
 
         <div class="ovl" id="simpsOvl">
             <div class="modal" style="width: 380px">
-                <h2>💰 Simps</h2>
+                <h2>Simps</h2>
                 <div
                     id="simpsContent"
                     style="
@@ -1073,7 +1073,7 @@
 
         <div class="ovl" id="usersOvl">
             <div class="modal" style="width: 380px; padding: 1.5rem">
-                <h2>👥 Usuários Ativos</h2>
+                <h2>Usuários Ativos</h2>
                 <div
                     id="activeUsersContent"
                     style="
@@ -1088,7 +1088,7 @@
                 ></div>
 
                 <div id="bannedSection" style="display: none">
-                    <h2 style="font-size: 0.9rem; color: #5e6cff; margin-top: 1rem">🔨 Banidos</h2>
+                    <h2 style="font-size: 0.9rem; color: #5e6cff; margin-top: 1rem">Banidos</h2>
                     <div
                         id="bannedUsersContent"
                         style="
@@ -1128,7 +1128,7 @@
             const CHANNEL = "daenil";
             const ROOM_ID = `simp-room-${CHANNEL}`;
 
-            const EMPTY_SOUNDS = ["https://files.catbox.moe/d5u8m3.mp3", "https://files.catbox.moe/xjed0e.mp3"];
+            const EMPTY_SOUNDS = ["https://files.catbox.moe/d5u8m3.mp3","https://files.catbox.moe/hxhg2l.mp3", "https://files.catbox.moe/xjed0e.mp3","https://files.catbox.moe/e470bx.mpeg","https://files.catbox.moe/szy7ht.mp3","https://files.catbox.moe/sf07ho.mp3","https://files.catbox.moe/petnkc.mp3"];
 
             let emptySoundAudio = null;
             let queue = [];
@@ -1277,7 +1277,7 @@
                 if (myName === PRIMARY_HOST) {
                     isAdmin = true;
                     isHost = true;
-                    document.getElementById("roleBadge").textContent = `👑 HOST (${myName})`;
+                    document.getElementById("roleBadge").textContent = `HOST (${myName})`;
                     document.getElementById("roleBadge").className = "role-badge role-host";
                     document.getElementById("usersBtn").style.display = "block";
                     toggleAdmin(true);
@@ -1285,7 +1285,7 @@
                 } else if (myName === SECONDARY_HOST) {
                     isAdmin = true;
                     toggleAdmin(true);
-                    document.getElementById("roleBadge").textContent = "🔒 ADMIN (tentando host)";
+                    document.getElementById("roleBadge").textContent = "ADMIN (tentando host)";
                     document.getElementById("roleBadge").style.background = "rgba(255, 165, 0, 0.2)";
                     document.getElementById("roleBadge").style.color = "#ffb347";
                     document.getElementById("roleBadge").style.borderColor = "#ffb347";
@@ -1315,7 +1315,7 @@
                             isHost = true;
                             isAdmin = true;
 
-                            document.getElementById("roleBadge").textContent = `👑 HOST (${myName})`;
+                            document.getElementById("roleBadge").textContent = `HOST (${myName})`;
                             document.getElementById("roleBadge").className = "role-badge role-host";
                             document.getElementById("roleBadge").style = "";
                             document.getElementById("usersBtn").style.display = "block";
@@ -1333,13 +1333,13 @@
 
                             startAsHost();
 
-                            toast("🎉 Você é o HOST agora!", "ok");
+                            toast("Você é o HOST agora", "ok");
                         }
                     }, 5000);
                 } else if (ADMIN_USERS.includes(myName)) {
                     isAdmin = true;
                     toggleAdmin(true);
-                    document.getElementById("roleBadge").textContent = "🔒 ADMIN";
+                    document.getElementById("roleBadge").textContent = "ADMIN";
                     document.getElementById("roleBadge").style.background = "rgba(255, 165, 0, 0.2)";
                     document.getElementById("roleBadge").style.color = "#ffb347";
                     document.getElementById("roleBadge").style.borderColor = "#ffb347";
@@ -1647,7 +1647,7 @@
 
                 hostPeer.on("open", function () {
                     p2pInitializing = false;
-                    document.getElementById("roleBadge").textContent = `👑 HOST (${myName})`;
+                    document.getElementById("roleBadge").textContent = `HOST (${myName})`;
                     document.getElementById("roleBadge").className = "role-badge role-host";
                     document.getElementById("eoverText").innerHTML = `Host iniciado.<br>Aguardando vídeos!`;
                     updateClientsBadge();
@@ -1671,12 +1671,12 @@
                 }
 
                 if (isAdmin) {
-                    document.getElementById("roleBadge").textContent = "🔒 ADMIN";
+                    document.getElementById("roleBadge").textContent = "ADMIN";
                     document.getElementById("roleBadge").style.background = "rgba(255, 165, 0, 0.2)";
                     document.getElementById("roleBadge").style.color = "#ffb347";
                     document.getElementById("roleBadge").style.borderColor = "#ffb347";
                 } else {
-                    document.getElementById("roleBadge").textContent = "🎧 CLIENT";
+                    document.getElementById("roleBadge").textContent = "CLIENT";
                     document.getElementById("roleBadge").className = "role-badge role-client";
                 }
 
@@ -1740,7 +1740,7 @@
                                     isHost = true;
                                     isAdmin = true;
 
-                                    document.getElementById("roleBadge").textContent = `👑 HOST (${myName})`;
+                                    document.getElementById("roleBadge").textContent = `HOST (${myName})`;
                                     document.getElementById("roleBadge").className = "role-badge role-host";
                                     document.getElementById("roleBadge").style = "";
                                     document.getElementById("usersBtn").style.display = "block";
@@ -2111,8 +2111,7 @@
                 else {
                     showEmpty();
                     playEmptySound();
-                    // Notify chat that the queue ended (only when host finishes videos)
-                    sendTwitchMessage("Nenhum vídeo na fila! Adicione uma musica usando %simp (link do youtube)");
+                    sendTwitchMessage("Nenhum vídeo na fila. Adicione uma musica usando %simp (link do youtube)");
                 }
             }
 
@@ -2122,7 +2121,7 @@
                 updateGifBackground();
                 document.getElementById("eover").classList.remove("gone");
                 document.getElementById("eoverText").innerHTML = isHost
-                    ? "Nenhum vídeo.<br>Use o chat"
+                    ? "Nenhum vídeo<br>Use o chat"
                     : "Aguardando Host...";
                 document.getElementById("npbar").style.display = "none";
                 document.getElementById("playerGlow").classList.remove("active");
