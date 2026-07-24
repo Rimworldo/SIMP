@@ -1996,12 +1996,22 @@
                     setupClient();
                 });
 
-                clientPeer.on("error", function (err) {
+               clientPeer.on("error", function (err) {
     p2pInitializing = false;
-    if (!isHost) {
-        toast("Erro de conexão. Tentando reconectar...", "err");
-        setTimeout(startAsClient, 4000);
+    if (isHost) return;
+
+    if (err && err.type === "peer-unavailable") {
+        // O host ainda não iniciou a sessão. O Peer continua bom, só tenta conectar de novo.
+        document.getElementById("eoverText").innerHTML = "Host ainda não iniciou. Aguardando...";
+        setTimeout(function () {
+            if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
+        }, 4000);
+        return;
     }
+
+    // Erro mais sério (rede, servidor, etc): aí sim recria o Peer do zero
+    toast("Erro de conexão. Tentando reconectar...", "err");
+    setTimeout(startAsClient, 4000);
 });
 }
 
