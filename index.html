@@ -1997,59 +1997,12 @@
                 });
 
                 clientPeer.on("error", function (err) {
-                    p2pInitializing = false;
-                    if (!isHost) {
-                        // Se for admin e falhou, tenta assumir como host após 5 segundos
-                        if (isAdmin) {
-                            toast("Host primário não encontrado. Assumindo como host...", "");
-                            setTimeout(function () {
-                                if (!isHost && (!hostConnection || !hostConnection.open)) {
-                                    if (hostConnection) {
-                                        try {
-                                            hostConnection.close();
-                                        } catch (e) {}
-                                        hostConnection = null;
-                                    }
-                                    if (clientPeer) {
-                                        try {
-                                            clientPeer.destroy();
-                                        } catch (e) {}
-                                        clientPeer = null;
-                                    }
-
-                                    clientCurrentVideoId = null;
-                                    clientSynced = false;
-                                    p2pInitializing = false;
-
-                                    isHost = true;
-                                    isAdmin = true;
-
-                                    document.getElementById("roleBadge").textContent = `HOST (${myName})`;
-                                    document.getElementById("roleBadge").className = "role-badge role-host";
-                                    document.getElementById("roleBadge").style = "";
-                                    document.getElementById("usersBtn").style.display = "block";
-                                    document.body.classList.add("is-admin");
-                                    document.getElementById("apanel").classList.add("show");
-                                    document.getElementById("cfgGeral").style.display = "flex";
-                                    document.getElementById("publicSeekRow").style.display = "flex";
-
-                                    const eover = document.getElementById("eover");
-                                    if (eover) {
-                                        eover.classList.add("gone");
-                                        document.getElementById("eoverText").innerHTML =
-                                            `Host iniciado!<br>Adicione vídeos à fila.`;
-                                    }
-
-                                    startAsHost();
-                                    toast("🎉 Você é o HOST agora!", "ok");
-                                }
-                            }, 5000);
-                        } else {
-                            setTimeout(startAsClient, 4000);
-                        }
-                    }
-                });
-            }
+    p2pInitializing = false;
+    if (!isHost) {
+        toast("Erro de conexão. Tentando reconectar...", "err");
+        setTimeout(startAsClient, 4000);
+    }
+});
 
             function buildSyncState() {
                 let time = 0;
