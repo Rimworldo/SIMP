@@ -1010,6 +1010,192 @@
                     opacity: 0;
                 }
             }
+
+            /* === egg: efeitos secretos aleatórios da logo === */
+            .egg-canvas {
+                position: fixed;
+                inset: 0;
+                z-index: 999997;
+                pointer-events: none;
+            }
+
+            /* disco party */
+            body.egg-disco {
+                animation: eggDiscoHue 0.6s linear infinite;
+            }
+            @keyframes eggDiscoHue {
+                0% {
+                    filter: hue-rotate(0deg) saturate(1.6);
+                }
+                100% {
+                    filter: hue-rotate(360deg) saturate(1.6);
+                }
+            }
+            .egg-disco-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 999996;
+                pointer-events: none;
+                opacity: 0.9;
+                mix-blend-mode: color-dodge;
+                background: conic-gradient(
+                    from 0deg,
+                    #ff5e5e,
+                    #ffdd57,
+                    #5de89a,
+                    #5e6cff,
+                    #a78bfa,
+                    #ff5e5e
+                );
+                animation: eggDiscoSpin 2.5s linear infinite;
+            }
+            @keyframes eggDiscoSpin {
+                from {
+                    transform: rotate(0deg) scale(2);
+                }
+                to {
+                    transform: rotate(360deg) scale(2);
+                }
+            }
+            .egg-disco-spin {
+                display: inline-block;
+                animation: eggLogoSpin 0.7s linear infinite;
+            }
+            @keyframes eggLogoSpin {
+                from {
+                    transform: rotate(0deg);
+                }
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            .egg-confetti {
+                position: fixed;
+                top: -20px;
+                pointer-events: none;
+                z-index: 999998;
+                will-change: transform, opacity;
+            }
+            @keyframes eggConfettiFall {
+                0% {
+                    transform: translateY(0) rotate(0deg);
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(115vh) rotate(540deg);
+                    opacity: 0.9;
+                }
+            }
+
+            /* gravity flip */
+            body.egg-flip {
+                animation: eggFlip 3s ease-in-out;
+                transform-origin: center center;
+            }
+            @keyframes eggFlip {
+                0% {
+                    transform: rotate(0deg);
+                }
+                15% {
+                    transform: rotate(190deg);
+                }
+                20% {
+                    transform: rotate(175deg);
+                }
+                50% {
+                    transform: rotate(180deg);
+                }
+                80% {
+                    transform: rotate(175deg);
+                }
+                85% {
+                    transform: rotate(190deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* glitch / vhs */
+            body.egg-glitch {
+                animation: eggGlitchShift 0.15s steps(2) infinite;
+            }
+            @keyframes eggGlitchShift {
+                0% {
+                    transform: translate(0, 0);
+                    filter: hue-rotate(0deg);
+                }
+                20% {
+                    transform: translate(-3px, 2px);
+                    filter: hue-rotate(60deg);
+                }
+                40% {
+                    transform: translate(3px, -2px);
+                    filter: hue-rotate(-60deg);
+                }
+                60% {
+                    transform: translate(-2px, -1px);
+                    filter: hue-rotate(30deg);
+                }
+                80% {
+                    transform: translate(2px, 1px);
+                    filter: hue-rotate(-30deg);
+                }
+                100% {
+                    transform: translate(0, 0);
+                    filter: hue-rotate(0deg);
+                }
+            }
+            .egg-glitch-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 999996;
+                pointer-events: none;
+                background: repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.05) 0px,
+                    rgba(255, 255, 255, 0.05) 1px,
+                    transparent 2px,
+                    transparent 4px
+                );
+                mix-blend-mode: overlay;
+            }
+
+            /* balão de fala aleatório */
+            .egg-toast {
+                position: fixed;
+                top: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 999999;
+                background: var(--surface2);
+                border: 1px solid var(--accent);
+                color: var(--text);
+                padding: 0.6rem 1.2rem;
+                border-radius: 20px;
+                font-family: "Space Mono", monospace;
+                font-size: 0.75rem;
+                opacity: 0;
+                animation: eggToastPop 3s ease forwards;
+                pointer-events: none;
+            }
+            @keyframes eggToastPop {
+                0% {
+                    opacity: 0;
+                    transform: translateX(-50%) translateY(-10px);
+                }
+                10% {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
+                }
+                85% {
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0;
+                    transform: translateX(-50%) translateY(-10px);
+                }
+            }
         </style>
     </head>
     <body>
@@ -1474,6 +1660,7 @@
 
                 logAdminAction(myName, `BANIU o usuário ${targetUser}`);
                 renderUsersModal();
+                broadcastState();
             }
 
             function unbanUser(targetUser) {
@@ -1486,6 +1673,7 @@
 
                 logAdminAction(myName, `DESBANIU o usuário ${targetUser}`);
                 renderUsersModal();
+                broadcastState();
             }
 
             document.getElementById("usersBtn").addEventListener("click", function () {
@@ -1680,18 +1868,19 @@
                 });
 
                 html += "<br><b>Comandos:</b><br>";
-                html += "%simp ajuda → Lista de comandos<br><br>";
-                html += "%simp give (quantidade) @usuario → Dá pontos<br><br>";
-                html += "%simp baby ban ban @usuario → Banir usuário (streamer/mods)<br><br>";
-                html += "%simp pontos / %simp pontos @usuario → Ver pontos<br><br>";
-                html += "%simp skip → Pular música (-50 Simps)<br><br>";
-                html += "%simp trocar → Embaralhar fila (-50 Simps)<br><br>";
-                html += "%simp tocando → Mostra a música tocando agora e quem pediu<br><br>";
-                html += "%simp lista → Mostra quantas músicas estão na fila e a próxima<br><br>";
-                html += "%simp gif (nome) → Mudar GIF (-20 Simps)<br><br>";
-                html += "%simp add (link) → Salva o link na playlist do site<br><br>";
-                html += "%simp playlist (numero) → Adiciona à fila o link salvo nessa posição<br><br>";
-                html += "%simp (url/busca) → Adiciona à fila";
+                html += "%s ajuda → Lista de comandos<br><br>";
+                html += "%s give (quantidade) @usuario → Dá pontos<br><br>";
+                html += "%s ban @usuario → Banir usuário (streamer/mods)<br><br>";
+                html += "%s pontos / %s pontos @usuario → Ver pontos<br><br>";
+                html += "%s skip → Pular música (-50 Simps)<br><br>";
+                html += "%s trocar → Embaralhar fila (-50 Simps)<br><br>";
+                html += "%s atual → Mostra a música tocando agora e quem pediu<br><br>";
+                html += "%s lista → Mostra quantas músicas estão na fila e a próxima<br><br>";
+                html += "%s gif (nome) → Mudar GIF (-20 Simps)<br><br>";
+                html += "%s add (link) → Salva o link na playlist do site<br><br>";
+                html += "%s playlist → Mostra todas as músicas salvas e suas posições<br><br>";
+                html += "%s play (numero) → Adiciona à fila o link salvo nessa posição<br><br>";
+                html += "%s (url/busca) → Adiciona à fila";
 
                 document.getElementById("simpsContent").innerHTML = html;
                 document.getElementById("simpsOvl").classList.add("open");
@@ -1861,6 +2050,145 @@
                     }
                 });
             }
+
+            function buildSyncState() {
+                let time = 0;
+                const isMp3 =
+                    curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                const rawAudio = document.getElementById("rawAudio");
+                if (isMp3 && rawAudio) {
+                    time = rawAudio.currentTime || 0;
+                } else if (ytPlayer && ytPlayer.getCurrentTime) {
+                    try {
+                        time = ytPlayer.getCurrentTime() || 0;
+                    } catch (e) {}
+                }
+                return {
+                    type: "sync",
+                    queue: queue,
+                    curIdx: curIdx,
+                    gifUrl: currentGifUrl,
+                    glow: config.glow,
+                    paused: paused,
+                    time: time,
+                    simpsPoints: simpsPoints,
+                    activeUsers: clientConnections
+                        .filter(function (c) {
+                            return c.open && c.metadata;
+                        })
+                        .map(function (c) {
+                            return c.metadata.user;
+                        }),
+                };
+            }
+
+            function broadcastState() {
+                if (!isHost) return;
+                const payload = buildSyncState();
+                clientConnections.forEach(function (c) {
+                    if (c.open) {
+                        try {
+                            c.send(payload);
+                        } catch (e) {}
+                    }
+                });
+            }
+
+            function setupHost() {
+                hostPeer.on("connection", function (conn) {
+                    conn.on("open", function () {
+                        if (
+                            conn.metadata &&
+                            conn.metadata.user &&
+                            bannedUsers.includes(conn.metadata.user.toLowerCase())
+                        ) {
+                            try {
+                                conn.send({ type: "banned" });
+                            } catch (e) {}
+                            setTimeout(function () {
+                                try {
+                                    conn.close();
+                                } catch (e) {}
+                            }, 300);
+                            return;
+                        }
+                        clientConnections.push(conn);
+                        updateClientsBadge();
+                        renderUsersModal();
+                        try {
+                            conn.send(buildSyncState());
+                        } catch (e) {}
+                    });
+
+                    conn.on("data", function (data) {
+                        if (!data || data.type !== "cmd") return;
+                        sendCmd(data.action, data);
+                        broadcastState();
+                    });
+
+                    conn.on("close", function () {
+                        clientConnections = clientConnections.filter(function (c) {
+                            return c !== conn;
+                        });
+                        updateClientsBadge();
+                        renderUsersModal();
+                    });
+
+                    conn.on("error", function (err) {});
+                });
+            }
+
+            function setupClient() {
+                if (hostConnection) {
+                    try {
+                        hostConnection.close();
+                    } catch (e) {}
+                    hostConnection = null;
+                }
+
+                hostConnection = clientPeer.connect(ROOM_ID, {
+                    reliable: true,
+                    metadata: { user: myName || myTwitchName || "Viewer" },
+                });
+
+                hostConnection.on("open", function () {
+                    document.getElementById("eoverText").innerHTML = "Sincronizando com o Host...";
+                    toast("Conectado ao Host!", "ok");
+                });
+
+                hostConnection.on("data", function (data) {
+                    if (!data) return;
+                    if (data.type === "banned") {
+                        executeBanLoop();
+                        return;
+                    }
+                    if (data.type === "syslog") {
+                        logChat(data.user, data.text, true, data.color);
+                        return;
+                    }
+                    if (data.type === "sync") {
+                        handleSync(data);
+                        return;
+                    }
+                });
+
+                hostConnection.on("close", function () {
+                    clientSynced = false;
+                    hostConnection = null;
+                    if (!isHost) {
+                        toast("Desconectado do Host. Tentando reconectar...", "err");
+                        setTimeout(function () {
+                            if (!isHost) startAsClient();
+                        }, 3000);
+                    }
+                });
+
+                hostConnection.on("error", function (err) {});
+            }
+
+            setInterval(function () {
+                if (isHost) broadcastState();
+            }, 1500);
 
             function handleSync(data) {
                 if (data.simpsPoints) simpsPoints = data.simpsPoints;
@@ -2169,6 +2497,7 @@
 
                 if (isHost && curIdx === -1) startPlayback(0);
                 else renderQueue();
+                if (isHost) broadcastState();
             }
 
             function startPlayback(idx) {
@@ -2204,7 +2533,7 @@
                 else {
                     showEmpty();
                     playEmptySound();
-                    sendTwitchMessage("Nenhum vídeo na fila. Adicione uma musica usando %simp (link do youtube)");
+                    sendTwitchMessage("Nenhum vídeo na fila. Adicione uma musica usando %s (link do youtube)");
                 }
             }
 
@@ -2430,6 +2759,7 @@
                             if (ytPlayer) ytPlayer.seekTo(payload.time, true);
                         }
                     }
+                    broadcastState();
                 } else if (hostConnection && hostConnection.open) {
                     hostConnection.send(Object.assign({ type: "cmd", action: action }, payload));
                     if (action !== "seek") toast("Enviado ao Host", "ok");
@@ -2614,14 +2944,14 @@
                             localStorage.setItem("simpTwitchUsers", JSON.stringify(Array.from(twitchUsers)));
                         }
 
-                        if (msg.toLowerCase().startsWith("%simp")) {
-                            const payload = msg.slice(5).trim();
+                        if (msg.toLowerCase().startsWith("%s")) {
+                            const payload = msg.slice(2).trim();
                             const parts = payload.split(" ");
                             const action = parts[0] ? parts[0].toLowerCase() : "";
                             const arg = parts.slice(1).join(" ");
 
                             if (action === "ajuda" || action === "help") {
-                                sendTwitchMessage(`@${twitchUser} %simp ajuda | %simp give (quantidade) @usuario | %simp pontos @usuario | %simp skip | %simp trocar | %simp gif (nome) | %simp tocando | %simp lista | %simp add (link) | %simp playlist (numero) | %simp (link/busca)
+                                sendTwitchMessage(`@${twitchUser} %s ajuda | %s give (quantidade) @usuario | %s pontos @usuario | %s skip | %s trocar | %s gif (nome) | %s atual | %s lista | %s add (link) | %s playlist | %s play (numero) | %s (link/busca)
 
 `);
                                 continue;
@@ -2631,7 +2961,7 @@
                                 const amount = parseInt(parts[1], 10);
                                 const target = parts[parts.length - 1].replace("@", "").toLowerCase();
                                 if (!target || isNaN(amount) || amount <= 0) {
-                                    sendTwitchMessage(`@${twitchUser} Uso: %simp give (quantidade) @usuario`);
+                                    sendTwitchMessage(`@${twitchUser} Uso: %s give (quantidade) @usuario`);
                                     continue;
                                 }
                                 if (target === twitchUser) {
@@ -2666,7 +2996,7 @@
                                 continue;
                             }
 
-                            if (action === "tocando") {
+                            if (action === "atual") {
                                 if (curIdx >= 0 && queue[curIdx]) {
                                     const it = queue[curIdx];
                                     sendTwitchMessage(
@@ -2735,13 +3065,13 @@
 
                             if (action === "add") {
                                 if (!arg) {
-                                    sendTwitchMessage(`@${twitchUser} Uso: %simp add (link)`);
+                                    sendTwitchMessage(`@${twitchUser} Uso: %s add (link)`);
                                     continue;
                                 }
                                 let addId = await extractId(arg);
                                 const isRawAudioAdd = arg.match(/\.(mp3|wav|ogg|m4a)$/i);
                                 if (!addId && !isRawAudioAdd) {
-                                    sendTwitchMessage(`@${twitchUser} Link inválido. Use: %simp add (link)`);
+                                    sendTwitchMessage(`@${twitchUser} Link inválido. Use: %s add (link)`);
                                     continue;
                                 }
                                 let addTitle = "";
@@ -2778,11 +3108,11 @@
                                 continue;
                             }
 
-                            if (action === "playlist") {
+                            if (action === "play") {
                                 const idx = parseInt(arg, 10) - 1;
                                 if (isNaN(idx) || idx < 0 || idx >= simpPlaylist.length) {
                                     sendTwitchMessage(
-                                        `@${twitchUser} Posição inválida. A playlist salva tem ${simpPlaylist.length} item(ns). Uso: %simp playlist (numero)`
+                                        `@${twitchUser} Posição inválida. A playlist salva tem ${simpPlaylist.length} item(ns). Uso: %s play (numero)`
                                     );
                                     continue;
                                 }
@@ -2794,9 +3124,23 @@
                                 continue;
                             }
 
+                            if (action === "playlist") {
+                                if (simpPlaylist.length === 0) {
+                                    sendTwitchMessage(`@${twitchUser} A playlist salva está vazia. Use %s add (link).`);
+                                    continue;
+                                }
+                                const listStr = simpPlaylist
+                                    .map(function (item, i) {
+                                        return `${i + 1}. ${item.title}`;
+                                    })
+                                    .join(" | ");
+                                sendTwitchMessage(`@${twitchUser} Playlist salva: ${listStr}`);
+                                continue;
+                            }
+
                             if (
                                 payload &&
-                                !["ajuda", "help", "give", "ban", "pontos", "skip", "trocar", "gif", "add", "playlist"].includes(
+                                !["ajuda", "help", "give", "ban", "pontos", "skip", "trocar", "gif", "add", "playlist", "play"].includes(
                                     action
                                 )
                             ) {
@@ -2907,10 +3251,23 @@
                 const ZW_AUDIO_URL = "https://files.catbox.moe/2n1tae.mp3";
                 const ZW_DELAY_MS = 2300;
                 const logoEl = document.querySelector(".logo");
+                let eggActive = false;
+                let lastEggKey = null;
+
+                function eggToast(msg) {
+                    const t = document.createElement("div");
+                    t.className = "egg-toast";
+                    t.textContent = msg;
+                    document.body.appendChild(t);
+                    setTimeout(function () {
+                        if (t.parentNode) t.remove();
+                    }, 3000);
+                }
+
+                // ---------- efeito 1: ZA WARUDO (segredo original) ----------
                 let zwAudio = null;
                 let zwTimer = null;
                 let zwParticleInterval = null;
-                let zwActive = false;
 
                 function zwSpawnParticle() {
                     const p = document.createElement("div");
@@ -2931,67 +3288,192 @@
                     }, dur * 1000 + 60);
                 }
 
-                function zwStart() {
-                    if (zwActive) return;
-                    zwActive = true;
-                    document.body.classList.add("zw-active");
+                function runZaWarudo(done) {
+                    if (zwAudio && !zwAudio.paused) return;
+                    try {
+                        zwAudio = new Audio(ZW_AUDIO_URL);
+                    } catch (e) {
+                        done();
+                        return;
+                    }
 
-                    const overlay = document.createElement("div");
-                    overlay.className = "zw-overlay active";
-                    overlay.id = "zwOverlay";
-                    document.body.appendChild(overlay);
+                    function start() {
+                        document.body.classList.add("zw-active");
+                        const overlay = document.createElement("div");
+                        overlay.className = "zw-overlay active";
+                        overlay.id = "zwOverlay";
+                        document.body.appendChild(overlay);
+                        document
+                            .querySelectorAll("header, .theater, .qside, .abtn, .tp, .logo, .npbar, #npbar")
+                            .forEach(function (el) {
+                                el.classList.add("zw-float");
+                            });
+                        zwParticleInterval = setInterval(function () {
+                            zwSpawnParticle();
+                            zwSpawnParticle();
+                            zwSpawnParticle();
+                        }, 55);
+                    }
 
-                    document
-                        .querySelectorAll("header, .theater, .qside, .abtn, .tp, .logo, .npbar, #npbar")
-                        .forEach(function (el) {
-                            el.classList.add("zw-float");
+                    function stop() {
+                        document.body.classList.remove("zw-active");
+                        const overlay = document.getElementById("zwOverlay");
+                        if (overlay) overlay.remove();
+                        document.querySelectorAll(".zw-float").forEach(function (el) {
+                            el.classList.remove("zw-float");
+                        });
+                        if (zwParticleInterval) {
+                            clearInterval(zwParticleInterval);
+                            zwParticleInterval = null;
+                        }
+                        done();
+                    }
+
+                    zwAudio
+                        .play()
+                        .then(function () {
+                            zwTimer = setTimeout(start, ZW_DELAY_MS);
+                        })
+                        .catch(function () {
+                            done();
                         });
 
-                    zwParticleInterval = setInterval(function () {
-                        zwSpawnParticle();
-                        zwSpawnParticle();
-                        zwSpawnParticle();
-                    }, 55);
+                    zwAudio.addEventListener("ended", function () {
+                        if (zwTimer) clearTimeout(zwTimer);
+                        stop();
+                    });
+                    zwAudio.addEventListener("pause", function () {
+                        if (zwAudio && zwAudio.currentTime === 0) {
+                            if (zwTimer) clearTimeout(zwTimer);
+                            stop();
+                        }
+                    });
                 }
 
-                function zwStop() {
-                    zwActive = false;
-                    document.body.classList.remove("zw-active");
-                    const overlay = document.getElementById("zwOverlay");
-                    if (overlay) overlay.remove();
-                    document.querySelectorAll(".zw-float").forEach(function (el) {
-                        el.classList.remove("zw-float");
-                    });
-                    if (zwParticleInterval) {
-                        clearInterval(zwParticleInterval);
-                        zwParticleInterval = null;
-                    }
+                // ---------- efeito 2: chuva de código (matrix) ----------
+                function runMatrixRain(done) {
+                    eggToast("Wake up, Simp...");
+                    const canvas = document.createElement("canvas");
+                    canvas.className = "egg-canvas";
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                    document.body.appendChild(canvas);
+                    const ctx = canvas.getContext("2d");
+                    const chars = "SIMPꓘΞ01アイウエオ$€¥#@%&*";
+                    const fontSize = 16;
+                    const cols = Math.floor(canvas.width / fontSize);
+                    const drops = new Array(cols).fill(1);
+
+                    const interval = setInterval(function () {
+                        ctx.fillStyle = "rgba(10, 10, 15, 0.15)";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = "#5de89a";
+                        ctx.font = fontSize + "px monospace";
+                        for (let i = 0; i < drops.length; i++) {
+                            const text = chars[Math.floor(Math.random() * chars.length)];
+                            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                            drops[i]++;
+                        }
+                    }, 40);
+
+                    setTimeout(function () {
+                        clearInterval(interval);
+                        canvas.style.transition = "opacity 0.6s";
+                        canvas.style.opacity = "0";
+                        setTimeout(function () {
+                            if (canvas.parentNode) canvas.remove();
+                            done();
+                        }, 600);
+                    }, 4000);
+                }
+
+                // ---------- efeito 3: disco party ----------
+                function runDiscoParty(done) {
+                    eggToast("🪩 MODO DISCO ATIVADO 🪩");
+                    document.body.classList.add("egg-disco");
+                    const overlay = document.createElement("div");
+                    overlay.className = "egg-disco-overlay";
+                    overlay.id = "eggDiscoOverlay";
+                    document.body.appendChild(overlay);
+                    if (logoEl) logoEl.classList.add("egg-disco-spin");
+
+                    const colors = ["#ff5e5e", "#ffdd57", "#5de89a", "#5e6cff", "#a78bfa", "#ffffff"];
+                    const confettiInterval = setInterval(function () {
+                        const p = document.createElement("div");
+                        p.className = "egg-confetti";
+                        const w = 6 + Math.random() * 6;
+                        const h = 10 + Math.random() * 8;
+                        p.style.width = w + "px";
+                        p.style.height = h + "px";
+                        p.style.left = Math.random() * 100 + "vw";
+                        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        const dur = 1.5 + Math.random() * 1.5;
+                        p.style.animation = `eggConfettiFall ${dur}s linear forwards`;
+                        document.body.appendChild(p);
+                        setTimeout(function () {
+                            if (p.parentNode) p.remove();
+                        }, dur * 1000 + 60);
+                    }, 70);
+
+                    setTimeout(function () {
+                        clearInterval(confettiInterval);
+                        document.body.classList.remove("egg-disco");
+                        if (logoEl) logoEl.classList.remove("egg-disco-spin");
+                        if (overlay.parentNode) overlay.remove();
+                        done();
+                    }, 4000);
+                }
+
+                // ---------- efeito 4: mundo de cabeça pra baixo ----------
+                function runGravityFlip(done) {
+                    eggToast("🙃 A gravidade sumiu por um instante...");
+                    document.body.classList.add("egg-flip");
+                    setTimeout(function () {
+                        document.body.classList.remove("egg-flip");
+                        done();
+                    }, 3000);
+                }
+
+                // ---------- efeito 5: glitch / VHS ----------
+                function runGlitch(done) {
+                    eggToast("⚠ FALHA NA TRANSMISSÃO ⚠");
+                    document.body.classList.add("egg-glitch");
+                    const overlay = document.createElement("div");
+                    overlay.className = "egg-glitch-overlay";
+                    overlay.id = "eggGlitchOverlay";
+                    document.body.appendChild(overlay);
+                    setTimeout(function () {
+                        document.body.classList.remove("egg-glitch");
+                        if (overlay.parentNode) overlay.remove();
+                        done();
+                    }, 3000);
+                }
+
+                const eggs = [
+                    { key: "zw", run: runZaWarudo },
+                    { key: "matrix", run: runMatrixRain },
+                    { key: "disco", run: runDiscoParty },
+                    { key: "flip", run: runGravityFlip },
+                    { key: "glitch", run: runGlitch },
+                ];
+
+                function pickEgg() {
+                    let choice;
+                    do {
+                        choice = eggs[Math.floor(Math.random() * eggs.length)];
+                    } while (eggs.length > 1 && choice.key === lastEggKey);
+                    lastEggKey = choice.key;
+                    return choice;
                 }
 
                 if (logoEl) {
                     logoEl.addEventListener("click", function () {
-                        if (zwAudio && !zwAudio.paused) return;
-                        try {
-                            zwAudio = new Audio(ZW_AUDIO_URL);
-                        } catch (e) {
-                            return;
-                        }
-                        zwAudio
-                            .play()
-                            .then(function () {
-                                zwTimer = setTimeout(zwStart, ZW_DELAY_MS);
-                            })
-                            .catch(function () {});
-
-                        zwAudio.addEventListener("ended", function () {
-                            if (zwTimer) clearTimeout(zwTimer);
-                            zwStop();
-                        });
-                        zwAudio.addEventListener("pause", function () {
-                            if (zwAudio && zwAudio.currentTime === 0) {
-                                if (zwTimer) clearTimeout(zwTimer);
-                                zwStop();
-                            }
+                        if (eggActive) return;
+                        eggActive = true;
+                        const egg = pickEgg();
+                        egg.run(function () {
+                            eggActive = false;
                         });
                     });
                 }
