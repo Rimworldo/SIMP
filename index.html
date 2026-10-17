@@ -1622,7 +1622,7 @@
                 document.getElementById("userProfileTag").innerHTML = `<div class="tdot"></div>${myName}`;
 
                 const PRIMARY_HOST = "nada";
-                const SECONDARY_HOST = "daniloamorimking";
+                const SECONDARY_HOST = "daenil";
 
                 if (myName === PRIMARY_HOST) {
                     isAdmin = true;
@@ -2479,9 +2479,9 @@
                 // Só aceita link do YouTube ou link de áudio. NÃO pesquisa por título.
                 if (!id && !isRawAudio) {
                     if (fromTwitch) {
-                        sendTwitchMessage(`@${user} Envie um link do YouTube ou um link de MP3/WAV/OGG/M4A.`);
+                        sendTwitchMessage(`@${user} Envie um link do YouTube por %simp (link).`);
                     } else {
-                        toast("Envie um link do YouTube ou de áudio (MP3/WAV/OGG/M4A)", "err");
+                        toast("Envie um link do YouTube", "err");
                     }
                     return;
                 }
@@ -2496,8 +2496,8 @@
                         return q.videoId === id;
                     })
                 ) {
-                    if (!fromTwitch) toast("Já na fila!", "err");
-                    else sendTwitchMessage(`@${user} Esse vídeo já está na fila!`);
+                    if (!fromTwitch) toast("Já na fila", "err");
+                    else sendTwitchMessage(`Esse vídeo já está na fila @${user}`);
                     return;
                 }
 
