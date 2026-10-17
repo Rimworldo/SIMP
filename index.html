@@ -1282,10 +1282,10 @@
                         z-index: 2;
                     "
                 >
-                    <div class="volrow" id="publicSeekRow" style="flex: 1; display: none">
+                    <div class="volrow" id="publicSeekRow" style="flex: 1">
                         <label>POSIÇÃO</label>
                         <input type="range" min="0" max="100" value="0" id="seekSliderClient" />
-                        <span class="volnum" id="seekTimeClient">0:00/--:--</span>
+                        <span class="volnum" id="seekTimeClient" style="min-width: 80px">0:00/--:--</span>
                     </div>
                     <div class="volrow" style="flex: 1">
                         <label>VOL</label>
@@ -1322,7 +1322,7 @@
                     <span class="qcount" id="qcount">0</span>
                 </div>
                 <div class="user-add-box">
-                    <input type="text" id="userUrl" placeholder="Link YouTube ou Pesquisa..." autocomplete="off" />
+                    <input type="text" id="userUrl" placeholder="Link YouTube ou MP3..." autocomplete="off" />
                     <button id="userAddBtn">Add</button>
                 </div>
                 <div class="qlist-wrap">
@@ -1414,6 +1414,9 @@
             const CHANNEL = "daenil";
             const ROOM_ID = `simp-room-${CHANNEL}`;
 
+            const BOT_NICK = "jonhcreator2";
+            const BOT_OAUTH = "oauth:m86lajvmo1az9wv7xi0dgpxze1tdsd";
+
             const EMPTY_SOUNDS = ["https://files.catbox.moe/d5u8m3.mp3","https://files.catbox.moe/hxhg2l.mp3", "https://files.catbox.moe/xjed0e.mp3","https://files.catbox.moe/szy7ht.mp3","https://files.catbox.moe/sf07ho.mp3","https://files.catbox.moe/petnkc.mp3"];
 
             const ADD_SOUNDS = [
@@ -1467,6 +1470,7 @@
             let lastTwitchMessageTime = 0;
             const TWITCH_COOLDOWN_MS = 3000;
             let startSoundPlayed = false;
+            let draggingSeek = false;
 
             function executeBanLoop() {
                 document.body.innerHTML =
@@ -1817,29 +1821,6 @@
                 }).length;
             }
 
-            async function searchYouTube(query) {
-                try {
-                    const response = await fetch(
-                        `https://inv.nadeko.net/api/v1/search?q=${encodeURIComponent(query)}&type=video`
-                    );
-                    if (!response.ok) throw new Error("Falha1");
-                    const data = await response.json();
-                    if (data && data[0] && data[0].title) return { videoId: data[0].videoId, title: data[0].title };
-                } catch (e) {
-                    try {
-                        const response2 = await fetch(
-                            `https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`
-                        );
-                        if (!response2.ok) throw new Error("Falha2");
-                        const data2 = await response2.json();
-                        if (data2 && data2[0] && data2[0].title)
-                            return { videoId: data2[0].videoId, title: data2[0].title };
-                    } catch (e2) {
-                        return null;
-                    }
-                }
-                return null;
-            }
             async function getVideoDuration(id) {
                 try {
                     const r = await fetch(`https://inv.nadeko.net/api/v1/videos/${id}`);
@@ -1896,7 +1877,7 @@
                 html += "%s atual → Mostra a música tocando agora e quem pediu<br><br>";
                 html += "%s lista → Mostra quantas músicas estão na fila e a próxima<br><br>";
                 html += "%s gif (nome) → Mudar GIF (-10 Simps, grátis p/ mods)<br><br>";
-                html += "%s (url/busca) → Adiciona à fila";
+                html += "%s (link youtube ou mp3) → Adiciona à fila";
 
                 document.getElementById("simpsContent").innerHTML = html;
                 document.getElementById("simpsOvl").classList.add("open");
@@ -2005,8 +1986,6 @@
                     toast("Conectando ao Twitch chat...", "");
                     logChat("SISTEMA", "🔗 Conectando ao Twitch chat como cliente...", true, "#ffdd57");
                     connectTwitch();
-                } else {
-                    logChat("SISTEMA", "✅ Twitch chat já conectado.", true, "#5de89a");
                 }
 
                 clientPeer = new Peer({ debug: 0, config: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] } });
@@ -2399,26 +2378,21 @@
 
                 let id = await extractId(rawUrl);
                 let fallbackTitle = "";
-                let isRawAudio = rawUrl.match(/\.(mp3|wav|ogg|m4a)$/i);
+                let isRawAudio = /\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(rawUrl);
 
+                // Só aceita link do YouTube ou link de áudio. NÃO pesquisa por título.
                 if (!id && !isRawAudio) {
-                    logChat("SISTEMA", `Buscando: "${rawUrl}"...`, true);
-                    const result = await searchYouTube(rawUrl);
-                    if (result && result.videoId) {
-                        id = result.videoId;
-                        fallbackTitle = result.title;
+                    if (fromTwitch) {
+                        sendTwitchMessage(`@${user} Envie um link do YouTube ou um link de MP3/WAV/OGG/M4A.`);
                     } else {
-                        if (fromTwitch) {
-                            logChat("SISTEMA", `Nada encontrado para: ${rawUrl}`, true);
-                            sendTwitchMessage(`@${user} Nada encontrado para sua busca.`);
-                        } else toast("Nada encontrado", "err");
-                        return;
+                        toast("Envie um link do YouTube ou de áudio (MP3/WAV/OGG/M4A)", "err");
                     }
+                    return;
                 }
 
                 if (isRawAudio) {
                     id = rawUrl;
-                    fallbackTitle = rawUrl.split("/").pop();
+                    fallbackTitle = rawUrl.split("/").pop().split("?")[0];
                 }
 
                 if (
@@ -2439,16 +2413,7 @@
                     duration = 0;
                 } else {
                     title = await fetchTitle(id);
-                    if (title === "Título Indisponível" || !title) {
-                        if (fallbackTitle) title = fallbackTitle;
-                        else
-                            title =
-                                rawUrl.replace(/^.*(youtu.be\/|v\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/, "Vídeo") ||
-                                "Música";
-                    }
-                    if ((title === "Título Indisponível" || !title) && fallbackTitle) {
-                        title = fallbackTitle;
-                    }
+                    if (title === "Título Indisponível" || !title) title = "Vídeo " + id;
                     duration = await getVideoDuration(id);
                     if (duration > 0 && duration > config.maxDuration * 60) {
                         if (fromTwitch) {
@@ -2515,7 +2480,7 @@
                 if (config.glow) document.getElementById("playerGlow").classList.add("active");
                 loadVid(item.videoId);
 
-                const isMp3 = item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                const isMp3 = /\.(mp3|wav|ogg|m4a)$/i.test(item.videoId);
                 if (isMp3) {
                     currentGifUrl = "https://media.giphy.com/media/r50i0lZV4ijvzLcJKz/giphy.gif";
                     updateGifBackground();
@@ -2562,7 +2527,7 @@
                 if (!id) return;
                 const ytFrame = document.getElementById("ytFrame");
                 const rawAudio = document.getElementById("rawAudio");
-                const isMp3 = id.match(/\.(mp3|wav|ogg|m4a)$/i);
+                const isMp3 = /\.(mp3|wav|ogg|m4a)$/i.test(id);
 
                 if (isMp3) {
                     if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
@@ -2641,6 +2606,7 @@
                                 else showEmpty();
                             }
                             renderQueue();
+                            if (isHost) broadcastState();
                         });
                     });
                 }
@@ -2661,7 +2627,7 @@
                     d.addEventListener("click", function (e) {
                         if (e.target.classList.contains("plist-del")) return;
                         sendCmd("add", {
-                            url: item.videoId.match(/\.(mp3|wav|ogg|m4a)$/i)
+                            url: /\.(mp3|wav|ogg|m4a)$/i.test(item.videoId)
                                 ? item.videoId
                                 : `https://youtu.be/${item.videoId}`,
                             user: myName || "Viewer",
@@ -2736,7 +2702,7 @@
                         paused = !paused;
                         const status = paused ? "Pausou" : "Despausou";
                         logAdminAction(myName, status + " o player");
-                        const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                        const isMp3 = curIdx >= 0 && /\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId);
                         const rawAudio = document.getElementById("rawAudio");
                         if (isMp3 && rawAudio) {
                             if (paused) rawAudio.pause();
@@ -2752,7 +2718,7 @@
                         showEmpty();
                     }
                     if (action === "seek" && payload.time !== undefined) {
-                        const isMp3 = curIdx >= 0 && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                        const isMp3 = curIdx >= 0 && /\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId);
                         const rawAudio = document.getElementById("rawAudio");
                         if (isMp3 && rawAudio) {
                             rawAudio.currentTime = payload.time;
@@ -2825,6 +2791,18 @@
             const volClient = document.getElementById("volSliderClient");
             const seekTimeClient = document.getElementById("seekTimeClient");
             const volNumClient = document.getElementById("volNumClient");
+
+            ["mousedown", "touchstart", "pointerdown"].forEach(function (ev) {
+                seekClient.addEventListener(ev, function () {
+                    draggingSeek = true;
+                });
+            });
+            ["mouseup", "touchend", "pointerup"].forEach(function (ev) {
+                seekClient.addEventListener(ev, function () {
+                    draggingSeek = false;
+                });
+            });
+
             volClient.addEventListener("input", function () {
                 config.vol = parseInt(this.value);
                 volNumClient.textContent = config.vol + "%";
@@ -2832,10 +2810,12 @@
                 const rawAudio = document.getElementById("rawAudio");
                 if (rawAudio) rawAudio.volume = config.vol / 100;
                 saveConfig();
+                if (isHost) broadcastState();
             });
+
             seekClient.addEventListener("input", function () {
                 if (isHost) {
-                    const isMp3 = curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                    const isMp3 = curIdx >= 0 && /\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId);
                     const rawAudio = document.getElementById("rawAudio");
                     if (isMp3 && rawAudio) {
                         rawAudio.currentTime = parseFloat(this.value);
@@ -2847,47 +2827,62 @@
                 }
             });
 
+            function fmtTime(t) {
+                const m = Math.floor(t / 60);
+                const s = Math.floor(t % 60).toString().padStart(2, "0");
+                return m + ":" + s;
+            }
+
             setInterval(function () {
                 let cur = 0;
                 let dur = 0;
                 const rawAudio = document.getElementById("rawAudio");
-                const isMp3 = curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                const isMp3 = curIdx >= 0 && queue[curIdx] && /\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId);
+
                 if (curIdx >= 0 && queue[curIdx]) {
                     if (isMp3 && rawAudio) {
                         cur = rawAudio.currentTime || 0;
-                        dur = rawAudio.duration || 0;
+                        dur = isFinite(rawAudio.duration) ? rawAudio.duration : 0;
                     } else if (ytReady && ytPlayer && ytPlayer.getCurrentTime) {
-                        cur = ytPlayer.getCurrentTime();
-                        dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
+                        try {
+                            cur = ytPlayer.getCurrentTime() || 0;
+                            dur = ytPlayer.getDuration ? ytPlayer.getDuration() || 0 : 0;
+                        } catch (e) {}
                     }
                 }
-                if (seekClient) {
+
+                if (!draggingSeek) {
                     seekClient.max = dur || 100;
                     seekClient.value = cur;
                 }
-                const f = function (t) {
-                    return (
-                        Math.floor(t / 60) +
-                        ":" +
-                        Math.floor(t % 60)
-                            .toString()
-                            .padStart(2, "0")
-                    );
-                };
-                if (seekTimeClient) seekTimeClient.textContent = f(cur) + "/" + (dur > 0 ? f(dur) : "--:--");
+                if (seekTimeClient) seekTimeClient.textContent = fmtTime(cur) + "/" + (dur > 0 ? fmtTime(dur) : "--:--");
             }, 500);
 
             function connectTwitch() {
+                if (twitchWs && twitchWs.readyState === WebSocket.OPEN) {
+                    logChat("SISTEMA", "✅ Twitch chat já está conectado (ignorando novo connect).", true, "#5de89a");
+                    return;
+                }
+                if (twitchWs && twitchWs.readyState === WebSocket.CONNECTING) {
+                    return;
+                }
+
                 logChat("SISTEMA", "🔗 Conectando ao Twitch chat...", true, "#ffdd57");
                 twitchWs = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
 
                 twitchWs.onopen = function () {
                     logChat("SISTEMA", "✅ WebSocket conectado. Enviando credenciais...", true, "#5de89a");
-                    twitchWs.send(`PASS oauth:m86lajvmo1az9wv7xi0dgpxze1tdsd`);
-                    twitchWs.send(`NICK jonhcreator2`);
-                    twitchWs.send(`JOIN #${CHANNEL}`);
-                    twitchWs.send("CAP REQ :twitch.tv/tags");
-                    twitchWs.send("CAP REQ :twitch.tv/commands");
+                    // Kills qualquer sessão anterior com esse nick (o Twitch derruba a antiga)
+                    // e rejoinha com a sessão atual = "só um bot por vez"
+                    try {
+                        twitchWs.send(`PASS ${BOT_OAUTH}`);
+                        twitchWs.send(`NICK ${BOT_NICK}`);
+                        twitchWs.send(`JOIN #${CHANNEL}`);
+                        twitchWs.send("CAP REQ :twitch.tv/tags");
+                        twitchWs.send("CAP REQ :twitch.tv/commands");
+                    } catch (e) {
+                        logChat("SISTEMA", "❌ Falha ao enviar credenciais.", true, "#ff7070");
+                    }
                 };
 
                 twitchWs.onerror = function (err) {
@@ -2907,6 +2902,19 @@
                             continue;
                         }
 
+                        if (raw.includes("RECONNECT")) {
+                            // O Twitch pede reconexão; fecha e deixa o onclose reconectar
+                            try {
+                                twitchWs.close();
+                            } catch (e) {}
+                            continue;
+                        }
+
+                        if (raw.includes("Login authentication failed") || raw.includes("Login unsuccessful")) {
+                            logChat("SISTEMA", "❌ OAuth inválido. Verifique BOT_OAUTH.", true, "#ff7070");
+                            continue;
+                        }
+
                         let tags = {};
                         let messagePart = raw;
 
@@ -2923,12 +2931,7 @@
                         }
 
                         const m = messagePart.match(/:([\w]+)![\w]+@[\w]+\.tmi\.twitch\.tv PRIVMSG #[\w]+ :(.*)/);
-                        if (!m) {
-                            if (raw.includes("daenil") && raw.includes("NOTICE")) {
-                                logChat("SISTEMA", "⚠️ Aviso do servidor Twitch recebido", true, "#ffb347");
-                            }
-                            continue;
-                        }
+                        if (!m) continue;
 
                         const twitchUser = m[1].toLowerCase();
                         const msg = m[2].trim();
@@ -2954,7 +2957,7 @@
                             const arg = parts.slice(1).join(" ");
 
                             if (action === "ajuda" || action === "help") {
-                                sendTwitchMessage(`@${twitchUser} %s ajuda | give (qtd) @user | ban @user | pontos | skip (25) | trocar (25) | gif (10) | atual | lista | rank | (link/busca)`);
+                                sendTwitchMessage(`@${twitchUser} %s ajuda | give (qtd) @user | ban @user | pontos | skip (25) | trocar (25) | gif (10) | atual | lista | rank | (link youtube/mp3)`);
                                 continue;
                             }
 
@@ -3101,6 +3104,7 @@
                                     "rank",
                                 ].includes(action)
                             ) {
+                                // Sem busca por título: só aceita link
                                 await addToQueue(payload, twitchUser, color, true);
                                 continue;
                             }
