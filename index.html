@@ -1426,6 +1426,50 @@
             ];
             const START_SOUND_URL = "https://user.uploads.dev/file/e73225c881fb859fb35f030a8f207696.mp3";
 
+            // ===== PERSISTÊNCIA DA FILA (chave separada para não conflitar com a playlist salva) =====
+            const QUEUE_STATE_KEY = "simpQueueState";
+            function saveQueueState() {
+                try {
+                    localStorage.setItem(
+                        QUEUE_STATE_KEY,
+                        JSON.stringify({
+                            queue: queue,
+                            curIdx: curIdx,
+                            paused: paused,
+                            gifUrl: currentGifUrl,
+                            time: getCurrentPlaybackTime(),
+                            savedAt: Date.now(),
+                        })
+                    );
+                } catch (e) {}
+            }
+            function loadQueueState() {
+                try {
+                    const raw = localStorage.getItem(QUEUE_STATE_KEY);
+                    if (!raw) return null;
+                    const data = JSON.parse(raw);
+                    if (!data || !Array.isArray(data.queue)) return null;
+                    return data;
+                } catch (e) {
+                    return null;
+                }
+            }
+            function clearQueueState() {
+                try {
+                    localStorage.removeItem(QUEUE_STATE_KEY);
+                } catch (e) {}
+            }
+            function getCurrentPlaybackTime() {
+                if (curIdx < 0 || !queue[curIdx]) return 0;
+                const isMp3 = /\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId);
+                const rawAudio = document.getElementById("rawAudio");
+                if (isMp3 && rawAudio) return rawAudio.currentTime || 0;
+                try {
+                    if (ytReady && ytPlayer && ytPlayer.getCurrentTime) return ytPlayer.getCurrentTime() || 0;
+                } catch (e) {}
+                return 0;
+            }
+
             let emptySoundAudio = null;
             let queue = [];
             let curIdx = -1;
@@ -1471,6 +1515,7 @@
             const TWITCH_COOLDOWN_MS = 3000;
             let startSoundPlayed = false;
             let draggingSeek = false;
+            let queueRestored = false; // evita double-restore
 
             function executeBanLoop() {
                 document.body.innerHTML =
@@ -1494,6 +1539,11 @@
                         if (isHost && config.autoSkip) nextVideo();
                     };
                 }
+            });
+
+            // Salva o estado da fila ao sair/recarregar (apenas host manda)
+            window.addEventListener("beforeunload", function () {
+                if (isHost) saveQueueState();
             });
 
             function sanitizeColor(c) {
@@ -1921,6 +1971,26 @@
                 isHost = true;
                 destroyPeers();
 
+                // Restaura a fila do localStorage antes de subir o peer
+                if (!queueRestored) {
+                    queueRestored = true;
+                    const saved = loadQueueState();
+                    if (saved && saved.queue.length > 0) {
+                        queue = saved.queue;
+                        curIdx = typeof saved.curIdx === "number" ? saved.curIdx : -1;
+                        if (curIdx >= queue.length) curIdx = -1;
+                        paused = !!saved.paused;
+                        if (saved.gifUrl) currentGifUrl = saved.gifUrl;
+                        renderQueue();
+                        logChat(
+                            "SISTEMA",
+                            `♻️ Fila restaurada: ${queue.length} vídeo(s) na posição ${curIdx >= 0 ? curIdx + 1 : "—"}`,
+                            true,
+                            "#5de89a"
+                        );
+                    }
+                }
+
                 hostPeer = new Peer(ROOM_ID, {
                     debug: 0,
                     config: { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] },
@@ -1941,6 +2011,14 @@
                             a.volume = 0.6;
                             a.play().catch(function () {});
                         } catch (e) {}
+                    }
+
+                    // Se tinha vídeo salvo tocando, retoma de onde parou
+                    if (curIdx >= 0 && queue[curIdx]) {
+                        const savedTime = loadQueueState() ? loadQueueState().time || 0 : 0;
+                        startPlayback(curIdx, savedTime);
+                    } else {
+                        renderQueue();
                     }
                 });
 
@@ -2015,7 +2093,7 @@
             function buildSyncState() {
                 let time = 0;
                 const isMp3 =
-                    curIdx >= 0 && queue[curIdx] && queue[curIdx].videoId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                    curIdx >= 0 && queue[curIdx] && /\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId);
                 const rawAudio = document.getElementById("rawAudio");
                 if (isMp3 && rawAudio) {
                     time = rawAudio.currentTime || 0;
@@ -2054,6 +2132,8 @@
                         } catch (e) {}
                     }
                 });
+                // persiste sempre que o estado muda
+                saveQueueState();
             }
 
             function setupHost() {
@@ -2199,7 +2279,7 @@
                 const now = Date.now();
                 const ytFrame = document.getElementById("ytFrame");
                 const rawAudio = document.getElementById("rawAudio");
-                const isMp3 = expectedId.match(/\.(mp3|wav|ogg|m4a)$/i);
+                const isMp3 = /\.(mp3|wav|ogg|m4a)$/i.test(expectedId);
 
                 if (clientCurrentVideoId !== expectedId) {
                     clientCurrentVideoId = expectedId;
@@ -2274,6 +2354,22 @@
                             ytReady = true;
                             e.target.setVolume(config.vol);
                             initConfigUI();
+
+                            // Se host restaurou a fila, retoma na posição salva
+                            if (isHost && queueRestored && curIdx >= 0 && queue[curIdx]) {
+                                const saved = loadQueueState();
+                                const savedTime = saved ? saved.time || 0 : 0;
+                                if (savedTime > 0) {
+                                    try {
+                                        if (/\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId)) {
+                                            const ra = document.getElementById("rawAudio");
+                                            if (ra) ra.currentTime = savedTime;
+                                        } else {
+                                            ytPlayer.seekTo(savedTime, true);
+                                        }
+                                    } catch (err) {}
+                                }
+                            }
                         },
                         onStateChange: function (e) {
                             if (!isHost) return;
@@ -2463,14 +2559,18 @@
 
                 if (isHost && curIdx === -1) startPlayback(0);
                 else renderQueue();
-                if (isHost) broadcastState();
+                if (isHost) {
+                    saveQueueState();
+                    broadcastState();
+                }
             }
 
-            function startPlayback(idx) {
+            function startPlayback(idx, startAtTime) {
                 if (!isHost || idx < 0 || idx >= queue.length) return;
                 stopEmptySound();
                 curIdx = idx;
                 const item = queue[curIdx];
+                const startTime = typeof startAtTime === "number" ? startAtTime : 0;
                 document.getElementById("eover").classList.add("gone");
                 document.getElementById("npbar").style.display = "flex";
                 document.getElementById("npTitle").textContent = item.title;
@@ -2478,7 +2578,7 @@
                 document.getElementById("npUser").style.color = sanitizeColor(item.color) || "";
                 document.getElementById("playerGlow").style.backgroundImage = `url(${item.thumb})`;
                 if (config.glow) document.getElementById("playerGlow").classList.add("active");
-                loadVid(item.videoId);
+                loadVid(item.videoId, startTime);
 
                 const isMp3 = /\.(mp3|wav|ogg|m4a)$/i.test(item.videoId);
                 if (isMp3) {
@@ -2489,6 +2589,7 @@
                 }
 
                 renderQueue();
+                saveQueueState();
             }
 
             function nextVideo() {
@@ -2501,6 +2602,8 @@
                     playEmptySound();
                     sendTwitchMessage("Nenhum vídeo na fila. Adicione uma musica usando %s (link do youtube)");
                 }
+                // Vídeo inteiro reproduzido → removido da fila → salvo sem ele
+                saveQueueState();
             }
 
             function showEmpty() {
@@ -2521,13 +2624,15 @@
                 }
                 document.getElementById("qlistBg").style.backgroundImage = "";
                 renderQueue();
+                saveQueueState();
             }
 
-            function loadVid(id) {
+            function loadVid(id, startTime) {
                 if (!id) return;
                 const ytFrame = document.getElementById("ytFrame");
                 const rawAudio = document.getElementById("rawAudio");
                 const isMp3 = /\.(mp3|wav|ogg|m4a)$/i.test(id);
+                const st = typeof startTime === "number" ? startTime : 0;
 
                 if (isMp3) {
                     if (ytReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
@@ -2536,6 +2641,14 @@
                         rawAudio.style.display = "block";
                         rawAudio.src = id;
                         rawAudio.volume = config.vol / 100;
+                        if (st > 0) {
+                            rawAudio.onloadedmetadata = function () {
+                                try {
+                                    rawAudio.currentTime = st;
+                                } catch (e) {}
+                                rawAudio.onloadedmetadata = null;
+                            };
+                        }
                         if (!paused) rawAudio.play().catch(function () {});
                     }
                 } else {
@@ -2545,7 +2658,7 @@
                     }
                     ytFrame.style.display = "block";
                     if (ytReady && ytPlayer && ytPlayer.loadVideoById) {
-                        ytPlayer.loadVideoById({ videoId: id, startSeconds: 0 });
+                        ytPlayer.loadVideoById({ videoId: id, startSeconds: st });
                         if (!paused) ytPlayer.playVideo();
                     }
                 }
@@ -2606,7 +2719,10 @@
                                 else showEmpty();
                             }
                             renderQueue();
-                            if (isHost) broadcastState();
+                            if (isHost) {
+                                saveQueueState();
+                                broadcastState();
+                            }
                         });
                     });
                 }
@@ -2711,6 +2827,7 @@
                             if (paused && ytPlayer) ytPlayer.pauseVideo();
                             else if (ytPlayer) ytPlayer.playVideo();
                         }
+                        saveQueueState();
                     }
                     if (action === "clear") {
                         logAdminAction(myName, "Limpou a fila");
@@ -2872,8 +2989,6 @@
 
                 twitchWs.onopen = function () {
                     logChat("SISTEMA", "✅ WebSocket conectado. Enviando credenciais...", true, "#5de89a");
-                    // Kills qualquer sessão anterior com esse nick (o Twitch derruba a antiga)
-                    // e rejoinha com a sessão atual = "só um bot por vez"
                     try {
                         twitchWs.send(`PASS ${BOT_OAUTH}`);
                         twitchWs.send(`NICK ${BOT_NICK}`);
@@ -2903,7 +3018,6 @@
                         }
 
                         if (raw.includes("RECONNECT")) {
-                            // O Twitch pede reconexão; fecha e deixa o onclose reconectar
                             try {
                                 twitchWs.close();
                             } catch (e) {}
@@ -3048,6 +3162,7 @@
                                         });
                                         renderQueue();
                                         broadcastState();
+                                        saveQueueState();
                                     } else sendCmd("trocar", { user: twitchUser });
                                     sendTwitchMessage(`@${twitchUser} fila trocada`);
                                 } else {
@@ -3104,7 +3219,6 @@
                                     "rank",
                                 ].includes(action)
                             ) {
-                                // Sem busca por título: só aceita link
                                 await addToQueue(payload, twitchUser, color, true);
                                 continue;
                             }
