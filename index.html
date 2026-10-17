@@ -46,6 +46,7 @@
                 top: 0;
                 z-index: 200;
                 background: rgba(10, 10, 15, 0.95);
+                gap: 0.75rem;
             }
             .logo {
                 font-size: 1.5rem;
@@ -172,8 +173,8 @@
                 border-radius: 4px;
             }
             .plist-del:hover {
-                color: var(--accent);
-                background: rgba(248, 133, 41, 0.1);
+                color: #ff5e5e;
+                background: rgba(255, 94, 94, 0.1);
             }
             .tp {
                 display: flex;
@@ -202,6 +203,54 @@
                 50% {
                     opacity: 0.3;
                 }
+            }
+            .header-mid {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 0.5rem;
+            }
+            .log-ticker {
+                flex: 1;
+                min-width: 0;
+                max-width: 100%;
+                height: 28px;
+                overflow: hidden;
+                position: relative;
+                margin: 0 1rem;
+                border: 1px solid var(--border);
+                border-radius: 20px;
+                background: rgba(0, 0, 0, 0.35);
+            }
+            .log-ticker-inner {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            .cm {
+                font-family: "Space Mono", monospace;
+                font-size: 0.68rem;
+                line-height: 1;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                position: absolute;
+                top: 50%;
+                left: 0;
+                white-space: nowrap;
+                will-change: transform, opacity;
+                pointer-events: none;
+                opacity: 0;
+            }
+            .cmu {
+                color: #a78bfa;
+                font-weight: 700;
+            }
+            .cmt {
+                color: var(--muted);
             }
             main {
                 display: grid;
@@ -407,8 +456,8 @@
                 color: #fff;
             }
             .cbtn.red:hover {
-                background: #e03030;
-                border-color: #e03030;
+                background: #ff5e5e;
+                border-color: #ff5e5e;
             }
             .volrow {
                 display: flex;
@@ -671,8 +720,8 @@
                 display: flex;
             }
             .qidel:hover {
-                color: var(--accent);
-                background: rgba(248, 133, 41, 0.1);
+                color: #ff5e5e;
+                background: rgba(255, 94, 94, 0.1);
             }
             .qisave:hover {
                 color: #5de89a;
@@ -700,54 +749,6 @@
             }
             .qempty .qc {
                 color: var(--accent);
-            }
-            .chatbox {
-                border-top: 1px solid var(--border);
-                padding: 0.7rem 1rem;
-                max-height: 130px;
-                overflow-y: auto;
-                background: var(--surface);
-                flex-shrink: 0;
-            }
-            .chatbox::-webkit-scrollbar {
-                width: 3px;
-            }
-            .chatbox::-webkit-scrollbar-thumb {
-                background: var(--border);
-            }
-            .cblbl {
-                font-family: "Space Mono", monospace;
-                font-size: 0.58rem;
-                color: var(--muted);
-                letter-spacing: 0.1em;
-                text-transform: uppercase;
-                margin-bottom: 0.4rem;
-            }
-            .cm {
-                font-family: "Space Mono", monospace;
-                font-size: 0.66rem;
-                line-height: 1.6;
-                padding: 0.1rem 0;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.025);
-                animation: fdin 0.2s ease;
-            }
-            @keyframes fdin {
-                from {
-                    opacity: 0;
-                }
-                to {
-                    opacity: 1;
-                }
-            }
-            .cmu {
-                color: #a78bfa;
-                font-weight: 700;
-            }
-            .cmc {
-                color: var(--accent);
-            }
-            .cmt {
-                color: var(--muted);
             }
             .ovl {
                 position: fixed;
@@ -811,8 +812,8 @@
                 color: #5de89a;
             }
             .toast.err {
-                border-color: rgba(255, 60, 60, 0.4);
-                color: #ff7070;
+                border-color: rgba(255, 94, 94, 0.4);
+                color: #ff5e5e;
             }
             @keyframes tin {
                 from {
@@ -878,8 +879,8 @@
             }
             .u-btn {
                 background: none;
-                border: 1px solid #5e6cff;
-                color: #5e6cff;
+                border: 1px solid #ff5e5e;
+                color: #ff5e5e;
                 font-family: "Space Mono";
                 font-size: 0.6rem;
                 padding: 0.2rem 0.5rem;
@@ -888,7 +889,7 @@
                 transition: 0.2s;
             }
             .u-btn:hover {
-                background: rgba(248, 133, 41, 0.2);
+                background: rgba(255, 94, 94, 0.2);
             }
             .u-btn.unban {
                 border-color: #5de89a;
@@ -906,6 +907,9 @@
                     height: auto;
                     position: static;
                     max-height: 420px;
+                }
+                .header-mid {
+                    display: none;
                 }
             }
             body::after {
@@ -1211,6 +1215,11 @@
 
         <header>
             <div class="logo">Simp<span>.</span> <span id="roleBadge" class="role-badge">Carregando...</span></div>
+            <div class="header-mid">
+                <div class="log-ticker" id="chatbox">
+                    <div class="log-ticker-inner" id="logInner"></div>
+                </div>
+            </div>
             <div class="hright">
                 <button class="abtn" id="usersBtn" style="display: none">👥 Usuários</button>
                 <div class="dropdown">
@@ -1298,10 +1307,11 @@
                                 >Palavras GIF: <input type="number" id="cfgGifWords" min="1" max="5" value="3"
                             /></label>
                             <label><input type="checkbox" id="cfgGlow" /> Glow</label>
-                            <label><input type="checkbox" id="cfgBpm" /> Beep ao adicionar</label>
+                            <label><input type="checkbox" id="cfgBpm" /> Som ao adicionar</label>
                             <label><input type="checkbox" id="cfgEmptySound" /> Som de fila vazia</label>
                             <label><input type="checkbox" id="cfgAutoSkip" /> Pulo Automático</label>
                             <label>Max dur.(min): <input type="number" id="cfgMaxDur" min="1" value="5" /></label>
+                            <label>Máx. vídeos/viewer: <input type="number" id="cfgMaxPerViewer" min="1" max="20" value="5" /></label>
                         </div>
                     </div>
                 </div>
@@ -1323,9 +1333,6 @@
                             <p>Fila vazia</p>
                         </div>
                     </div>
-                </div>
-                <div class="chatbox" id="chatbox">
-                    <div class="cblbl">Log Simp.</div>
                 </div>
             </div>
         </main>
@@ -1409,6 +1416,13 @@
 
             const EMPTY_SOUNDS = ["https://files.catbox.moe/d5u8m3.mp3","https://files.catbox.moe/hxhg2l.mp3", "https://files.catbox.moe/xjed0e.mp3","https://files.catbox.moe/szy7ht.mp3","https://files.catbox.moe/sf07ho.mp3","https://files.catbox.moe/petnkc.mp3"];
 
+            const ADD_SOUNDS = [
+                "https://user.uploads.dev/file/e73225c881fb859fb35f030a8f207696.mp3",
+                "https://user.uploads.dev/file/c703c231e59ac6d670b45468a84831a5.mp3",
+                "https://user.uploads.dev/file/809183ff60aa24a5c814009881715c54.mp3"
+            ];
+            const START_SOUND_URL = "https://user.uploads.dev/file/e73225c881fb859fb35f030a8f207696.mp3";
+
             let emptySoundAudio = null;
             let queue = [];
             let curIdx = -1;
@@ -1432,7 +1446,9 @@
                     emptySound: true,
                     autoSkip: true,
                     maxDuration: 5,
+                    maxPerViewer: 5,
                 };
+            if (config.maxPerViewer === undefined) config.maxPerViewer = 5;
             let simpsPoints = JSON.parse(localStorage.getItem("simpPoints") || "{}");
             let bannedUsers = JSON.parse(localStorage.getItem("simpBannedUsers") || "[]");
             let hostPeer = null;
@@ -1449,7 +1465,8 @@
             let syncedActiveUsers = [];
             let twitchWs = null;
             let lastTwitchMessageTime = 0;
-            const TWITCH_COOLDOWN_MS = 3000; // 3 seconds cooldown for bot chat responses
+            const TWITCH_COOLDOWN_MS = 3000;
+            let startSoundPlayed = false;
 
             function executeBanLoop() {
                 document.body.innerHTML =
@@ -1755,6 +1772,7 @@
                 document.getElementById("cfgAutoSkip").checked = config.autoSkip;
                 document.getElementById("cfgGifWords").value = config.gifWords;
                 document.getElementById("cfgMaxDur").value = config.maxDuration || 5;
+                document.getElementById("cfgMaxPerViewer").value = config.maxPerViewer || 5;
                 document.getElementById("volSliderClient").value = config.vol;
                 document.getElementById("volNumClient").textContent = config.vol + "%";
             }
@@ -1868,18 +1886,16 @@
                 });
 
                 html += "<br><b>Comandos:</b><br>";
-                html += "%s ajuda → Lista de comandos<br><br>";
+                html += "%s / %simp ajuda → Lista de comandos<br><br>";
                 html += "%s give (quantidade) @usuario → Dá pontos<br><br>";
                 html += "%s ban @usuario → Banir usuário (streamer/mods)<br><br>";
                 html += "%s pontos / %s pontos @usuario → Ver pontos<br><br>";
-                html += "%s skip → Pular música (-50 Simps)<br><br>";
-                html += "%s trocar → Embaralhar fila (-50 Simps)<br><br>";
+                html += "%s rank → Top 10 Simps<br><br>";
+                html += "%s skip → Pular música (-25 Simps, grátis p/ mods)<br><br>";
+                html += "%s trocar → Embaralhar fila (-25 Simps, grátis p/ mods)<br><br>";
                 html += "%s atual → Mostra a música tocando agora e quem pediu<br><br>";
                 html += "%s lista → Mostra quantas músicas estão na fila e a próxima<br><br>";
-                html += "%s gif (nome) → Mudar GIF (-20 Simps)<br><br>";
-                html += "%s add (link) → Salva o link na playlist do site<br><br>";
-                html += "%s playlist → Mostra todas as músicas salvas e suas posições<br><br>";
-                html += "%s play (numero) → Adiciona à fila o link salvo nessa posição<br><br>";
+                html += "%s gif (nome) → Mudar GIF (-10 Simps, grátis p/ mods)<br><br>";
                 html += "%s (url/busca) → Adiciona à fila";
 
                 document.getElementById("simpsContent").innerHTML = html;
@@ -1936,6 +1952,15 @@
                     document.getElementById("eoverText").innerHTML = `Host iniciado.<br>Aguardando vídeos!`;
                     updateClientsBadge();
                     setupHost();
+
+                    if (!startSoundPlayed) {
+                        startSoundPlayed = true;
+                        try {
+                            const a = new Audio(START_SOUND_URL);
+                            a.volume = 0.6;
+                            a.play().catch(function () {});
+                        } catch (e) {}
+                    }
                 });
 
                 hostPeer.on("error", function (err) {
@@ -1948,11 +1973,6 @@
                 if (p2pInitializing) return;
                 p2pInitializing = true;
                 isHost = false;
-
-                if (isHost) {
-                    p2pInitializing = false;
-                    return;
-                }
 
                 if (isAdmin) {
                     document.getElementById("roleBadge").textContent = "ADMIN";
@@ -1996,24 +2016,22 @@
                     setupClient();
                 });
 
-               clientPeer.on("error", function (err) {
-    p2pInitializing = false;
-    if (isHost) return;
+                clientPeer.on("error", function (err) {
+                    p2pInitializing = false;
+                    if (isHost) return;
 
-    if (err && err.type === "peer-unavailable") {
-        // O host ainda não iniciou a sessão. O Peer continua bom, só tenta conectar de novo.
-        document.getElementById("eoverText").innerHTML = "Host ainda não iniciou. Aguardando...";
-        setTimeout(function () {
-            if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
-        }, 4000);
-        return;
-    }
+                    if (err && err.type === "peer-unavailable") {
+                        document.getElementById("eoverText").innerHTML = "Host ainda não iniciou. Aguardando...";
+                        setTimeout(function () {
+                            if (!isHost && clientPeer && !clientPeer.destroyed) setupClient();
+                        }, 4000);
+                        return;
+                    }
 
-    // Erro mais sério (rede, servidor, etc): aí sim recria o Peer do zero
-    toast("Erro de conexão. Tentando reconectar...", "err");
-    setTimeout(startAsClient, 4000);
-});
-}
+                    toast("Erro de conexão. Tentando reconectar...", "err");
+                    setTimeout(startAsClient, 4000);
+                });
+            }
 
             function buildSyncState() {
                 let time = 0;
@@ -2036,6 +2054,7 @@
                     paused: paused,
                     time: time,
                     simpsPoints: simpsPoints,
+                    config: config,
                     activeUsers: clientConnections
                         .filter(function (c) {
                             return c.open && c.metadata;
@@ -2157,6 +2176,11 @@
             function handleSync(data) {
                 if (data.simpsPoints) simpsPoints = data.simpsPoints;
                 if (data.activeUsers) syncedActiveUsers = data.activeUsers;
+                if (data.config) {
+                    config = data.config;
+                    if (config.maxPerViewer === undefined) config.maxPerViewer = 5;
+                    initConfigUI();
+                }
 
                 const queueChanged = JSON.stringify(queue) !== JSON.stringify(data.queue);
                 const idxChanged = curIdx !== data.curIdx;
@@ -2433,6 +2457,19 @@
                         } else toast(`>${config.maxDuration}min`, "err");
                         return;
                     }
+                }
+
+                const maxPer = config.maxPerViewer || 5;
+                const userCount = queue.filter(function (q) {
+                    return q.user === user;
+                }).length;
+                if (userCount >= maxPer) {
+                    if (fromTwitch) {
+                        sendTwitchMessage(`@${user} Você já tem o máximo de ${maxPer} vídeos na fila!`);
+                    } else {
+                        toast(`Máximo de ${maxPer} vídeos na fila`, "err");
+                    }
+                    return;
                 }
 
                 if (color && color.startsWith("#") && color !== "#a78bfa") {
@@ -2779,6 +2816,10 @@
                 config.maxDuration = parseInt(e.target.value);
                 saveConfig();
             });
+            document.getElementById("cfgMaxPerViewer").addEventListener("change", function (e) {
+                config.maxPerViewer = parseInt(e.target.value) || 5;
+                saveConfig();
+            });
 
             const seekClient = document.getElementById("seekSliderClient");
             const volClient = document.getElementById("volSliderClient");
@@ -2839,8 +2880,6 @@
             function connectTwitch() {
                 logChat("SISTEMA", "🔗 Conectando ao Twitch chat...", true, "#ffdd57");
                 twitchWs = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
-
-                //senhas importantes
 
                 twitchWs.onopen = function () {
                     logChat("SISTEMA", "✅ WebSocket conectado. Enviando credenciais...", true, "#5de89a");
@@ -2915,9 +2954,7 @@
                             const arg = parts.slice(1).join(" ");
 
                             if (action === "ajuda" || action === "help") {
-                                sendTwitchMessage(`@${twitchUser} %s ajuda | %s give (quantidade) @usuario | %s pontos @usuario | %s skip | %s trocar | %s gif (nome) | %s atual | %s lista | %s add (link) | %s playlist | %s play (numero) | %s (link/busca)
-
-`);
+                                sendTwitchMessage(`@${twitchUser} %s ajuda | give (qtd) @user | ban @user | pontos | skip (25) | trocar (25) | gif (10) | atual | lista | rank | (link/busca)`);
                                 continue;
                             }
 
@@ -2988,8 +3025,8 @@
                             }
 
                             if (action === "skip") {
-                                if (isMod || getUserPoints(twitchUser) >= 50) {
-                                    if (!isMod) spendPoints(twitchUser, 50);
+                                if (isMod || isHost || getUserPoints(twitchUser) >= 25) {
+                                    if (!isMod && !isHost) spendPoints(twitchUser, 25);
                                     if (isHost) nextVideo();
                                     else sendCmd("skip", { user: twitchUser });
                                     sendTwitchMessage(`@${twitchUser} pulou o video OL`);
@@ -3000,13 +3037,14 @@
                             }
 
                             if (action === "trocar") {
-                                if (getUserPoints(twitchUser) >= 50) {
-                                    spendPoints(twitchUser, 50);
+                                if (isMod || isHost || getUserPoints(twitchUser) >= 25) {
+                                    if (!isMod && !isHost) spendPoints(twitchUser, 25);
                                     if (isHost) {
                                         queue = queue.sort(function () {
                                             return Math.random() - 0.5;
                                         });
                                         renderQueue();
+                                        broadcastState();
                                     } else sendCmd("trocar", { user: twitchUser });
                                     sendTwitchMessage(`@${twitchUser} fila trocada`);
                                 } else {
@@ -3016,8 +3054,8 @@
                             }
 
                             if (action === "gif" && arg) {
-                                if (getUserPoints(twitchUser) >= 20) {
-                                    spendPoints(twitchUser, 20);
+                                if (isMod || isHost || getUserPoints(twitchUser) >= 10) {
+                                    if (!isMod && !isHost) spendPoints(twitchUser, 10);
                                     if (isHost) setQueueGif(arg);
                                     else sendCmd("gif", { user: twitchUser, gifName: arg });
                                     sendTwitchMessage(`@${twitchUser} trocou o gif pra ${arg}`);
@@ -3027,86 +3065,41 @@
                                 continue;
                             }
 
-                            if (action === "add") {
-                                if (!arg) {
-                                    sendTwitchMessage(`@${twitchUser} Uso: %s add (link)`);
-                                    continue;
-                                }
-                                let addId = await extractId(arg);
-                                const isRawAudioAdd = arg.match(/\.(mp3|wav|ogg|m4a)$/i);
-                                if (!addId && !isRawAudioAdd) {
-                                    sendTwitchMessage(`@${twitchUser} Link inválido. Use: %s add (link)`);
-                                    continue;
-                                }
-                                let addTitle = "";
-                                let addThumb = "";
-                                if (isRawAudioAdd) {
-                                    addId = arg;
-                                    addTitle = arg.split("/").pop();
-                                    addThumb = "https://i.giphy.com/blSTtZehjAZ8I.webp";
-                                } else {
-                                    addTitle = await fetchTitle(addId);
-                                    if (!addTitle || addTitle === "Título Indisponível") addTitle = "Música";
-                                    addThumb = `https://img.youtube.com/vi/${addId}/hqdefault.jpg`;
-                                }
-                                if (
-                                    simpPlaylist.find(function (v) {
-                                        return v.videoId === addId;
+                            if (action === "rank") {
+                                const top = Object.entries(simpsPoints)
+                                    .sort(function (a, b) {
+                                        return b[1] - a[1];
                                     })
-                                ) {
-                                    sendTwitchMessage(`@${twitchUser} Esse link já está salvo na playlist.`);
+                                    .slice(0, 10);
+                                if (!top.length) {
+                                    sendTwitchMessage(`@${twitchUser} Ninguém tem Simps ainda.`);
                                     continue;
                                 }
-                                simpPlaylist.push({
-                                    videoId: addId,
-                                    title: addTitle,
-                                    user: twitchUser,
-                                    color: color,
-                                    thumb: addThumb,
-                                });
-                                localStorage.setItem("simpPlaylist", JSON.stringify(simpPlaylist));
-                                renderPlaylist();
-                                sendTwitchMessage(
-                                    `@${twitchUser} Adicionado "${addTitle}" à playlist salva (posição ${simpPlaylist.length}).`
-                                );
-                                continue;
-                            }
-
-                            if (action === "play") {
-                                const idx = parseInt(arg, 10) - 1;
-                                if (isNaN(idx) || idx < 0 || idx >= simpPlaylist.length) {
-                                    sendTwitchMessage(
-                                        `@${twitchUser} Posição inválida. A playlist salva tem ${simpPlaylist.length} item(ns). Uso: %s play (numero)`
-                                    );
-                                    continue;
-                                }
-                                const saved = simpPlaylist[idx];
-                                const savedUrl = saved.videoId.match(/\.(mp3|wav|ogg|m4a)$/i)
-                                    ? saved.videoId
-                                    : `https://youtu.be/${saved.videoId}`;
-                                await addToQueue(savedUrl, twitchUser, color, true);
-                                continue;
-                            }
-
-                            if (action === "playlist") {
-                                if (simpPlaylist.length === 0) {
-                                    sendTwitchMessage(`@${twitchUser} A playlist salva está vazia. Use %s add (link).`);
-                                    continue;
-                                }
-                                const listStr = simpPlaylist
-                                    .map(function (item, i) {
-                                        return `${i + 1}. ${item.title}`;
+                                let s = top
+                                    .map(function (it, i) {
+                                        return i + 1 + ". " + it[0] + " (" + it[1] + ")";
                                     })
                                     .join(" | ");
-                                sendTwitchMessage(`@${twitchUser} Playlist salva: ${listStr}`);
+                                if (s.length > 380) s = s.slice(0, 377) + "...";
+                                sendTwitchMessage(`@${twitchUser} Top Simps: ${s}`);
                                 continue;
                             }
 
                             if (
                                 payload &&
-                                !["ajuda", "help", "give", "ban", "pontos", "skip", "trocar", "gif", "add", "playlist", "play"].includes(
-                                    action
-                                )
+                                ![
+                                    "ajuda",
+                                    "help",
+                                    "give",
+                                    "ban",
+                                    "pontos",
+                                    "skip",
+                                    "trocar",
+                                    "gif",
+                                    "atual",
+                                    "lista",
+                                    "rank",
+                                ].includes(action)
                             ) {
                                 await addToQueue(payload, twitchUser, color, true);
                                 continue;
@@ -3132,49 +3125,69 @@
             function playPing() {
                 if (!config.bpm) return;
                 try {
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.1);
+                    const a = new Audio(ADD_SOUNDS[Math.floor(Math.random() * ADD_SOUNDS.length)]);
+                    a.volume = 0.55;
+                    a.play().catch(function () {});
                 } catch (e) {}
             }
 
-            function playPing() {
-                if (!config.bpm) return;
-                try {
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.1);
-                } catch (e) {}
+            var logQueue = [];
+            var logBusy = false;
+            function logChat(user, text, isCmd, color, isMod) {
+                logQueue.push({
+                    user: user,
+                    text: text,
+                    color: color,
+                    isMod: !!isMod,
+                    points: getUserPoints(user),
+                });
+                processLogQueue();
             }
-
-            function logChat(user, text, isCmd = false, color = "#a78bfa", isMod = false) {
-                const box = document.getElementById("chatbox");
-                const points = getUserPoints(user);
-                const modTag = isMod ? ' <span style="color:#5e6cff">[MOD]</span>' : "";
-                const safeColor = sanitizeColor(color);
-
-                const d = document.createElement("div");
+            function processLogQueue() {
+                if (logBusy || !logQueue.length) return;
+                var inner = document.getElementById("logInner");
+                if (!inner) return;
+                logBusy = true;
+                var item = logQueue.shift();
+                var d = document.createElement("div");
                 d.className = "cm";
-                d.innerHTML = `<span class="cmu" style="color:${safeColor}">${esc(user)}${modTag} <span style="color:#5e6cff"> (${points} Simps)</span></span>: <span class="cmt">${esc(text)}</span>`;
-
-                box.appendChild(d);
-                box.scrollTop = box.scrollHeight;
-                if (box.childNodes.length > 60) box.firstChild.remove();
-                setTimeout(function () {
-                    if (d.parentNode) d.parentNode.removeChild(d);
-                }, 10000);
+                d.innerHTML =
+                    '<span class="cmu" style="color:' +
+                    sanitizeColor(item.color) +
+                    '">' +
+                    esc(item.user) +
+                    (item.isMod ? ' <span style="color:#5e6cff">[MOD]</span>' : "") +
+                    ' <span style="color:#5e6cff"> (' +
+                    (item.points || 0) +
+                    ' Simps)</span></span>: <span class="cmt">' +
+                    esc(item.text) +
+                    "</span>";
+                inner.appendChild(d);
+                requestAnimationFrame(function () {
+                    var boxW = inner.clientWidth || 300;
+                    var msgW = d.offsetWidth || 120;
+                    var startX = -msgW;
+                    var endX = boxW + 8;
+                    var dist = endX - startX;
+                    var dur = Math.min(10, Math.max(4, dist / 55));
+                    d.style.transform = "translateY(-50%) translateX(" + startX + "px)";
+                    d.style.opacity = "0";
+                    void d.offsetWidth;
+                    d.style.transition = "transform " + dur + "s linear, opacity 0.3s ease";
+                    d.style.transform = "translateY(-50%) translateX(" + endX + "px)";
+                    d.style.opacity = "1";
+                    var releaseAt = Math.max(1.2, dur * 0.55) * 1000;
+                    setTimeout(function () {
+                        logBusy = false;
+                        processLogQueue();
+                    }, releaseAt);
+                    setTimeout(function () {
+                        d.style.opacity = "0";
+                    }, (dur - 0.35) * 1000);
+                    setTimeout(function () {
+                        if (d.parentNode) d.parentNode.removeChild(d);
+                    }, (dur + 0.25) * 1000);
+                });
             }
 
             function logAdminAction(user, action) {
@@ -3228,7 +3241,6 @@
                     }, 3000);
                 }
 
-                // ---------- efeito 1: ZA WARUDO (segredo original) ----------
                 let zwAudio = null;
                 let zwTimer = null;
                 let zwParticleInterval = null;
@@ -3314,7 +3326,6 @@
                     });
                 }
 
-                // ---------- efeito 2: chuva de código (matrix) ----------
                 function runMatrixRain(done) {
                     eggToast("Wake up, Simp...");
                     const canvas = document.createElement("canvas");
@@ -3352,7 +3363,6 @@
                     }, 4000);
                 }
 
-                // ---------- efeito 3: disco party ----------
                 function runDiscoParty(done) {
                     eggToast("🪩 MODO DISCO ATIVADO 🪩");
                     document.body.classList.add("egg-disco");
@@ -3389,7 +3399,6 @@
                     }, 4000);
                 }
 
-                // ---------- efeito 4: mundo de cabeça pra baixo ----------
                 function runGravityFlip(done) {
                     eggToast("🙃 A gravidade sumiu por um instante...");
                     document.body.classList.add("egg-flip");
@@ -3399,7 +3408,6 @@
                     }, 3000);
                 }
 
-                // ---------- efeito 5: glitch / VHS ----------
                 function runGlitch(done) {
                     eggToast("⚠ FALHA NA TRANSMISSÃO ⚠");
                     document.body.classList.add("egg-glitch");
