@@ -1312,6 +1312,7 @@
                             <label><input type="checkbox" id="cfgAutoSkip" /> Pulo Automático</label>
                             <label>Max dur.(min): <input type="number" id="cfgMaxDur" min="1" value="5" /></label>
                             <label>Máx. vídeos/viewer: <input type="number" id="cfgMaxPerViewer" min="1" max="20" value="5" /></label>
+                            <label><input type="checkbox" id="cfgRadio" /> Rádio</label>
                         </div>
                     </div>
                 </div>
@@ -1494,8 +1495,10 @@
                     autoSkip: true,
                     maxDuration: 5,
                     maxPerViewer: 5,
+                    radio: true,
                 };
             if (config.maxPerViewer === undefined) config.maxPerViewer = 5;
+            if (config.radio === undefined) config.radio = true;
             let simpsPoints = JSON.parse(localStorage.getItem("simpPoints") || "{}");
             let bannedUsers = JSON.parse(localStorage.getItem("simpBannedUsers") || "[]");
             let hostPeer = null;
@@ -1827,6 +1830,7 @@
                 document.getElementById("cfgGifWords").value = config.gifWords;
                 document.getElementById("cfgMaxDur").value = config.maxDuration || 5;
                 document.getElementById("cfgMaxPerViewer").value = config.maxPerViewer || 5;
+                document.getElementById("cfgRadio").checked = config.radio;
                 document.getElementById("volSliderClient").value = config.vol;
                 document.getElementById("volNumClient").textContent = config.vol + "%";
             }
@@ -1965,6 +1969,34 @@
                 }
             }
 
+            let radioList = JSON.parse(localStorage.getItem("simpRadioList") || "[]");
+            let radioIdx = parseInt(localStorage.getItem("simpRadioIdx") || "0", 10) || 0;
+
+            function saveToRadio(item) {
+                if (radioList.find(function (r) { return r.videoId === item.videoId; })) return;
+                radioList.push({ videoId: item.videoId, title: item.title, thumb: item.thumb });
+                if (radioList.length > 300) radioList.shift();
+                localStorage.setItem("simpRadioList", JSON.stringify(radioList));
+            }
+
+            function startRadio() {
+                if (!isHost || !config.radio || !ytReady || radioList.length === 0 || queue.length > 0) return false;
+                if (radioIdx >= radioList.length) radioIdx = 0;
+                const r = radioList[radioIdx++];
+                localStorage.setItem("simpRadioIdx", radioIdx);
+                queue.push({
+                    videoId: r.videoId,
+                    title: r.title,
+                    user: "📻 Rádio",
+                    color: "#ffdd57",
+                    thumb: r.thumb,
+                    radio: true,
+                });
+                startPlayback(0);
+                broadcastState();
+                return true;
+            }
+
             function startAsHost() {
                 if (p2pInitializing) return;
                 p2pInitializing = true;
@@ -2017,7 +2049,7 @@
                     if (curIdx >= 0 && queue[curIdx]) {
                         const savedTime = loadQueueState() ? loadQueueState().time || 0 : 0;
                         startPlayback(curIdx, savedTime);
-                    } else {
+                    } else if (!startRadio()) {
                         renderQueue();
                     }
                 });
@@ -2370,12 +2402,13 @@
                                     } catch (err) {}
                                 }
                             }
+                            if (isHost && curIdx === -1 && queue.length === 0) startRadio();
                         },
                         onStateChange: function (e) {
                             if (!isHost) return;
                             if (e.data === YT.PlayerState.PLAYING) {
                                 const dur = ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
-                                if (dur > config.maxDuration * 60) {
+                                if (dur > config.maxDuration * 60 && !(queue[curIdx] && queue[curIdx].radio)) {
                                     logChat(
                                         "SISTEMA",
                                         `Vídeo pulado: muito longo (> ${config.maxDuration} min).`,
@@ -2389,6 +2422,9 @@
                                 if (config.autoSkip) nextVideo();
                             }
                             paused = e.data === YT.PlayerState.PAUSED;
+                        },
+                        onError: function () {
+                            if (isHost && queue[curIdx] && queue[curIdx].radio) nextVideo();
                         },
                     },
                 });
@@ -2493,7 +2529,7 @@
 
                 if (
                     queue.find(function (q) {
-                        return q.videoId === id;
+                        return q.videoId === id && !q.radio;
                     })
                 ) {
                     if (!fromTwitch) toast("Já na fila", "err");
@@ -2548,6 +2584,7 @@
                     : `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 
                 queue.push({ videoId: id, title: title, user: user, color: userColor, thumb: thumb });
+                saveToRadio({ videoId: id, title: title, thumb: thumb });
                 if (isHost && twitchUsers.has(user)) addPoints(user, 1);
                 logChat(user, title, true, userColor || "#a78bfa");
                 if (isHost) playPing();
@@ -2597,7 +2634,7 @@
                 queue.splice(0, curIdx + 1);
                 curIdx = -1;
                 if (queue.length > 0) startPlayback(0);
-                else {
+                else if (!startRadio()) {
                     showEmpty();
                     playEmptySound();
                     sendTwitchMessage("Nenhum vídeo na fila. Adicione uma musica usando %s (link do youtube)");
@@ -2716,7 +2753,7 @@
                             else if (i === curIdx) {
                                 curIdx = -1;
                                 if (queue.length > 0) startPlayback(0);
-                                else showEmpty();
+                                else if (!startRadio()) showEmpty();
                             }
                             renderQueue();
                             if (isHost) {
@@ -2832,7 +2869,7 @@
                     if (action === "clear") {
                         logAdminAction(myName, "Limpou a fila");
                         queue = [];
-                        showEmpty();
+                        if (!startRadio()) showEmpty();
                     }
                     if (action === "seek" && payload.time !== undefined) {
                         const isMp3 = curIdx >= 0 && /\.(mp3|wav|ogg|m4a)$/i.test(queue[curIdx].videoId);
@@ -2902,6 +2939,19 @@
             document.getElementById("cfgMaxPerViewer").addEventListener("change", function (e) {
                 config.maxPerViewer = parseInt(e.target.value) || 5;
                 saveConfig();
+            });
+            document.getElementById("cfgRadio").addEventListener("change", function (e) {
+                config.radio = e.target.checked;
+                saveConfig();
+                if (isHost) {
+                    if (config.radio) {
+                        if (curIdx === -1 && queue.length === 0) startRadio();
+                    } else if (curIdx >= 0 && queue[curIdx] && queue[curIdx].radio) {
+                        nextVideo(); // desligou: para a música da rádio
+                    }
+                    broadcastState();
+                }
+                toast(config.radio ? "Rádio ativada" : "Rádio desativada", "ok");
             });
 
             const seekClient = document.getElementById("seekSliderClient");
