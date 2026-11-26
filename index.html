@@ -1924,6 +1924,7 @@
                 html += "%s / %simp ajuda → Lista de comandos<br><br>";
                 html += "%s give (quantidade) @usuario → Dá pontos<br><br>";
                 html += "%s ban @usuario → Banir usuário (streamer/mods)<br><br>";
+                html += "%s unban @usuario → Desbanir usuário (streamer/mods)<br><br>";
                 html += "%s pontos / %s pontos @usuario → Ver pontos<br><br>";
                 html += "%s rank → Top 10 Simps<br><br>";
                 html += "%s skip → Pular música (-25 Simps, grátis p/ mods)<br><br>";
@@ -2021,6 +2022,10 @@
                             "#5de89a"
                         );
                     }
+                }
+
+                if (!twitchWs || (twitchWs.readyState !== WebSocket.OPEN && twitchWs.readyState !== WebSocket.CONNECTING)) {
+                    connectTwitch();
                 }
 
                 hostPeer = new Peer(ROOM_ID, {
@@ -2196,6 +2201,7 @@
 
                     conn.on("data", function (data) {
                         if (!data || data.type !== "cmd") return;
+                        if (!canClientRunCmd(data.action, data.user)) return;
                         sendCmd(data.action, data);
                         broadcastState();
                     });
@@ -2839,6 +2845,21 @@
                 }
             }
 
+            // Quem é mod/admin (o host é quem decide, o cliente não)
+            function isPrivilegedUser(name) {
+                name = String(name || "").toLowerCase();
+                if (!name) return false;
+                return name === "daenil" || ADMIN_USERS.includes(name) || twitchMods.has(name);
+            }
+
+            // Clientes só podem adicionar música. Pular, pausar, limpar, seek e ban só mod/admin.
+            // Pular com Simps só pelo chat (%s skip), que roda no host.
+            function canClientRunCmd(action, user) {
+                if (action === "add") return true;
+                if (["skip", "pause", "clear", "seek", "ban"].includes(action)) return isPrivilegedUser(user);
+                return false;
+            }
+
             function sendCmd(action, payload = {}) {
                 if (isHost) {
                     if (action === "add") {
@@ -3101,7 +3122,10 @@
                         const msg = m[2].trim();
                         const rawColor = tags.color && tags.color.startsWith("#") ? tags.color : null;
                         const color = rawColor || "#a78bfa";
-                        const isMod = tags.mod === "1" || (tags.badges && tags.badges.includes("moderator"));
+                        const isMod =
+                            tags.mod === "1" ||
+                            (tags.badges && (tags.badges.includes("moderator") || tags.badges.includes("broadcaster"))) ||
+                            twitchUser === "daenil";
 
                         if (isMod) twitchMods.add(twitchUser);
                         if (!myTwitchName) myTwitchName = twitchUser;
@@ -3115,13 +3139,15 @@
                         }
 
                         if (msg.toLowerCase().startsWith("%s")) {
+                            // Só o host trata comandos: ele é quem tem os pontos de verdade
+                            if (!isHost) continue;
                             const payload = msg.slice(2).trim();
                             const parts = payload.split(" ");
                             const action = parts[0] ? parts[0].toLowerCase() : "";
                             const arg = parts.slice(1).join(" ");
 
                             if (action === "ajuda" || action === "help") {
-                                sendTwitchMessage(`@${twitchUser} %s ajuda | give (qtd) @user | ban @user | pontos | skip (25) | trocar (25) | gif (10) | atual | lista | rank | (link youtube/mp3)`);
+                                sendTwitchMessage(`@${twitchUser} %s ajuda | give (qtd) @user | ban @user | unban @user | pontos | skip (25) | trocar (25) | gif (10) | atual | lista | rank | (link youtube/mp3)`);
                                 continue;
                             }
 
@@ -3151,6 +3177,21 @@
                                     const target = arg.replace("@", "").toLowerCase();
                                     banUser(target);
                                     sendTwitchMessage(`@${twitchUser} baniu @${target} anga `);
+                                } else {
+                                    sendTwitchMessage(`@${twitchUser} seja mod primeiro besta.`);
+                                }
+                                continue;
+                            }
+
+                            if (action === "unban" && arg) {
+                                if (isMod || isHost) {
+                                    const target = arg.replace("@", "").toLowerCase();
+                                    if (bannedUsers.includes(target)) {
+                                        unbanUser(target);
+                                        sendTwitchMessage(`@${twitchUser} desbaniu @${target} finO`);
+                                    } else {
+                                        sendTwitchMessage(`@${twitchUser} @${target} não está banido.`);
+                                    }
                                 } else {
                                     sendTwitchMessage(`@${twitchUser} seja mod primeiro besta.`);
                                 }
@@ -3260,6 +3301,7 @@
                                     "help",
                                     "give",
                                     "ban",
+                                    "unban",
                                     "pontos",
                                     "skip",
                                     "trocar",
