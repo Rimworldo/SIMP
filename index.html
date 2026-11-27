@@ -1711,11 +1711,12 @@
             }
 
             function banUser(targetUser) {
-                if (!isHost) return;
+                if (!isHost) return false;
                 targetUser = targetUser.toLowerCase().replace("@", "");
+                if (!targetUser) return false;
                 if (targetUser === myName || ADMIN_USERS.includes(targetUser) || targetUser === "daenil") {
                     toast("Você não pode banir este usuário!", "err");
-                    return;
+                    return false;
                 }
 
                 if (!bannedUsers.includes(targetUser)) {
@@ -1735,6 +1736,7 @@
                 logAdminAction(myName, `BANIU o usuário ${targetUser}`);
                 renderUsersModal();
                 broadcastState();
+                return true;
             }
 
             function unbanUser(targetUser) {
@@ -3141,6 +3143,7 @@
                         if (msg.toLowerCase().startsWith("%s")) {
                             // Só o host trata comandos: ele é quem tem os pontos de verdade
                             if (!isHost) continue;
+                            if (bannedUsers.includes(twitchUser)) continue;
                             const payload = msg.slice(2).trim();
                             const parts = payload.split(" ");
                             const action = parts[0] ? parts[0].toLowerCase() : "";
@@ -3162,38 +3165,42 @@
                                     sendTwitchMessage(`@${twitchUser} você não pode dar pontos a si mesmo besta.`);
                                     continue;
                                 }
-                                if (getUserPoints(twitchUser) < amount) {
+                                if (!spendPoints(twitchUser, amount)) {
                                     sendTwitchMessage(`@${twitchUser} pobre.`);
                                     continue;
                                 }
-                                spendPoints(twitchUser, amount);
                                 addPoints(target, amount);
                                 sendTwitchMessage(`@${twitchUser} deu ${amount} Simps para @${target} finO`);
                                 continue;
                             }
 
                             if (action === "ban" && arg) {
-                                if (isMod || isHost) {
-                                    const target = arg.replace("@", "").toLowerCase();
-                                    banUser(target);
+                                if (!isMod) {
+                                    sendTwitchMessage(`@${twitchUser} seja mod primeiro besta.`);
+                                    continue;
+                                }
+                                const target = arg.replace("@", "").toLowerCase();
+                                if (bannedUsers.includes(target)) {
+                                    sendTwitchMessage(`@${twitchUser} @${target} já está banido.`);
+                                } else if (banUser(target)) {
                                     sendTwitchMessage(`@${twitchUser} baniu @${target} anga `);
                                 } else {
-                                    sendTwitchMessage(`@${twitchUser} seja mod primeiro besta.`);
+                                    sendTwitchMessage(`@${twitchUser} não dá pra banir @${target}.`);
                                 }
                                 continue;
                             }
 
                             if (action === "unban" && arg) {
-                                if (isMod || isHost) {
-                                    const target = arg.replace("@", "").toLowerCase();
-                                    if (bannedUsers.includes(target)) {
-                                        unbanUser(target);
-                                        sendTwitchMessage(`@${twitchUser} desbaniu @${target} finO`);
-                                    } else {
-                                        sendTwitchMessage(`@${twitchUser} @${target} não está banido.`);
-                                    }
-                                } else {
+                                if (!isMod) {
                                     sendTwitchMessage(`@${twitchUser} seja mod primeiro besta.`);
+                                    continue;
+                                }
+                                const target = arg.replace("@", "").toLowerCase();
+                                if (bannedUsers.includes(target)) {
+                                    unbanUser(target);
+                                    sendTwitchMessage(`@${twitchUser} desbaniu @${target} finO`);
+                                } else {
+                                    sendTwitchMessage(`@${twitchUser} @${target} não está banido.`);
                                 }
                                 continue;
                             }
@@ -3233,44 +3240,41 @@
                             }
 
                             if (action === "skip") {
-                                if (isMod || isHost || getUserPoints(twitchUser) >= 25) {
-                                    if (!isMod && !isHost) spendPoints(twitchUser, 25);
-                                    if (isHost) nextVideo();
-                                    else sendCmd("skip", { user: twitchUser });
-                                    sendTwitchMessage(`@${twitchUser} pulou o video OL`);
-                                } else {
+                                if (!isMod && !spendPoints(twitchUser, 25)) {
                                     sendTwitchMessage(`@${twitchUser} Seja mais rico SonicSafado`);
+                                    continue;
                                 }
+                                nextVideo();
+                                sendTwitchMessage(`@${twitchUser} pulou o video OL`);
                                 continue;
                             }
 
                             if (action === "trocar") {
-                                if (isMod || isHost || getUserPoints(twitchUser) >= 25) {
-                                    if (!isMod && !isHost) spendPoints(twitchUser, 25);
-                                    if (isHost) {
-                                        queue = queue.sort(function () {
-                                            return Math.random() - 0.5;
-                                        });
-                                        renderQueue();
-                                        broadcastState();
-                                        saveQueueState();
-                                    } else sendCmd("trocar", { user: twitchUser });
-                                    sendTwitchMessage(`@${twitchUser} fila trocada`);
-                                } else {
-                                    sendTwitchMessage(`@${twitchUser} Tenha mais dinheiros`);
+                                if (queue.length < 2) {
+                                    sendTwitchMessage(`@${twitchUser} a fila precisa ter pelo menos 2 músicas.`);
+                                    continue;
                                 }
+                                if (!isMod && !spendPoints(twitchUser, 25)) {
+                                    sendTwitchMessage(`@${twitchUser} Tenha mais dinheiros`);
+                                    continue;
+                                }
+                                queue = queue.sort(function () {
+                                    return Math.random() - 0.5;
+                                });
+                                renderQueue();
+                                broadcastState();
+                                saveQueueState();
+                                sendTwitchMessage(`@${twitchUser} fila trocada`);
                                 continue;
                             }
 
                             if (action === "gif" && arg) {
-                                if (isMod || isHost || getUserPoints(twitchUser) >= 10) {
-                                    if (!isMod && !isHost) spendPoints(twitchUser, 10);
-                                    if (isHost) setQueueGif(arg);
-                                    else sendCmd("gif", { user: twitchUser, gifName: arg });
-                                    sendTwitchMessage(`@${twitchUser} trocou o gif pra ${arg}`);
-                                } else {
+                                if (!isMod && !spendPoints(twitchUser, 10)) {
                                     sendTwitchMessage(`@${twitchUser} bixo pobre`);
+                                    continue;
                                 }
+                                await setQueueGif(arg);
+                                sendTwitchMessage(`@${twitchUser} trocou o gif pra ${arg}`);
                                 continue;
                             }
 
