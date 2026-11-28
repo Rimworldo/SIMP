@@ -703,7 +703,8 @@
                 flex-shrink: 0;
             }
             .qidel,
-            .qisave {
+            .qisave,
+            .qiban {
                 background: none;
                 border: none;
                 color: var(--muted);
@@ -716,7 +717,8 @@
                 display: none;
             }
             .qi:hover .qidel,
-            .qi:hover .qisave {
+            .qi:hover .qisave,
+            .qi:hover .qiban {
                 display: flex;
             }
             .qidel:hover {
@@ -726,6 +728,10 @@
             .qisave:hover {
                 color: #5de89a;
                 background: rgba(50, 200, 100, 0.1);
+            }
+            .qiban:hover {
+                color: #ff5e5e;
+                background: rgba(255, 94, 94, 0.1);
             }
             .qempty {
                 flex: 1;
@@ -1389,6 +1395,19 @@
                     ></div>
                 </div>
 
+                <h2 style="font-size: 0.9rem; color: #5e6cff; margin-top: 1rem">Músicas banidas</h2>
+                <div
+                    id="bannedVideosContent"
+                    style="
+                        max-height: 150px;
+                        overflow-y: auto;
+                        border: 1px solid rgba(248, 133, 41, 0.2);
+                        border-radius: 8px;
+                        padding: 0.5rem;
+                        background: #000;
+                    "
+                ></div>
+
                 <div class="mbtns" style="margin-top: 1rem">
                     <button class="bok" id="usersClose">Fechar</button>
                 </div>
@@ -1501,6 +1520,7 @@
             if (config.radio === undefined) config.radio = true;
             let simpsPoints = JSON.parse(localStorage.getItem("simpPoints") || "{}");
             let bannedUsers = JSON.parse(localStorage.getItem("simpBannedUsers") || "[]");
+            let bannedVideos = JSON.parse(localStorage.getItem("simpBannedVideos") || "[]");
             let hostPeer = null;
             let clientPeer = null;
             let hostConnection = null;
@@ -1822,6 +1842,27 @@
                         });
                     });
                 }
+
+                const bvDiv = document.getElementById("bannedVideosContent");
+                bvDiv.innerHTML = "";
+                if (bannedVideos.length === 0) {
+                    bvDiv.innerHTML =
+                        '<div style="color:var(--muted); font-size:0.7rem; text-align:center;">Nenhuma música banida.</div>';
+                } else {
+                    bannedVideos.forEach(function (v) {
+                        const row = document.createElement("div");
+                        row.className = "u-item";
+                        row.innerHTML =
+                            `<span class="u-name" style="color:#5e6cff; max-width:230px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(v.title)}</span> <button class="u-btn unban" data-vid="${esc(v.videoId)}">UNBAN</button>`;
+                        bvDiv.appendChild(row);
+                    });
+                    bvDiv.querySelectorAll(".u-btn").forEach(function (btn) {
+                        btn.addEventListener("click", function () {
+                            sendCmd("unbanvideo", { videoId: this.dataset.vid, user: myName });
+                            setTimeout(renderUsersModal, isHost ? 50 : 1800);
+                        });
+                    });
+                }
             }
 
             function initConfigUI() {
@@ -2000,6 +2041,41 @@
                 return true;
             }
 
+            function removeVideoById(videoId) {
+                if (!isHost) return;
+                const i = queue.findIndex(function (q) {
+                    return q.videoId === videoId;
+                });
+                if (i === -1) return;
+                queue.splice(i, 1);
+                if (i < curIdx) curIdx--;
+                else if (i === curIdx) {
+                    curIdx = -1;
+                    if (queue.length > 0) startPlayback(0);
+                    else if (!startRadio()) showEmpty();
+                }
+                renderQueue();
+                saveQueueState();
+            }
+
+            function banVideo(videoId, title) {
+                if (!isHost || !videoId) return;
+                if (
+                    !bannedVideos.find(function (v) {
+                        return v.videoId === videoId;
+                    })
+                ) {
+                    bannedVideos.push({ videoId: videoId, title: title || videoId });
+                    localStorage.setItem("simpBannedVideos", JSON.stringify(bannedVideos));
+                }
+                // tira da rádio também
+                radioList = radioList.filter(function (r) {
+                    return r.videoId !== videoId;
+                });
+                localStorage.setItem("simpRadioList", JSON.stringify(radioList));
+                removeVideoById(videoId);
+            }
+
             function startAsHost() {
                 if (p2pInitializing) return;
                 p2pInitializing = true;
@@ -2151,6 +2227,7 @@
                     time: time,
                     simpsPoints: simpsPoints,
                     config: config,
+                    bannedVideos: bannedVideos,
                     activeUsers: clientConnections
                         .filter(function (c) {
                             return c.open && c.metadata;
@@ -2275,6 +2352,7 @@
             function handleSync(data) {
                 if (data.simpsPoints) simpsPoints = data.simpsPoints;
                 if (data.activeUsers) syncedActiveUsers = data.activeUsers;
+                if (data.bannedVideos) bannedVideos = data.bannedVideos;
                 if (data.config) {
                     config = data.config;
                     if (config.maxPerViewer === undefined) config.maxPerViewer = 5;
@@ -2536,6 +2614,16 @@
                 }
 
                 if (
+                    bannedVideos.some(function (v) {
+                        return v.videoId === id;
+                    })
+                ) {
+                    if (fromTwitch) sendTwitchMessage(`@${user} Essa música está banida.`);
+                    else toast("Essa música está banida", "err");
+                    return;
+                }
+
+                if (
                     queue.find(function (q) {
                         return q.videoId === id && !q.radio;
                     })
@@ -2732,6 +2820,7 @@
       ${!isCur ? `<span class="qinum">${pos}</span>` : ""}
       <button class="qisave" data-i="${i}" title="Salvar">💾</button>
       ${isAdmin && !isCur ? `<button class="qidel" data-i="${i}" title="Remover">✕</button>` : ""}
+      ${isAdmin ? `<button class="qiban" data-i="${i}" title="Banir música">🚫</button>` : ""}
     `;
                     list.appendChild(d);
                 });
@@ -2755,19 +2844,17 @@
                     list.querySelectorAll(".qidel").forEach(function (btn) {
                         btn.addEventListener("click", function (e) {
                             e.stopPropagation();
-                            const i = parseInt(btn.dataset.i);
-                            queue.splice(i, 1);
-                            if (i < curIdx) curIdx--;
-                            else if (i === curIdx) {
-                                curIdx = -1;
-                                if (queue.length > 0) startPlayback(0);
-                                else if (!startRadio()) showEmpty();
-                            }
-                            renderQueue();
-                            if (isHost) {
-                                saveQueueState();
-                                broadcastState();
-                            }
+                            const item = queue[parseInt(btn.dataset.i)];
+                            if (item) sendCmd("remove", { videoId: item.videoId, user: myName });
+                        });
+                    });
+                    list.querySelectorAll(".qiban").forEach(function (btn) {
+                        btn.addEventListener("click", function (e) {
+                            e.stopPropagation();
+                            const item = queue[parseInt(btn.dataset.i)];
+                            if (!item) return;
+                            if (!confirm('Banir "' + item.title + '" para sempre?')) return;
+                            sendCmd("banvideo", { videoId: item.videoId, user: myName });
                         });
                     });
                 }
@@ -2858,7 +2945,8 @@
             // Pular com Simps só pelo chat (%s skip), que roda no host.
             function canClientRunCmd(action, user) {
                 if (action === "add") return true;
-                if (["skip", "pause", "clear", "seek", "ban"].includes(action)) return isPrivilegedUser(user);
+                if (["skip", "pause", "clear", "seek", "ban", "remove", "banvideo", "unbanvideo"].includes(action))
+                    return isPrivilegedUser(user);
                 return false;
             }
 
@@ -2902,6 +2990,25 @@
                         } else {
                             if (ytPlayer) ytPlayer.seekTo(payload.time, true);
                         }
+                    }
+                    if (action === "remove" && payload.videoId) {
+                        logAdminAction(payload.user || myName, "removeu um vídeo da fila");
+                        removeVideoById(payload.videoId);
+                    }
+                    if (action === "banvideo" && payload.videoId) {
+                        const it = queue.find(function (q) {
+                            return q.videoId === payload.videoId;
+                        });
+                        const t = it ? it.title : payload.videoId;
+                        logAdminAction(payload.user || myName, 'BANIU a música "' + t + '"');
+                        banVideo(payload.videoId, t);
+                    }
+                    if (action === "unbanvideo" && payload.videoId) {
+                        bannedVideos = bannedVideos.filter(function (v) {
+                            return v.videoId !== payload.videoId;
+                        });
+                        localStorage.setItem("simpBannedVideos", JSON.stringify(bannedVideos));
+                        logAdminAction(payload.user || myName, "DESBANIU uma música");
                     }
                     broadcastState();
                 } else if (hostConnection && hostConnection.open) {
